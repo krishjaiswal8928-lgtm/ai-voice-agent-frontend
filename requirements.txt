@@ -1,0 +1,67 @@
+# Core Framework
+fastapi>=0.100.0
+uvicorn>=0.21.0
+python-dotenv>=1.0.0
+python-multipart
+pydantic>=2.0.0
+
+# Database
+firebase-admin>=6.2.0
+sqlalchemy>=1.4.0,<2.0.0
+psycopg2-binary>=2.9.0
+
+# Authentication
+passlib>=1.7.4
+bcrypt>=4.0.0
+pyjwt>=2.7.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# Twilio Integration
+twilio>=8.0.0
+websockets>=11.0.0
+
+# AI Services
+huggingface-hub>=0.20.0
+google-cloud-speech>=2.18.0
+google-cloud-texttospeech>=2.14.0
+httpx>=0.24.0
+openai>=1.0.0
+
+# AWS Polly (TTS)
+boto3>=1.28.0
+
+# Deepgram SDK (STT and TTS)
+deepgram-sdk>=3.0.0
+
+# Cartesia TTS
+cartesia>=2.0.0
+
+# Optional: RAG & Knowledge Base
+requests>=2.31.0
+beautifulsoup4
+python-docx
+pypdf2
+pandas
+tiktoken
+sentence-transformers
+chromadb
+langchain
+langgraph
+
+# Vector Stores
+faiss-cpu>=1.7.0
+pinecone-client>=2.2.0
+
+# Task Queue
+celery>=5.3.0
+redis>=4.6.0
+
+# Utilities
+PyPDF2>=3.0.0
+
+# Google OAuth
+google-auth>=2.22.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.0

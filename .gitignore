@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.production
+serviceAccountKey.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+ai_voice_agent.db
+
+# Logs
+*.log
+webhook_debug.log
+
+# IDE
+.idea/
+.vscode/
+.qodo/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node modules
+node_modules/
+.next/
+out/
+.turbo/
+
+# Frontend build
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+
+# Test files
+test_audio_output/
+debug_audio/
+exports/
+
+# Data files
+data/
+*.csv
+*.xlsx
+
+# Temporary files
+*.tmp
+*.temp

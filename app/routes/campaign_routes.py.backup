@@ -1,0 +1,863 @@
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import tempfile
+import os
+import asyncio
+from dotenv import load_dotenv
+
+from app import schemas
+from app.dependencies import get_db, get_current_user
+from app.models.campaign import Campaign as CampaignModel
+from app.models.lead import Lead as LeadModel
+from app.schemas.campaign import Campaign, CampaignCreate, CampaignUpdate
+from app.schemas.lead import Lead as LeadSchema
+from app.services import campaign_service, rag_service
+from app.services.outbound_service import outbound_manager
+from app.services.lead_caller import lead_caller_service
+from app.services.callback_scheduler import callback_scheduler
+
+load_dotenv()
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
+
+@router.get("/", response_model=List[Campaign])
+async def read_campaigns(
+    skip: int = 0, 
+    limit: int = 100, 
+    campaign_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all campaigns for the current user."""
+    logger.info(f"Reading campaigns for user {current_user['user_id']} with type filter: {campaign_type}")
+    # Ignore 'all' filter value to show all campaigns
+    if campaign_type == 'all':
+        campaign_type = None
+        logger.info("Campaign type filter was 'all', setting to None to show all campaigns")
+    
+    logger.info(f"Final campaign type filter: {campaign_type}")
+    campaigns = campaign_service.get_campaigns(db, current_user["user_id"], skip=skip, limit=limit, campaign_type=campaign_type)
+    logger.info(f"Found {len(campaigns)} campaigns for user {current_user['user_id']}")
+    return campaigns
+
+@router.get("/{campaign_id}", response_model=Campaign)
+async def read_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific campaign."""
+    logger.info(f"Reading campaign {campaign_id} for user {current_user['user_id']}")
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return campaign
+
+@router.post("/", response_model=Campaign)
+async def create_campaign(
+    campaign: CampaignCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new campaign."""
+    logger.info(f"Creating campaign for user {current_user['user_id']}")
+    logger.info(f"Campaign data: {campaign}")
+    try:
+        result = campaign_service.create_campaign(db, campaign, current_user["user_id"])
+        logger.info(f"Successfully created campaign with ID: {result.id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error creating campaign: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating campaign: {str(e)}"
+        )
+
+@router.put("/{campaign_id}", response_model=Campaign)
+async def update_campaign(
+    campaign_id: int,
+    campaign: CampaignUpdate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a campaign."""
+    logger.info(f"Updating campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    updated_campaign = campaign_service.update_campaign(db, campaign_id, campaign)
+    if not updated_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return updated_campaign
+
+@router.delete("/{campaign_id}", response_model=dict)
+async def delete_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a campaign."""
+    logger.info(f"Deleting campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    if campaign_service.delete_campaign(db, campaign_id):
+        return {"message": "Campaign deleted successfully"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+
+@router.post("/{campaign_id}/start", response_model=Campaign)
+async def start_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Start a campaign."""
+    logger.info(f"Starting campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    started_campaign = campaign_service.start_campaign(db, campaign_id)
+    if not started_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Initialize Twilio client if not already initialized
+    if not outbound_manager.client:
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        from_number = os.getenv("TWILIO_NUMBER")
+        ngrok_domain = os.getenv("NGROK_DOMAIN")
+        
+        if account_sid and auth_token and from_number and ngrok_domain:
+            webhook_base = f"https://{ngrok_domain}"
+            outbound_manager.initialize(account_sid, auth_token, from_number, webhook_base)
+            logger.info("✅ Twilio outbound service initialized for campaign start")
+    
+    # Start the lead caller service in the background
+    try:
+        # Run the lead caller in the background
+        asyncio.create_task(lead_caller_service.start_campaign_dialing(campaign_id, db))
+        logger.info(f"Started lead dialing for campaign {campaign_id}")
+    except Exception as e:
+        logger.error(f"Failed to start lead dialing for campaign {campaign_id}: {e}")
+    
+    return started_campaign
+
+@router.post("/{campaign_id}/stop", response_model=Campaign)
+async def stop_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Stop a campaign."""
+    logger.info(f"Stopping campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    stopped_campaign = campaign_service.stop_campaign(db, campaign_id)
+    if not stopped_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return stopped_campaign
+
+@router.post("/{campaign_id}/upload-rag", response_model=dict)
+async def upload_rag_document(
+    campaign_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a RAG document for the campaign."""
+    logger.info(f"Uploading RAG document for campaign {campaign_id} for user {current_user['user_id']}")
+    # Verify campaign exists and belongs to user
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Save file temporarily
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(await file.read())
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Determine file type
+        file_type = file.content_type
+        logger.info(f"Original file content type: {file_type}")
+        logger.info(f"File filename: {file.filename}")
+        
+        # Improved file type detection
+        if "pdf" in file_type.lower():
+            file_type = "pdf"
+        elif "word" in file_type.lower() or "docx" in file.filename.lower():
+            file_type = "docx"
+        else:
+            # Try to determine file type from extension
+            if file.filename and file.filename.lower().endswith('.pdf'):
+                file_type = "pdf"
+            elif file.filename and file.filename.lower().endswith('.docx'):
+                file_type = "docx"
+            else:
+                file_type = "unknown"
+        
+        logger.info(f"Determined file type: {file_type}")
+        
+        # Validate file type before processing
+        supported_types = ["pdf", "docx"]
+        if file_type not in supported_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported file type: {file.filename}. Supported file types are: {', '.join(supported_types)}"
+            )
+        
+        # Process document
+        rag_doc = await rag_service.process_document(
+            tmp_file_path, file_type, campaign_id, db
+        )
+        
+        # Update campaign with RAG document ID
+        campaign_service.update_campaign(
+            db, campaign_id, 
+            CampaignUpdate(rag_document_id=rag_doc.id)
+        )
+        
+        return {
+            "message": "Document uploaded and processed successfully",
+            "document_id": rag_doc.id
+        }
+    except Exception as e:
+        logger.error(f"Error processing file: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing file: {str(e)}"
+        )
+    finally:
+        # Clean up temporary file
+        if os.path.exists(tmp_file_path):
+            os.unlink(tmp_file_path)
+
+# New endpoint for uploading leads
+@router.post("/{campaign_id}/upload-leads", response_model=List[LeadSchema])
+async def upload_leads(
+    campaign_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload leads for the campaign."""
+    logger.info(f"Uploading leads for campaign {campaign_id} for user {current_user['user_id']}")
+    # Verify campaign exists and belongs to user
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Check file type
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only CSV files are allowed"
+        )
+    
+    try:
+        # Save file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.csv') as tmp_file:
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_file_path = tmp_file.name
+        
+        # Process the CSV file
+        lead_count = await campaign_service.process_lead_csv(tmp_file_path, campaign_id, db)
+        logger.info(f"Processed {lead_count} leads for campaign {campaign_id}")
+        
+        # Clean up temp file
+        if os.path.exists(tmp_file_path):
+            os.unlink(tmp_file_path)
+        
+        if lead_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid leads found in CSV. Make sure the file contains a 'phone' column with data."
+            )
+        
+        # Return the leads for the campaign
+        leads = db.query(LeadModel).filter(LeadModel.campaign_id == campaign_id).all()
+        return leads
+    except ValueError as e:
+        logger.error(f"Value error processing leads: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error processing leads: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error processing leads: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing leads: {str(e)}"
+        )
+
+@router.get("/callbacks", tags=["Callbacks"])
+async def get_scheduled_callbacks():
+    """Get all scheduled callbacks"""
+    try:
+        callbacks = callback_scheduler.get_scheduled_callbacks()
+        return {
+            "status": "success",
+            "callbacks": callbacks
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import tempfile
+import os
+import asyncio
+from dotenv import load_dotenv
+
+from app import schemas
+from app.dependencies import get_db
+from app.core.security import get_current_user
+from app.models.campaign import Campaign as CampaignModel
+from app.models.lead import Lead as LeadModel
+from app.schemas.campaign import Campaign, CampaignCreate, CampaignUpdate
+from app.schemas.lead import Lead as LeadSchema
+from app.services import campaign_service, rag_service
+from app.services.outbound_service import outbound_manager
+from app.services.lead_caller import lead_caller_service
+from app.services.callback_scheduler import callback_scheduler
+
+load_dotenv()
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
+
+@router.get("/", response_model=List[Campaign])
+async def read_campaigns(
+    skip: int = 0, 
+    limit: int = 100, 
+    campaign_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all campaigns for the current user."""
+    logger.info(f"Reading campaigns for user {current_user['user_id']} with type filter: {campaign_type}")
+    # Ignore 'all' filter value to show all campaigns
+    if campaign_type == 'all':
+        campaign_type = None
+        logger.info("Campaign type filter was 'all', setting to None to show all campaigns")
+    
+    logger.info(f"Final campaign type filter: {campaign_type}")
+    campaigns = campaign_service.get_campaigns(db, current_user["user_id"], skip=skip, limit=limit, campaign_type=campaign_type)
+    logger.info(f"Found {len(campaigns)} campaigns for user {current_user['user_id']}")
+    return campaigns
+
+@router.get("/{campaign_id}", response_model=Campaign)
+async def read_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific campaign."""
+    logger.info(f"Reading campaign {campaign_id} for user {current_user['user_id']}")
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return campaign
+
+@router.post("/", response_model=Campaign)
+async def create_campaign(
+    campaign: CampaignCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new campaign."""
+    logger.info(f"Creating campaign for user {current_user['user_id']}")
+    logger.info(f"Campaign data: {campaign}")
+    try:
+        result = campaign_service.create_campaign(db, campaign, current_user["user_id"])
+        logger.info(f"Successfully created campaign with ID: {result.id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error creating campaign: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating campaign: {str(e)}"
+        )
+
+@router.put("/{campaign_id}", response_model=Campaign)
+async def update_campaign(
+    campaign_id: int,
+    campaign: CampaignUpdate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a campaign."""
+    logger.info(f"Updating campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    updated_campaign = campaign_service.update_campaign(db, campaign_id, campaign)
+    if not updated_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return updated_campaign
+
+@router.delete("/{campaign_id}", response_model=dict)
+async def delete_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a campaign."""
+    logger.info(f"Deleting campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    if campaign_service.delete_campaign(db, campaign_id):
+        return {"message": "Campaign deleted successfully"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+
+@router.post("/{campaign_id}/start", response_model=Campaign)
+async def start_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Start a campaign."""
+    logger.info(f"Starting campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    started_campaign = campaign_service.start_campaign(db, campaign_id)
+    if not started_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Initialize Twilio client if not already initialized
+    if not outbound_manager.client:
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        from_number = os.getenv("TWILIO_NUMBER")
+        ngrok_domain = os.getenv("NGROK_DOMAIN")
+        
+        if account_sid and auth_token and from_number and ngrok_domain:
+            webhook_base = f"https://{ngrok_domain}"
+            outbound_manager.initialize(account_sid, auth_token, from_number, webhook_base)
+            logger.info("✅ Twilio outbound service initialized for campaign start")
+    
+    # Start the lead caller service in the background
+    try:
+        # Run the lead caller in the background
+        asyncio.create_task(lead_caller_service.start_campaign_dialing(campaign_id, db))
+        logger.info(f"Started lead dialing for campaign {campaign_id}")
+    except Exception as e:
+        logger.error(f"Failed to start lead dialing for campaign {campaign_id}: {e}")
+    
+    return started_campaign
+
+@router.post("/{campaign_id}/stop", response_model=Campaign)
+async def stop_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Stop a campaign."""
+    logger.info(f"Stopping campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    stopped_campaign = campaign_service.stop_campaign(db, campaign_id)
+    if not stopped_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return stopped_campaign
+
+@router.post("/{campaign_id}/upload-rag", response_model=dict)
+async def upload_rag_document(
+    campaign_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a RAG document for the campaign."""
+    logger.info(f"Uploading RAG document for campaign {campaign_id} for user {current_user['user_id']}")
+    # Verify campaign exists and belongs to user
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Save file temporarily
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(await file.read())
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Determine file type
+        file_type = file.content_type
+        logger.info(f"Original file content type: {file_type}")
+        logger.info(f"File filename: {file.filename}")
+        
+        # Improved file type detection
+        if "pdf" in file_type.lower():
+            file_type = "pdf"
+        elif "word" in file_type.lower() or "docx" in file.filename.lower():
+            file_type = "docx"
+        else:
+            # Try to determine file type from extension
+            if file.filename and file.filename.lower().endswith('.pdf'):
+                file_type = "pdf"
+            elif file.filename and file.filename.lower().endswith('.docx'):
+                file_type = "docx"
+            else:
+                file_type = "unknown"
+        
+        logger.info(f"Determined file type: {file_type}")
+        
+        # Validate file type before processing
+        supported_types = ["pdf", "docx"]
+        if file_type not in supported_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported file type: {file.filename}. Supported file types are: {', '.join(supported_types)}"
+            )
+        
+        # Process document
+        rag_doc = await rag_service.process_document(
+            tmp_file_path, file_type, campaign_id, db
+        )
+        
+        # Update campaign with RAG document ID
+        campaign_service.update_campaign(
+            db, campaign_id, 
+            CampaignUpdate(rag_document_id=rag_doc.id)
+        )
+        
+        return {
+            "message": "Document uploaded and processed successfully",
+            "document_id": rag_doc.id
+        }
+    except Exception as e:
+        logger.error(f"Error processing file: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing file: {str(e)}"
+        )
+    finally:
+        # Clean up temporary file
+        if os.path.exists(tmp_file_path):
+            os.unlink(tmp_file_path)
+
+# New endpoint for uploading leads
+@router.post("/{campaign_id}/upload-leads", response_model=List[LeadSchema])
+async deffrom fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import tempfile
+import os
+import asyncio
+from dotenv import load_dotenv
+
+from app import schemas
+from app.dependencies import get_db
+from app.core.security import get_current_user
+from app.models.campaign import Campaign as CampaignModel
+from app.models.lead import Lead as LeadModel
+from app.schemas.campaign import Campaign, CampaignCreate, CampaignUpdate
+from app.schemas.lead import Lead as LeadSchema
+from app.services import campaign_service, rag_service
+from app.services.outbound_service import outbound_manager
+from app.services.lead_caller import lead_caller_service
+from app.services.callback_scheduler import callback_scheduler
+
+load_dotenv()
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
+
+@router.get("/", response_model=List[Campaign])
+async def read_campaigns(
+    skip: int = 0, 
+    limit: int = 100, 
+    campaign_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all campaigns for the current user."""
+    logger.info(f"Reading campaigns for user {current_user['user_id']} with type filter: {campaign_type}")
+    # Ignore 'all' filter value to show all campaigns
+    if campaign_type == 'all':
+        campaign_type = None
+        logger.info("Campaign type filter was 'all', setting to None to show all campaigns")
+    
+    logger.info(f"Final campaign type filter: {campaign_type}")
+    campaigns = campaign_service.get_campaigns(db, current_user["user_id"], skip=skip, limit=limit, campaign_type=campaign_type)
+    logger.info(f"Found {len(campaigns)} campaigns for user {current_user['user_id']}")
+    return campaigns
+
+@router.get("/{campaign_id}", response_model=Campaign)
+async def read_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific campaign."""
+    logger.info(f"Reading campaign {campaign_id} for user {current_user['user_id']}")
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return campaign
+
+@router.post("/", response_model=Campaign)
+async def create_campaign(
+    campaign: CampaignCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new campaign."""
+    logger.info(f"Creating campaign for user {current_user['user_id']}")
+    logger.info(f"Campaign data: {campaign}")
+    try:
+        result = campaign_service.create_campaign(db, campaign, current_user["user_id"])
+        logger.info(f"Successfully created campaign with ID: {result.id}")
+        return result
+    except Exception as e:
+        logger.error(f"Error creating campaign: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating campaign: {str(e)}"
+        )
+
+@router.put("/{campaign_id}", response_model=Campaign)
+async def update_campaign(
+    campaign_id: int,
+    campaign: CampaignUpdate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a campaign."""
+    logger.info(f"Updating campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    updated_campaign = campaign_service.update_campaign(db, campaign_id, campaign)
+    if not updated_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return updated_campaign
+
+@router.delete("/{campaign_id}", response_model=dict)
+async def delete_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a campaign."""
+    logger.info(f"Deleting campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    if campaign_service.delete_campaign(db, campaign_id):
+        return {"message": "Campaign deleted successfully"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+
+@router.post("/{campaign_id}/start", response_model=Campaign)
+async def start_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Start a campaign."""
+    logger.info(f"Starting campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    started_campaign = campaign_service.start_campaign(db, campaign_id)
+    if not started_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Initialize Twilio client if not already initialized
+    if not outbound_manager.client:
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        from_number = os.getenv("TWILIO_NUMBER")
+        ngrok_domain = os.getenv("NGROK_DOMAIN")
+        
+        if account_sid and auth_token and from_number and ngrok_domain:
+            webhook_base = f"https://{ngrok_domain}"
+            outbound_manager.initialize(account_sid, auth_token, from_number, webhook_base)
+            logger.info("✅ Twilio outbound service initialized for campaign start")
+    
+    # Start the lead caller service in the background
+    try:
+        # Run the lead caller in the background
+        asyncio.create_task(lead_caller_service.start_campaign_dialing(campaign_id, db))
+        logger.info(f"Started lead dialing for campaign {campaign_id}")
+    except Exception as e:
+        logger.error(f"Failed to start lead dialing for campaign {campaign_id}: {e}")
+    
+    return started_campaign
+
+@router.post("/{campaign_id}/stop", response_model=Campaign)
+async def stop_campaign(
+    campaign_id: int, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Stop a campaign."""
+    logger.info(f"Stopping campaign {campaign_id} for user {current_user['user_id']}")
+    db_campaign = campaign_service.get_campaign(db, campaign_id)
+    if not db_campaign or db_campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    stopped_campaign = campaign_service.stop_campaign(db, campaign_id)
+    if not stopped_campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    return stopped_campaign
+
+@router.post("/{campaign_id}/upload-rag", response_model=dict)
+async def upload_rag_document(
+    campaign_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a RAG document for the campaign."""
+    logger.info(f"Uploading RAG document for campaign {campaign_id} for user {current_user['user_id']}")
+    # Verify campaign exists and belongs to user
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign or campaign.user_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found"
+        )
+    
+    # Save file temporarily
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+        tmp_file.write(await file.read())
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Determine file type
+        file_type = file.content_type
+        logger.info(f"Original file content type: {file_type}")
+        logger.info(f"File filename: {file.filename}")
+        
+        # Improved file type detection
+        if "pdf" in file_type.lower():
+            file_type = "pdf"
+        elif "word" in file_type.lower() or "docx" in file.filename.lower():
+            file_type = "docx"
+        else:
+            # Try to determine file type from extension
+            if file.filename and file.filename.lower().endswith('.pdf'):
+                file_type = "pdf"
+            elif file.filename and file.filename.lower().endswith('.docx'):
+                file_type = "docx"
+            else:
+                file_type = "

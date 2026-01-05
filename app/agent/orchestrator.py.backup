@@ -1,0 +1,890 @@
+# app/agent/orchestrator.py
+"""
+ULTRA OPTIMIZED - Fast, Reliable, CSV Export Fixed
+"""
+
+import asyncio
+import time
+import logging
+from typing import Optional
+from datetime import datetime
+import numpy as np
+# Removed torch import to avoid memory issues
+
+from app.services.stt_service import transcribe_audio_with_provider
+from app.services.llm_service import generate_response_with_provider
+from app.services.tts_service import synthesize_speech_with_provider
+from app.services.excel_exporter import export_conversation_to_csv
+from app.agent.memory_store import MemoryStore
+from app.agent.state_manager import StateManager
+from app.services.stt_service import has_speech
+from app.models.conversation import Conversation
+from app.database.session import SessionLocal
+from app.models.custom_agent import CustomAgent  # Import CustomAgent model
+
+# Import the autonomous agent
+from app.agent.autonomous.agent import AutonomousAgent, create_agent
+# Add import for LangGraph agent
+from app.agent.autonomous.langgraph_agent import LangGraphAgent
+
+# Add logger
+logger = logging.getLogger(__name__)
+
+# Import the retriever service for RAG integration
+from app.services.retriever_service import get_relevant_context
+
+_active_conversations = {}
+memory_store = MemoryStore()
+MIN_AUDIO_LENGTH = 12000
+SILENCE_TIMEOUT = 4.0
+POST_TTS_DELAY = 0.8
+MAX_BUFFER_SIZE = 320000
+MAX_HISTORY_MESSAGES = 8
+MAX_STT_RETRIES = 3
+
+# Add timeout constants
+STT_TIMEOUT = 10.0  # 10 seconds for STT
+LLM_TIMEOUT = 15.0  # 15 seconds for LLM
+TTS_TIMEOUT = 10.0  # 10 seconds for TTS
+
+
+class ConversationState:
+    def __init__(self, call_sid: str, goal: Optional[str] = None, campaign_id: Optional[int] = None, phone_number: Optional[str] = None, lead_id: Optional[int] = None, lead_name: Optional[str] = None, custom_agent_id: Optional[int] = None):
+        self.call_sid = call_sid
+        self.goal = goal
+        self.campaign_id = campaign_id  # Add campaign ID for RAG retrieval
+        self.phone_number = phone_number  # Add phone number
+        self.lead_id = lead_id  # Add lead ID
+        self.lead_name = lead_name  # Add lead name
+        self.custom_agent_id = custom_agent_id  # Add custom agent ID
+        self.audio_buffer = bytearray()
+        self.last_audio_time = time.time()
+        self.processing = False
+        self.is_speaking = False
+        self.call_start_time = time.time()
+        self.stt_retry_count = 0
+        self.fallback_count = 0
+        self.conversation_history = []
+        self.autonomous_agent: Optional[AutonomousAgent] = None
+        # Add LangGraph agent
+        self.langgraph_agent: Optional[LangGraphAgent] = None
+        _active_conversations[call_sid] = self
+        print(f"📞 Call started: {call_sid}")
+
+    def get_stats(self):
+        """Get call statistics"""
+        return {
+            "call_duration": time.time() - self.call_start_time,
+            "conversation_turns": len(self.conversation_history),
+            "last_activity": time.time() - self.last_audio_time
+        }
+
+    def add_message(self, role: str, content: str):
+        self.conversation_history.append({"role": role, "content": content})
+        memory_store.add_message(self.call_sid, content, role)
+
+    def clear_buffer(self):
+        self.audio_buffer = bytearray()
+        self.last_audio_time = time.time()
+
+    def get_call_duration(self) -> float:
+        return time.time() - self.call_start_time
+
+
+def get_conversation_state(call_sid: str, goal: Optional[str] = None,
+                           campaign_id: Optional[int] = None, phone_number: Optional[str] = None,
+                           lead_id: Optional[int] = None, lead_name: Optional[str] = None, 
+                           custom_agent_id: Optional[int] = None) -> ConversationState:
+    if call_sid not in _active_conversations:
+        _active_conversations[call_sid] = ConversationState(call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id)
+    return _active_conversations[call_sid]
+
+
+# Add this new function to handle WebSocket parameters
+def get_conversation_state_with_params(call_sid: str, params: dict) -> ConversationState:
+    """Create or get conversation state with parameters from WebSocket"""
+    if call_sid not in _active_conversations:
+        goal = params.get("goal", "")
+        campaign_id = int(params.get("campaign_id", 0)) if params.get("campaign_id") else None
+        phone_number = params.get("phone_number", "")
+        lead_id = int(params.get("lead_id", 0)) if params.get("lead_id") else None
+        lead_name = params.get("lead_name", "Unknown")
+        custom_agent_id = int(params.get("custom_agent_id", 0)) if params.get("custom_agent_id") else None
+        _active_conversations[call_sid] = ConversationState(call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id)
+    else:
+        # Update existing conversation state with new parameters if provided
+        state = _active_conversations[call_sid]
+        if params.get("goal"):
+            state.goal = params.get("goal", "")
+        if params.get("campaign_id"):
+            state.campaign_id = int(params.get("campaign_id", 0)) if params.get("campaign_id") else None
+        if params.get("phone_number"):
+            state.phone_number = params.get("phone_number", "")
+        if params.get("lead_id"):
+            state.lead_id = int(params.get("lead_id", 0)) if params.get("lead_id") else None
+        if params.get("lead_name"):
+            state.lead_name = params.get("lead_name", "Unknown")
+        if params.get("custom_agent_id"):
+            state.custom_agent_id = int(params.get("custom_agent_id", 0)) if params.get("custom_agent_id") else None
+    return _active_conversations[call_sid]
+
+
+def get_all_active_calls() -> list[dict]:
+    """Get all currently active calls with their statistics and lead information"""
+    active_calls = []
+    for call_sid, state in _active_conversations.items():
+        active_calls.append({
+            "call_sid": call_sid,
+            "start_time": state.call_start_time,
+            "duration": time.time() - state.call_start_time,
+            "last_activity": state.last_audio_time,
+            "conversation_turns": len(state.conversation_history),
+            "campaign_id": getattr(state, 'campaign_id', None),
+            "lead_id": getattr(state, 'lead_id', None),
+            "lead_name": getattr(state, 'lead_name', 'Unknown'),
+            "to_phone": getattr(state, 'phone_number', 'Unknown'),
+            "status": "in_progress",  # Active calls are always in progress
+            "custom_agent_id": getattr(state, 'custom_agent_id', None)  # Add custom agent ID
+        })
+    return active_calls
+
+
+def cleanup_conversation(call_sid: str):
+    """FIXED: Proper CSV export and database save"""
+    print(f"\n{'=' * 60}")
+    print(f"📊 Exporting conversation: {call_sid}")
+    print(f"{'=' * 60}")
+
+    if call_sid in _active_conversations:
+        state = _active_conversations[call_sid]
+        history = memory_store.get_history(call_sid)
+
+        try:
+            # Create database session
+            db = SessionLocal()
+            
+            try:
+                # Save conversation to database
+                if history and len(history) > 0:
+                    # Create transcript from history
+                    transcript = "\n".join([f"{msg.get('role', 'unknown')}: {msg.get('content', msg.get('text', ''))}" for msg in history])
+                    
+                    # Get the last AI response (if any)
+                    ai_response = ""
+                    for msg in reversed(history):
+                        if msg.get('role') == 'assistant':
+                            ai_response = msg.get('content', msg.get('text', ''))
+                            break
+                    
+                    # Create conversation object
+                    conversation = Conversation(
+                        campaign_id=state.campaign_id,
+                        lead_id=state.lead_id if state.lead_id else None,  # Add lead_id if available
+                        transcript=transcript,
+                        ai_response=ai_response,
+                        duration=int(state.get_call_duration()),
+                        status="completed"
+                    )
+                    
+                    # Add to database
+                    db.add(conversation)
+                    db.commit()
+                    db.refresh(conversation)
+                    print(f"✅ Saved conversation to database with ID: {conversation.id}")
+                    
+                    # Call excel_exporter
+                    filename = export_conversation_to_csv(
+                        session_id=call_sid,
+                        conversation=history,
+                        goal=state.goal,
+                        client_name=state.lead_name if state.lead_name else "Customer",
+                        duration=state.get_call_duration()
+                    )
+
+                    print(f"✅ EXPORTED: {filename}")
+                    print(f"   Duration: {state.get_call_duration():.0f}s")
+                    print(f"   Messages: {len(history)}")
+
+                else:
+                    print("⚠️ No history to export")
+            except Exception as e:
+                print(f"❌ Database save error: {e}")
+                db.rollback()
+            finally:
+                db.close()
+
+        except Exception as e:
+            print(f"❌ Export error: {e}")
+
+        # Cleanup memory
+        memory_store.clear_memory(call_sid)
+        del _active_conversations[call_sid]
+
+        print(f"🧹 Cleanup complete: {call_sid}")
+
+
+def has_speech_orchestrator(audio_bytes: bytes, threshold: int = 500) -> bool:
+    """VAD for Problem 4"""
+    try:
+        audio = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32)
+        energy = np.sqrt(np.mean(audio ** 2))
+        return energy > threshold
+    except:
+        return True
+
+
+async def process_audio_chunk(audio_bytes: bytes, call_sid: str) -> Optional[bytes | str]:
+    """Process incoming audio chunk"""
+    try:
+        if not call_sid or not audio_bytes:
+            logger.warning("Missing call_sid or audio_bytes")
+            return None
+
+        state = get_conversation_state(call_sid)
+
+        # Initialize autonomous agent if not already done and we have a goal
+        if state.autonomous_agent is None and state.goal:
+            try:
+                state.autonomous_agent = create_agent(call_sid)
+                await state.autonomous_agent.initialize(state.goal)
+            except Exception as e:
+                logger.error(f"Failed to initialize autonomous agent: {e}")
+                # Continue without agent - will use fallback LLM
+        
+        # Initialize LangGraph agent if not already done and we have a goal
+        if state.langgraph_agent is None and state.goal:
+            try:
+                state.langgraph_agent = LangGraphAgent(call_sid, state.phone_number)
+                await state.langgraph_agent.initialize(state.goal)
+            except Exception as e:
+                logger.error(f"Failed to initialize LangGraph agent: {e}")
+                # Continue without agent - will use fallback LLM
+
+        # ==== Barge-In Agar AI bol raha hai, tab bhi check karo ====
+        if state.is_speaking:
+            # More sensitive VAD check with lower threshold to avoid false positives
+            if has_speech(audio_bytes, threshold=300):  # Higher threshold for barge-in
+                print("Barge-In Detected! User interrupted AI.")
+                state.is_speaking = False
+                state.clear_buffer()
+                # Add a small delay before processing new audio to avoid overlap
+                await asyncio.sleep(0.1)
+                state.audio_buffer.extend(audio_bytes)
+                state.last_audio_time = time.time()
+                return "interrupt"  # Twilio ko "clear bhejne ka signal"
+            else:
+                # If no strong speech detected, continue speaking
+                return None  # No Speech -> ignore
+
+        if state.processing:
+            return None
+
+        # Add to buffer
+        state.audio_buffer.extend(audio_bytes)
+        current_time = time.time()
+        time_since_last = current_time - state.last_audio_time
+
+        # Overflow protection
+        if len(state.audio_buffer) > MAX_BUFFER_SIZE:
+            logger.warning("Audio buffer overflow - clearing buffer")
+            state.clear_buffer()
+            return None
+
+        # Check if ready to process (Problem 6: Silence detection)
+        has_enough = len(state.audio_buffer) >= MIN_AUDIO_LENGTH
+        silence = (time_since_last > SILENCE_TIMEOUT) and len(state.audio_buffer) > 8000  # Reduced buffer requirement
+
+        if not (has_enough or silence):
+            state.last_audio_time = current_time
+            return None
+
+        # Process the audio
+        state.processing = True
+        try:
+            # Get custom agent configuration if available
+            llm_provider = "gemini"
+            tts_provider = "aws_polly"
+            stt_provider = "deepgram"
+            personality = "professional"
+            
+            if state.custom_agent_id:
+                try:
+                    db = SessionLocal()
+                    custom_agent = db.query(CustomAgent).filter(CustomAgent.id == state.custom_agent_id).first()
+                    if custom_agent:
+                        llm_provider = custom_agent.llm_provider or llm_provider
+                        tts_provider = custom_agent.tts_provider or tts_provider
+                        stt_provider = custom_agent.stt_provider or stt_provider
+                        personality = custom_agent.personality or personality
+                    db.close()
+                except Exception as e:
+                    logger.error(f"Error fetching custom agent config: {e}")
+
+            # Transcribe audio using the selected STT provider
+            user_text = await transcribe_audio_with_provider(stt_provider, bytes(state.audio_buffer))
+            if not user_text:
+                logger.warning("STT returned empty text")
+                # If we've been waiting for a while and still no text, send a prompt
+                if time_since_last > SILENCE_TIMEOUT * 2:
+                    logger.info("Long silence detected, sending prompt")
+                    state.clear_buffer()
+                    state.processing = False
+                    # Return a simple response to prompt the user
+                    try:
+                        tts_audio = await asyncio.wait_for(
+                            synthesize_speech_with_provider(tts_provider, "Hello! How can I help you today?"),
+                            timeout=TTS_TIMEOUT
+                        )
+                        if tts_audio:
+                            state.is_speaking = True
+                            return tts_audio
+                        else:
+                            return b""
+                    except asyncio.TimeoutError:
+                        logger.error("TTS timeout exceeded for prompt")
+                        return b""
+                # If buffer is getting large, try to process anyway
+                elif len(state.audio_buffer) > MAX_BUFFER_SIZE * 0.8:
+                    logger.info("Large buffer detected, attempting to process anyway")
+                    # Try with a different provider
+                    try:
+                        user_text = await transcribe_audio_with_provider("google", bytes(state.audio_buffer))
+                        if not user_text:
+                            user_text = await transcribe_audio_with_provider("openai", bytes(state.audio_buffer))
+                    except:
+                        pass
+                
+                if not user_text:
+                    state.clear_buffer()
+                    state.processing = False
+                    return None
+
+            print(f"👤 User: {user_text}")
+            state.add_message("user", user_text)
+
+            # Generate AI response using the autonomous agent if available
+            ai_response = None
+            try:
+                if state.langgraph_agent:
+                    # Use LangGraph agent for more sophisticated conversation flow
+                    try:
+                        ai_response = await asyncio.wait_for(
+                            state.langgraph_agent.process_user_input(user_text),
+                            timeout=LLM_TIMEOUT
+                        )
+                    except asyncio.TimeoutError:
+                        logger.error("LangGraph agent timeout exceeded")
+                        ai_response = None
+                elif state.autonomous_agent:
+                    # Fallback to traditional autonomous agent
+                    try:
+                        ai_response = await asyncio.wait_for(
+                            state.autonomous_agent.process_user_input(user_text),
+                            timeout=LLM_TIMEOUT
+                        )
+                    except asyncio.TimeoutError:
+                        logger.error("Autonomous agent timeout exceeded")
+                        ai_response = None
+                else:
+                    # Fallback to basic LLM response with selected provider
+                    # Get relevant context from RAG if available
+                    context = ""
+                    if state.campaign_id:
+                        try:
+                            context_list = get_relevant_context(user_text, str(state.campaign_id))
+                            if context_list:
+                                # Join the context list into a single string
+                                context = "\n".join(context_list) if isinstance(context_list, list) else str(context_list)
+                        except Exception as e:
+                            logger.error(f"Error retrieving RAG context: {e}")
+                            context = ""
+                    
+                    # Ensure conversation history is properly formatted
+                    formatted_history = []
+                    for msg in state.conversation_history:
+                        if isinstance(msg, dict):
+                            formatted_history.append(msg)
+                        else:
+                            # Handle any malformed history entries
+                            formatted_history.append({"role": "user", "content": str(msg)})
+                    
+                    # Generate response with context using selected LLM provider with timeout
+                    try:
+                        ai_response = await asyncio.wait_for(
+                            generate_response_with_provider(
+                                llm_provider, 
+                                user_text, 
+                                state.goal or "Answer customer questions", 
+                                formatted_history, 
+                                context,
+                                personality
+                            ),
+                            timeout=LLM_TIMEOUT
+                        )
+                    except asyncio.TimeoutError:
+                        logger.error("LLM timeout exceeded")
+                        # Try with a fallback provider
+                        try:
+                            fallback_provider = "openai" if llm_provider != "openai" else "deepseek"
+                            ai_response = await asyncio.wait_for(
+                                generate_response_with_provider(
+                                    fallback_provider,
+                                    user_text, 
+                                    state.goal or "Answer customer questions", 
+                                    formatted_history, 
+                                    context,
+                                    personality
+                                ),
+                                timeout=LLM_TIMEOUT
+                            )
+                        except asyncio.TimeoutError:
+                            logger.error(f"Fallback LLM {fallback_provider} timeout exceeded")
+                            ai_response = "Hello! I'm here to help you. How can I assist you today?"
+                        except Exception as fallback_error:
+                            logger.error(f"Fallback LLM {fallback_provider} also failed: {fallback_error}")
+                            ai_response = "Hello! I'm here to help you. How can I assist you today?"
+
+            except Exception as e:
+                logger.error(f"Error generating AI response: {e}")
+                # Try with a fallback provider
+                try:
+                    ai_response = await asyncio.wait_for(
+                        generate_response_with_provider(
+                            "openai" if llm_provider != "openai" else "deepseek",
+                            user_text, 
+                            state.goal or "Answer customer questions", 
+                            state.conversation_history, 
+                            "",  # No context for fallback
+                            personality
+                        ),
+                        timeout=LLM_TIMEOUT
+                    )
+                except asyncio.TimeoutError:
+                    logger.error("Fallback LLM timeout exceeded")
+                    ai_response = "Hello! I'm here to help you. How can I assist you today?"
+                except Exception as fallback_e:
+                    logger.error(f"Fallback LLM also failed: {fallback_e}")
+                    ai_response = "Hello! I'm here to help you. How can I assist you today?"
+
+            if not ai_response:
+                logger.warning("AI response is empty, using default response")
+                ai_response = "Hello! I'm here to help you. How can I assist you today?"
+
+            print(f"🤖 AI: {ai_response}")
+            state.add_message("assistant", ai_response)
+
+            # Convert to speech using the selected TTS provider with timeout
+            try:
+                tts_audio = await asyncio.wait_for(
+                    synthesize_speech_with_provider(tts_provider, ai_response),
+                    timeout=TTS_TIMEOUT
+                )
+            except asyncio.TimeoutError:
+                logger.error("TTS timeout exceeded")
+                tts_audio = None
+
+            if tts_audio:
+                state.is_speaking = True
+                state.clear_buffer()
+                state.processing = False
+                return tts_audio
+            else:
+                logger.warning("TTS returned empty audio")
+                state.clear_buffer()
+                state.processing = False
+                # Return a simple response instead of None
+                return b""
+
+        except Exception as e:
+            logger.error(f"Error in processing: {e}")
+            state.clear_buffer()
+            state.processing = False
+            # Return a simple error response instead of None
+            try:
+                # Try to generate a simple error response
+                error_response = "I'm sorry, I encountered an error. Please try again."
+                tts_audio = await synthesize_speech_with_provider(tts_provider, error_response)
+                if tts_audio:
+                    return tts_audio
+            except:
+                pass
+            return b""
+
+    except Exception as e:
+        logger.error(f"Error in process_audio_chunk: {e}")
+        # Even in case of error, return a minimal response to keep the call going
+        try:
+            tts_audio = await synthesize_speech_with_provider("aws_polly", "I'm sorry, there was an issue. Please try again.")
+            if tts_audio:
+                return tts_audio
+        except:
+            pass
+        return b""# app/agent/orchestrator.py
+"""
+ULTRA OPTIMIZED - Fast, Reliable, CSV Export Fixed
+"""
+
+import asyncio
+import time
+import logging
+from typing import Optional
+from datetime import datetime
+import numpy as np
+# Removed torch import to avoid memory issues
+
+from app.services.stt_service import transcribe_audio_with_provider
+from app.services.llm_service import generate_response_with_provider
+from app.services.tts_service import synthesize_speech_with_provider
+from app.services.excel_exporter import export_conversation_to_csv
+from app.agent.memory_store import MemoryStore
+from app.agent.state_manager import StateManager
+from app.services.stt_service import has_speech
+from app.models.conversation import Conversation
+from app.database.session import SessionLocal
+from app.models.custom_agent import CustomAgent  # Import CustomAgent model
+
+# Import the autonomous agent
+from app.agent.autonomous.agent import AutonomousAgent, create_agent
+# Add import for LangGraph agent
+from app.agent.autonomous.langgraph_agent import LangGraphAgent
+
+# Add logger
+logger = logging.getLogger(__name__)
+
+# Import the retriever service for RAG integration
+from app.services.retriever_service import get_relevant_context
+
+_active_conversations = {}
+memory_store = MemoryStore()
+MIN_AUDIO_LENGTH = 12000
+SILENCE_TIMEOUT = 4.0
+POST_TTS_DELAY = 0.8
+MAX_BUFFER_SIZE = 320000
+MAX_HISTORY_MESSAGES = 8
+MAX_STT_RETRIES = 3
+
+# Add timeout constants
+STT_TIMEOUT = 10.0  # 10 seconds for STT
+LLM_TIMEOUT = 15.0  # 15 seconds for LLM
+TTS_TIMEOUT = 10.0  # 10 seconds for TTS
+
+
+class ConversationState:
+    def __init__(self, call_sid: str, goal: Optional[str] = None, campaign_id: Optional[int] = None, phone_number: Optional[str] = None, lead_id: Optional[int] = None, lead_name: Optional[str] = None, custom_agent_id: Optional[int] = None):
+        self.call_sid = call_sid
+        self.goal = goal
+        self.campaign_id = campaign_id  # Add campaign ID for RAG retrieval
+        self.phone_number = phone_number  # Add phone number
+        self.lead_id = lead_id  # Add lead ID
+        self.lead_name = lead_name  # Add lead name
+        self.custom_agent_id = custom_agent_id  # Add custom agent ID
+        self.audio_buffer = bytearray()
+        self.last_audio_time = time.time()
+        self.processing = False
+        self.is_speaking = False
+        self.call_start_time = time.time()
+        self.stt_retry_count = 0
+        self.fallback_count = 0
+        self.conversation_history = []
+        self.autonomous_agent: Optional[AutonomousAgent] = None
+        # Add LangGraph agent
+        self.langgraph_agent: Optional[LangGraphAgent] = None
+        _active_conversations[call_sid] = self
+        print(f"📞 Call started: {call_sid}")
+
+    def get_stats(self):
+        """Get call statistics"""
+        return {
+            "call_duration": time.time() - self.call_start_time,
+            "conversation_turns": len(self.conversation_history),
+            "last_activity": time.time() - self.last_audio_time
+        }
+
+    def add_message(self, role: str, content: str):
+        self.conversation_history.append({"role": role, "content": content})
+        memory_store.add_message(self.call_sid, content, role)
+
+    def clear_buffer(self):
+        self.audio_buffer = bytearray()
+        self.last_audio_time = time.time()
+
+    def get_call_duration(self) -> float:
+        return time.time() - self.call_start_time
+
+
+def get_conversation_state(call_sid: str, goal: Optional[str] = None,
+                           campaign_id: Optional[int] = None, phone_number: Optional[str] = None,
+                           lead_id: Optional[int] = None, lead_name: Optional[str] = None, 
+                           custom_agent_id: Optional[int] = None) -> ConversationState:
+    if call_sid not in _active_conversations:
+        _active_conversations[call_sid] = ConversationState(call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id)
+    return _active_conversations[call_sid]
+
+
+# Add this new function to handle WebSocket parameters
+def get_conversation_state_with_params(call_sid: str, params: dict) -> ConversationState:
+    """Create or get conversation state with parameters from WebSocket"""
+    if call_sid not in _active_conversations:
+        goal = params.get("goal", "")
+        campaign_id = int(params.get("campaign_id", 0)) if params.get("campaign_id") else None
+        phone_number = params.get("phone_number", "")
+        lead_id = int(params.get("lead_id", 0)) if params.get("lead_id") else None
+        lead_name = params.get("lead_name", "Unknown")
+        custom_agent_id = int(params.get("custom_agent_id", 0)) if params.get("custom_agent_id") else None
+        _active_conversations[call_sid] = ConversationState(call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id)
+    else:
+        # Update existing conversation state with new parameters if provided
+        state = _active_conversations[call_sid]
+        if params.get("goal"):
+            state.goal = params.get("goal", "")
+        if params.get("campaign_id"):
+            state.campaign_id = int(params.get("campaign_id", 0)) if params.get("campaign_id") else None
+        if params.get("phone_number"):
+            state.phone_number = params.get("phone_number", "")
+        if params.get("lead_id"):
+            state.lead_id = int(params.get("lead_id", 0)) if params.get("lead_id") else None
+        if params.get("lead_name"):
+            state.lead_name = params.get("lead_name", "Unknown")
+        if params.get("custom_agent_id"):
+            state.custom_agent_id = int(params.get("custom_agent_id", 0)) if params.get("custom_agent_id") else None
+    return _active_conversations[call_sid]
+
+
+def get_all_active_calls() -> list[dict]:
+    """Get all currently active calls with their statistics and lead information"""
+    active_calls = []
+    for call_sid, state in _active_conversations.items():
+        active_calls.append({
+            "call_sid": call_sid,
+            "start_time": state.call_start_time,
+            "duration": time.time() - state.call_start_time,
+            "last_activity": state.last_audio_time,
+            "conversation_turns": len(state.conversation_history),
+            "campaign_id": getattr(state, 'campaign_id', None),
+            "lead_id": getattr(state, 'lead_id', None),
+            "lead_name": getattr(state, 'lead_name', 'Unknown'),
+            "to_phone": getattr(state, 'phone_number', 'Unknown'),
+            "status": "in_progress",  # Active calls are always in progress
+            "custom_agent_id": getattr(state, 'custom_agent_id', None)  # Add custom agent ID
+        })
+    return active_calls
+
+
+def cleanup_conversation(call_sid: str):
+    """FIXED: Proper CSV export and database save"""
+    print(f"\n{'=' * 60}")
+    print(f"📊 Exporting conversation: {call_sid}")
+    print(f"{'=' * 60}")
+
+    if call_sid in _active_conversations:
+        state = _active_conversations[call_sid]
+        history = memory_store.get_history(call_sid)
+
+        try:
+            # Create database session
+            db = SessionLocal()
+            
+            try:
+                # Save conversation to database
+                if history and len(history) > 0:
+                    # Create transcript from history
+                    transcript = "\n".join([f"{msg.get('role', 'unknown')}: {msg.get('content', msg.get('text', ''))}" for msg in history])
+                    
+                    # Get the last AI response (if any)
+                    ai_response = ""
+                    for msg in reversed(history):
+                        if msg.get('role') == 'assistant':
+                            ai_response = msg.get('content', msg.get('text', ''))
+                            break
+                    
+                    # Create conversation object
+                    conversation = Conversation(
+                        campaign_id=state.campaign_id,
+                        lead_id=state.lead_id if state.lead_id else None,  # Add lead_id if available
+                        transcript=transcript,
+                        ai_response=ai_response,
+                        duration=int(state.get_call_duration()),
+                        status="completed"
+                    )
+                    
+                    # Add to database
+                    db.add(conversation)
+                    db.commit()
+                    db.refresh(conversation)
+                    print(f"✅ Saved conversation to database with ID: {conversation.id}")
+                    
+                    # Call excel_exporter
+                    filename = export_conversation_to_csv(
+                        session_id=call_sid,
+                        conversation=history,
+                        goal=state.goal,
+                        client_name=state.lead_name if state.lead_name else "Customer",
+                        duration=state.get_call_duration()
+                    )
+
+                    print(f"✅ EXPORTED: {filename}")
+                    print(f"   Duration: {state.get_call_duration():.0f}s")
+                    print(f"   Messages: {len(history)}")
+
+                else:
+                    print("⚠️ No history to export")
+            except Exception as e:
+                print(f"❌ Database save error: {e}")
+                db.rollback()
+            finally:
+                db.close()
+
+        except Exception as e:
+            print(f"❌ Export error: {e}")
+
+        # Cleanup memory
+        memory_store.clear_memory(call_sid)
+        del _active_conversations[call_sid]
+
+        print(f"🧹 Cleanup complete: {call_sid}")
+
+
+# ... existing code ...
+
+_active_conversations = {}
+memory_store = MemoryStore()
+MIN_AUDIO_LENGTH = 12000
+SILENCE_TIMEOUT = 4.0
+POST_TTS_DELAY = 0.8
+MAX_BUFFER_SIZE = 320000
+MAX_HISTORY_MESSAGES = 8
+MAX_STT_RETRIES = 3
+
+# Add timeout constants
+STT_TIMEOUT = 10.0  # 10 seconds for STT
+LLM_TIMEOUT = 15.0  # 15 seconds for LLM
+TTS_TIMEOUT = 10.0  # 10 seconds for TTS
+
+
+class ConversationState:
+    def __init__(self, call_sid: str, goal: Optional[str] = None, campaign_id: Optional[int] = None, phone_number: Optional[str] = None, lead_id: Optional[int] = None, lead_name: Optional[str] = None, custom_agent_id: Optional[int] = None):
+        self.call_sid = call_sid
+        self.goal = goal
+        self.campaign_id = campaign_id  # Add campaign ID for RAG retrieval
+        self.phone_number = phone_number  # Add phone number
+        self.lead_id = lead_id  # Add lead ID
+        self.lead_name = lead_name  # Add lead name
+        self.custom_agent_id = custom_agent_id  # Add custom agent ID
+        self.audio_buffer = bytearray()
+        self.last_audio_time = time.time()
+        self.processing = False
+        self.is_speaking = False
+        self.call_start_time = time.time()
+        self.stt_retry_count = 0
+        self.fallback_count = 0
+        self.conversation_history = []
+        self.autonomous_agent: Optional[AutonomousAgent] = None
+        # Add LangGraph agent
+        self.langgraph_agent: Optional[LangGraphAgent] = None
+        _active_conversations[call_sid] = self
+        print(f"📞 Call started: {call_sid}")
+
+    def get_stats(self):
+        """Get call statistics"""
+        return {
+            "call_duration": time.time() - self.call_start_time,
+            "conversation_turns": len(self.conversation_history),
+            "last_activity": time.time() - self.last_audio_time
+        }
+
+    def add_message(self, role: str, content: str):
+        self.conversation_history.append({"role": role, "content": content})
+        memory_store.add_message(self.call_sid, content, role)
+
+    def clear_buffer(self):
+        self.audio_buffer = bytearray()
+        self.last_audio_time = time.time()
+
+    def get_call_duration(self) -> float:
+        return time.time() - self.call_start_time
+
+
+def get_conversation_state(call_sid: str, goal: Optional[str] = None,
+                           campaign_id: Optional[int] = None, phone_number: Optional[str] = None,
+                           lead_id: Optional[int] = None, lead_name: Optional[str] = None, 
+                           custom_agent_id: Optional[int] = None) -> ConversationState:
+    if call_sid not in _active_conversations:
+        _active_conversations[call_sid] = ConversationState(call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id)
+    return _active_conversations[call_sid]
+
+
+# Add this new function to handle WebSocket parameters
+def get_conversation_state_with_params(call_sid: str, params: dict) -> ConversationState:
+    """Create or get conversation state with parameters from WebSocket"""
+    if call_sid not in _active_conversations:
+        goal = params.get("goal", "")
+        campaign_id = int(params.get("campaign_id", 0)) if params.get("campaign_id") else None
+        phone_number = params.get("phone_number", "")
+        lead_id = int(params.get("lead_id", 0)) if params.get("lead_id") else None
+        lead_name = params.get("lead_name", "Unknown")
+        custom_agent_id = int(params.get("custom_agent_id", 0)) if params.get("custom_agent_id") else None
+        _active_conversations[call_sid] = ConversationState(call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id)
+    else:
+        # Update existing conversation state with new parameters if provided
+        state = _active_conversations[call_sid]
+        if params.get("goal"):
+            state.goal = params.get("goal", "")
+        if params.get("campaign_id"):
+            state.campaign_id = int(params.get("campaign_id", 0)) if params.get("campaign_id") else None
+        if params.get("phone_number"):
+            state.phone_number = params.get("phone_number", "")
+        if params.get("lead_id"):
+            state.lead_id = int(params.get("lead_id", 0)) if params.get("lead_id") else None
+        if params.get("lead_name"):
+            state.lead_name = params.get("lead_name", "Unknown")
+        if params.get("custom_agent_id"):
+            state.custom_agent_id = int(params.get("custom_agent_id", 0)) if params.get("custom_agent_id") else None
+    return _active_conversations[call_sid]
+
+
+def get_all_active_calls() -> list[dict]:
+    """Get all currently active calls with their statistics and lead information"""
+    active_calls = []
+    for call_sid, state in _active_conversations.items():
+        active_calls.append({
+            "call_sid": call_sid,
+            "start_time": state.call_start_time,
+            "duration": time.time() - state.call_start_time,
+            "last_activity": state.last_audio_time,
+            "conversation_turns": len(state.conversation_history),
+            "campaign_id": getattr(state, 'campaign_id', None),
+            "lead_id": getattr(state, 'lead_id', None),
+            "lead_name": getattr(state, 'lead_name', 'Unknown'),
+            "to_phone": getattr(state, 'phone_number', 'Unknown'),
+            "status": "in_progress",  # Active calls are always in progress
+            "custom_agent_id": getattr(state, 'custom_agent_id', None)  # Add custom agent ID
+        })
+    return active_calls
+
+
+def cleanup_conversation(call_sid: str):
+    """FIXED: Proper CSV export and database save"""
+    print(f"\n{'=' * 60}")
+    print(f"📊 Exporting conversation: {call_sid}")
+    print(f"{'=' * 60}")
+
+    if call_sid in _active_conversations:
+        state = _active_conversations[call_sid]
+        history = memory_store.get_history(call_sid)
+
+        try:
+            # Create database session
+            db = SessionLocal()
+            
+            try:
+                # Save conversation to database
+                if history and len(history) > 0:
+                    # Create transcript from history
+                    transcript = "\n".join([f"{msg.get('role', 'unknown')}: {msg.get('content', msg.get('text', ''))}" for msg in history])
+                    
+                    # Get the last AI response (if any)
+                    ai_response = ""
+                    for msg in reversed(history):
+                        if msg.get('role') == 'assistant':
+                            ai_response = msg.get('content', msg.get('text', ''))
+                           
