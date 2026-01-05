@@ -248,7 +248,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
                     <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Goal Status</TableCell>
-                    {Object.keys(results[0]).filter(key => !['name', 'phone', 'goalStatus']).map((key) => (
+                    {Object.keys(results[0]).filter(key => !['name', 'phone', 'goalStatus'].includes(key)).map((key) => (
                       <TableCell key={key} sx={{ fontWeight: 700 }}>
                         {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                       </TableCell>
@@ -274,7 +274,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
                           }
                         />
                       </TableCell>
-                      {Object.keys(row).filter(key => !['name', 'phone', 'goalStatus']).map((key) => (
+                      {Object.keys(row).filter(key => !['name', 'phone', 'goalStatus'].includes(key)).map((key) => (
                         <TableCell key={key}>{row[key] || '-'}</TableCell>
                       ))}
                     </TableRow>
