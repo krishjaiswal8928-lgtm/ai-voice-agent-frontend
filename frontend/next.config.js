@@ -1,12 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Use standalone mode for server-side rendering (required for dynamic routes)
   reactStrictMode: true,
   swcMinify: true,
-  output: 'export',
-  distDir: '../out',
-  images: {
-    unoptimized: true,
-  },
   experimental: {
     // appDir: true, // Removed as it's no longer needed in newer Next.js versions
     turbopack: {
