@@ -78,8 +78,6 @@ const personalities = [
   { value: 'supportive', label: 'Supportive (Healthcare)' }
 ];
 
-export const dynamicParams = false;
-
 export default function EditAgentPage() {
   const router = useRouter();
   const params = useParams();

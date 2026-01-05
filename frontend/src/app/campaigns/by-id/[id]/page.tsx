@@ -23,8 +23,6 @@ interface Campaign {
   updated_at?: string;
 }
 
-export const dynamicParams = false;
-
 export default function CampaignDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
 

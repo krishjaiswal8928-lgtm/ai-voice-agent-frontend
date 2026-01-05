@@ -32,7 +32,7 @@ export function useReports() {
   const exportCampaignResults = async (campaignId: number) => {
     try {
       setLoading(true);
-      const response = await reportAPI.exportCallSessionResults(campaignId.toString());
+      const response = await reportAPI.exportCampaignResults(campaignId);
       // In a real app, this would trigger a file download
       return response.data;
     } catch (err) {
@@ -47,7 +47,7 @@ export function useReports() {
   const exportConversations = async (campaignId: number) => {
     try {
       setLoading(true);
-      const response = await reportAPI.exportConversations(campaignId.toString());
+      const response = await reportAPI.exportConversations(campaignId);
       // In a real app, this would trigger a file download
       return response.data;
     } catch (err) {

@@ -11,8 +11,6 @@
     "dev:frontend": "cd frontend && npm run dev",
     "build:backend": "python -m compileall .",
     "build:frontend": "cd frontend && npm run build",
-    "build:firebase": "cd frontend && npm run build",
-    "deploy:firebase": "npm run build:firebase && firebase deploy --only hosting",
     "test": "pytest",
     "test:coverage": "pytest --cov=app",
     "lint": "flake8 app",

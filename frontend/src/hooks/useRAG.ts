@@ -20,7 +20,7 @@ export function useRAG(campaignId: number | null) {
     try {
       setLoading(true);
       setError(null);
-      const response = await ragAPI.uploadPDF(campaignId!.toString(), file);
+      const response = await ragAPI.uploadPDF(campaignId!, file);
       setDocuments(prev => [...prev, response.data]);
       return response.data;
     } catch (err) {
@@ -36,7 +36,7 @@ export function useRAG(campaignId: number | null) {
     try {
       setLoading(true);
       setError(null);
-      const response = await ragAPI.uploadDOCX(campaignId!.toString(), file);
+      const response = await ragAPI.uploadDOCX(campaignId!, file);
       setDocuments(prev => [...prev, response.data]);
       return response.data;
     } catch (err) {
@@ -52,7 +52,7 @@ export function useRAG(campaignId: number | null) {
     try {
       setLoading(true);
       setError(null);
-      const response = await ragAPI.uploadURL(campaignId!.toString(), url);
+      const response = await ragAPI.uploadURL(campaignId!, url);
       setDocuments(prev => [...prev, response.data]);
       return response.data;
     } catch (err) {
@@ -67,7 +67,7 @@ export function useRAG(campaignId: number | null) {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const response = await ragAPI.getDocuments(campaignId!.toString());
+      const response = await ragAPI.getDocuments(campaignId!);
       setDocuments(response.data);
     } catch (err) {
       setError('Failed to fetch documents');

@@ -7,8 +7,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
 import { KnowledgeBaseDashboard } from '@/components/KnowledgeBaseDashboard';
 
-export const dynamicParams = false;
-
 export default function AgentTrainingPage() {
   const router = useRouter();
   const params = useParams();

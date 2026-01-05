@@ -34,8 +34,6 @@ interface Call {
   duration: number;
 }
 
-export const dynamicParams = false;
-
 export default function InboundLiveCallDashboardScreen({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { callSessions, loading: campaignsLoading } = useCallSessions();
