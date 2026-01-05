@@ -89,7 +89,7 @@ export const authAPI = {
 
 // Call Session endpoints
 export const callSessionAPI = {
-  getAll: (skip = 0, limit = 100, campaignType = null) => {
+  getAll: (skip = 0, limit = 100, campaignType: string | null | undefined = null) => {
     let url = `/campaigns?skip=${skip}&limit=${limit}`;
     // Don't send 'all' as a filter value, only send specific types
     if (campaignType && campaignType !== 'all') {
