@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
+import {
+  Box,
+  Typography,
   Button,
   Card,
   CardContent,
@@ -19,9 +19,9 @@ import {
   IconButton,
   CircularProgress
 } from '@mui/material';
-import { 
-  ArrowBack, 
-  Save, 
+import {
+  ArrowBack,
+  Save,
   SmartToy,
   Psychology,
   RecordVoiceOver,
@@ -78,11 +78,13 @@ const personalities = [
   { value: 'supportive', label: 'Supportive (Healthcare)' }
 ];
 
+export const dynamicParams = false;
+
 export default function EditAgentPage() {
   const router = useRouter();
   const params = useParams();
   const agentId = params.id as string;
-  
+
   const [agentData, setAgentData] = useState<AgentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -132,11 +134,11 @@ export default function EditAgentPage() {
 
   const handleSave = async () => {
     if (!agentData) return;
-    
+
     try {
       setSaving(true);
       setError(null);
-      
+
       // Update the agent
       await voiceAPI.updateCustomAgent(agentData.id, {
         name: agentData.name,
@@ -153,7 +155,7 @@ export default function EditAgentPage() {
         system_prompt: agentData.system_prompt,
         website_urls: agentData.website_urls
       });
-      
+
       // Redirect to agent settings
       router.push('/agent-settings');
     } catch (err) {
@@ -167,11 +169,11 @@ export default function EditAgentPage() {
   if (loading) {
     return (
       <NavigationLayout>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '100vh', 
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
           bgcolor: '#ffffff',
           color: '#000000'
         }}>
@@ -186,7 +188,7 @@ export default function EditAgentPage() {
       <NavigationLayout>
         <Box sx={{ p: 3, bgcolor: '#ffffff', minHeight: '100vh', color: '#000000' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-            <IconButton 
+            <IconButton
               onClick={() => router.back()}
               sx={{ color: '#000000', mr: 2 }}
             >
@@ -196,16 +198,16 @@ export default function EditAgentPage() {
               Edit Agent
             </Typography>
           </Box>
-          
+
           <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', p: 3 }}>
             <Typography color="error" sx={{ mb: 2 }}>
               {error || 'Agent not found'}
             </Typography>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={() => router.back()}
-              sx={{ 
-                bgcolor: '#000000', 
+              sx={{
+                bgcolor: '#000000',
                 color: '#ffffff',
                 '&:hover': {
                   bgcolor: '#333333'
@@ -225,7 +227,7 @@ export default function EditAgentPage() {
       <Box sx={{ p: 3, bgcolor: '#ffffff', minHeight: '100vh', color: '#000000' }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <IconButton 
+          <IconButton
             onClick={() => router.back()}
             sx={{ color: '#000000', mr: 2 }}
           >
@@ -251,7 +253,7 @@ export default function EditAgentPage() {
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                   Basic Information
                 </Typography>
-                
+
                 <TextField
                   fullWidth
                   label="Agent Name"
@@ -260,7 +262,7 @@ export default function EditAgentPage() {
                   margin="normal"
                   sx={{ mb: 2 }}
                 />
-                
+
                 <TextField
                   fullWidth
                   label="Description"
@@ -271,7 +273,7 @@ export default function EditAgentPage() {
                   margin="normal"
                   sx={{ mb: 2 }}
                 />
-                
+
                 <TextField
                   fullWidth
                   label="System Prompt"
@@ -290,7 +292,7 @@ export default function EditAgentPage() {
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                   AI Provider Settings
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={4}>
                     <FormControl fullWidth margin="normal">
@@ -307,7 +309,7 @@ export default function EditAgentPage() {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={4}>
                     <FormControl fullWidth margin="normal">
                       <InputLabel>TTS Provider</InputLabel>
@@ -323,7 +325,7 @@ export default function EditAgentPage() {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={4}>
                     <FormControl fullWidth margin="normal">
                       <InputLabel>STT Provider</InputLabel>
@@ -348,7 +350,7 @@ export default function EditAgentPage() {
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                   Personality & Tone
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth margin="normal">
@@ -365,7 +367,7 @@ export default function EditAgentPage() {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth margin="normal">
                       <InputLabel>Tone</InputLabel>
@@ -380,7 +382,7 @@ export default function EditAgentPage() {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={4}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       Politeness Level: {agentData.politeness_level}
@@ -398,7 +400,7 @@ export default function EditAgentPage() {
                       ]}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={4}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       Sales Aggressiveness: {agentData.sales_aggressiveness}
@@ -416,7 +418,7 @@ export default function EditAgentPage() {
                       ]}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={4}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       Confidence Level: {agentData.confidence_level}
@@ -443,12 +445,12 @@ export default function EditAgentPage() {
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                   Training Data Sources
                 </Typography>
-                
+
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="subtitle1" sx={{ mb: 1 }}>
                     Website URLs
                   </Typography>
-                  
+
                   <Box sx={{ display: 'flex', mb: 2 }}>
                     <TextField
                       fullWidth
@@ -457,11 +459,11 @@ export default function EditAgentPage() {
                       onChange={(e) => setNewUrl(e.target.value)}
                       sx={{ mr: 1 }}
                     />
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       onClick={handleAddUrl}
-                      sx={{ 
-                        color: '#000000', 
+                      sx={{
+                        color: '#000000',
                         borderColor: '#000000',
                         '&:hover': {
                           borderColor: '#333333',
@@ -472,13 +474,13 @@ export default function EditAgentPage() {
                       Add
                     </Button>
                   </Box>
-                  
+
                   {agentData.website_urls.map((url, index) => (
-                    <Box 
-                      key={index} 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <Box
+                      key={index}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'space-between',
                         p: 1,
                         mb: 1,
@@ -489,8 +491,8 @@ export default function EditAgentPage() {
                       <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
                         {url}
                       </Typography>
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         onClick={() => handleRemoveUrl(url)}
                         sx={{ color: '#f44336' }}
                       >
@@ -502,7 +504,7 @@ export default function EditAgentPage() {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} md={4}>
             <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', position: 'sticky', top: 20 }}>
               <CardContent>
@@ -511,18 +513,18 @@ export default function EditAgentPage() {
                   <Typography variant="h6">
                     {agentData.name}
                   </Typography>
-                  <Chip 
-                    label={agentData.personality} 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: '#f5f5f5', 
+                  <Chip
+                    label={agentData.personality}
+                    size="small"
+                    sx={{
+                      bgcolor: '#f5f5f5',
                       color: '#000000',
                       textTransform: 'capitalize',
                       mt: 1
-                    }} 
+                    }}
                   />
                 </Box>
-                
+
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
                     AI Providers
@@ -546,15 +548,15 @@ export default function EditAgentPage() {
                     </Typography>
                   </Box>
                 </Box>
-                
+
                 <Button
                   fullWidth
                   variant="contained"
                   startIcon={<Save />}
                   onClick={handleSave}
                   disabled={saving}
-                  sx={{ 
-                    bgcolor: '#000000', 
+                  sx={{
+                    bgcolor: '#000000',
                     color: '#ffffff',
                     fontWeight: 700,
                     py: 1.5,
@@ -569,14 +571,14 @@ export default function EditAgentPage() {
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
-                
+
                 <Button
                   fullWidth
                   variant="outlined"
                   onClick={() => router.push(`/agent-settings/${agentData.id}/train`)}
-                  sx={{ 
+                  sx={{
                     mt: 2,
-                    color: '#000000', 
+                    color: '#000000',
                     borderColor: '#000000',
                     fontWeight: 700,
                     py: 1.5,

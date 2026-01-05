@@ -209,8 +209,6 @@ function TwilioConnectPage() {
                                 onClick={handleConnect}
                                 disabled={loading || !accountSid || !authToken}
                                 sx={{
-                                    bgcolor: '#6366f1',
-                                    '&:hover': { bgcolor: '#4f46e5' },
                                     py: 1.5,
                                     background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                                     '&:hover': {

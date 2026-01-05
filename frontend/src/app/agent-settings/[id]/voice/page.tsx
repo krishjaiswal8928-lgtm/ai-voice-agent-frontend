@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
+import {
+  Box,
+  Typography,
   Button,
   Card,
   CardContent,
@@ -18,9 +18,9 @@ import {
   Grid,
   Chip
 } from '@mui/material';
-import { 
-  ArrowBack, 
-  SmartToy, 
+import {
+  ArrowBack,
+  SmartToy,
   RecordVoiceOver,
   Hearing,
   Psychology
@@ -54,11 +54,13 @@ const personalities = [
   { value: 'supportive', label: 'Supportive (Healthcare)' }
 ];
 
+export const dynamicParams = false;
+
 export default function VoiceBehaviorSetupPage() {
   const router = useRouter();
   const params = useParams();
   const agentId = params.id as string;
-  
+
   const [agentConfig, setAgentConfig] = useState({
     llm_provider: 'gemini',
     tts_provider: 'aws_polly',
@@ -89,7 +91,7 @@ export default function VoiceBehaviorSetupPage() {
       <Box sx={{ p: 3, bgcolor: '#ffffff', minHeight: '100vh', color: '#000000', width: '100%' }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-          <IconButton 
+          <IconButton
             onClick={() => router.push('/agent-settings')}
             sx={{ color: '#000000', mr: 2 }}
           >
@@ -112,7 +114,7 @@ export default function VoiceBehaviorSetupPage() {
                 <Typography variant="h5" gutterBottom>
                   AI Service Configuration
                 </Typography>
-                
+
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={4}>
                     <FormControl fullWidth>
@@ -171,7 +173,7 @@ export default function VoiceBehaviorSetupPage() {
                 <Typography variant="h5" gutterBottom>
                   Behavior & Personality
                 </Typography>
-                
+
                 <Grid container spacing={3}>
                   <Grid item xs={12}>
                     <FormControl fullWidth>
@@ -189,7 +191,7 @@ export default function VoiceBehaviorSetupPage() {
                       </Select>
                     </FormControl>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -199,7 +201,7 @@ export default function VoiceBehaviorSetupPage() {
                       placeholder="e.g., formal, informal, persuasive"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
@@ -209,7 +211,7 @@ export default function VoiceBehaviorSetupPage() {
                       placeholder="e.g., concise, detailed, conversational"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <Typography gutterBottom>Politeness Level</Typography>
                     <Slider
@@ -220,7 +222,7 @@ export default function VoiceBehaviorSetupPage() {
                       valueLabelDisplay="auto"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <Typography gutterBottom>Sales Aggressiveness</Typography>
                     <Slider
@@ -231,7 +233,7 @@ export default function VoiceBehaviorSetupPage() {
                       valueLabelDisplay="auto"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <Typography gutterBottom>Confidence Level</Typography>
                     <Slider
@@ -242,7 +244,7 @@ export default function VoiceBehaviorSetupPage() {
                       valueLabelDisplay="auto"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
@@ -258,30 +260,30 @@ export default function VoiceBehaviorSetupPage() {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} md={4}>
             <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', position: 'sticky', top: 80 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
                   Voice & Behavior Preview
                 </Typography>
-                
+
                 <Box sx={{ textAlign: 'center', py: 3 }}>
                   <SmartToy sx={{ fontSize: 60, color: '#2196f3', mb: 2 }} />
                   <Typography variant="h6" sx={{ mb: 1, color: '#000000' }}>
                     Agent Configuration
                   </Typography>
-                  <Chip 
-                    label={agentConfig.personality} 
-                    size="small" 
-                    sx={{ 
-                      bgcolor: '#e0e0e0', 
+                  <Chip
+                    label={agentConfig.personality}
+                    size="small"
+                    sx={{
+                      bgcolor: '#e0e0e0',
                       color: '#000000',
                       textTransform: 'capitalize',
                       mb: 2
-                    }} 
+                    }}
                   />
-                  
+
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" sx={{ color: '#aaa', mb: 1 }}>
                       <Psychology sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -297,7 +299,7 @@ export default function VoiceBehaviorSetupPage() {
                     </Typography>
                   </Box>
                 </Box>
-                
+
                 <Paper sx={{ p: 2, bgcolor: '#f5f5f5', mt: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Behavior Settings:
@@ -312,13 +314,13 @@ export default function VoiceBehaviorSetupPage() {
                     Politeness: {agentConfig.politeness_level}/10
                   </Typography>
                 </Paper>
-                
+
                 <Box sx={{ mt: 3 }}>
                   <Button
                     fullWidth
                     variant="contained"
                     onClick={handleSave}
-                    sx={{ 
+                    sx={{
                       backgroundColor: '#000000',
                       color: '#ffffff',
                       fontWeight: 700,

@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Card, 
-  CardContent, 
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
   CircularProgress,
   Table,
   TableBody,
@@ -67,7 +67,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
         totalCalls: 120,
         completedCalls: 120
       };
-      
+
       const mockResults: ResultData[] = [
         { name: 'John Smith', phone: '+1234567890', goalStatus: 'Booked', appointmentDate: '2023-05-20', email: 'john@example.com' },
         { name: 'Jane Doe', phone: '+1234567891', goalStatus: 'Interested', notes: 'Requested more info', email: 'jane@example.com' },
@@ -75,7 +75,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
         { name: 'Emily Wilson', phone: '+1234567893', goalStatus: 'Not Interested', notes: 'Already has similar product' },
         { name: 'Michael Brown', phone: '+1234567894', goalStatus: 'Booked', appointmentDate: '2023-05-22', email: 'michael@example.com' }
       ];
-      
+
       setCampaign(mockCampaign);
       setResults(mockResults);
     } catch (err) {
@@ -92,7 +92,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
       // In a real implementation, this would download the actual CSV
       // For now, we'll simulate the download
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Create a mock CSV content
       const csvContent = [
         ['Name', 'Phone', 'Goal Status', 'Appointment Date', 'Email', 'Notes'],
@@ -102,7 +102,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
         ['Emily Wilson', '+1234567893', 'Not Interested', '', '', 'Already has similar product'],
         ['Michael Brown', '+1234567894', 'Booked', '2023-05-22', 'michael@example.com', '']
       ].map(row => row.join(',')).join('\n');
-      
+
       // Create download link
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -155,17 +155,17 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
                 {campaign.name}
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Chip 
+                <Chip
                   icon={campaign.status === 'completed' ? <CheckCircle /> : campaign.status === 'failed' ? <Error /> : <HourglassEmpty />}
                   label={
                     campaign.status === 'pending' ? 'Pending' :
-                    campaign.status === 'in_progress' ? 'In Progress' :
-                    campaign.status === 'completed' ? 'Completed' : 'Failed'
+                      campaign.status === 'in_progress' ? 'In Progress' :
+                        campaign.status === 'completed' ? 'Completed' : 'Failed'
                   }
                   color={
                     campaign.status === 'pending' ? 'default' :
-                    campaign.status === 'in_progress' ? 'primary' :
-                    campaign.status === 'completed' ? 'success' : 'error'
+                      campaign.status === 'in_progress' ? 'primary' :
+                        campaign.status === 'completed' ? 'success' : 'error'
                   }
                 />
                 <Typography variant="body2" sx={{ color: '#777' }}>
@@ -183,8 +183,8 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
               startIcon={downloading ? <CircularProgress size={20} /> : <Download />}
               onClick={handleDownloadResults}
               disabled={downloading || campaign.status !== 'completed'}
-              sx={{ 
-                bgcolor: '#000', 
+              sx={{
+                bgcolor: '#000',
                 color: '#fff',
                 '&:hover': {
                   bgcolor: '#333'
@@ -198,7 +198,7 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
               Download Results
             </Button>
           </Box>
-          
+
           <Box sx={{ display: 'flex', gap: 4, mt: 2 }}>
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 700 }}>
@@ -227,13 +227,13 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
           </Box>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
             Campaign Results
           </Typography>
-          
+
           {results.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body1" sx={{ color: '#777' }}>
@@ -248,33 +248,33 @@ export function CampaignResults({ campaignId }: { campaignId: number }) {
                     <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Phone</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Goal Status</TableCell>
-                    {Object.keys(results[0]).filter(key => !['name', 'phone', 'goalStatus']).map((key) => (
+                    {results[0] ? Object.keys(results[0]).filter(key => !['name', 'phone', 'goalStatus'].includes(key)).map((key) => (
                       <TableCell key={key} sx={{ fontWeight: 700 }}>
                         {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                       </TableCell>
-                    ))}
+                    )) : null}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {results.map((row, index) => (
-                    <TableRow 
-                      key={index} 
+                    <TableRow
+                      key={index}
                       sx={{ '&:nth-of-type(odd)': { bgcolor: '#fafafa' } }}
                     >
                       <TableCell>{row.name}</TableCell>
                       <TableCell>{row.phone}</TableCell>
                       <TableCell>
-                        <Chip 
+                        <Chip
                           label={row.goalStatus}
                           size="small"
                           color={
                             row.goalStatus === 'Booked' ? 'success' :
-                            row.goalStatus === 'Interested' ? 'primary' :
-                            row.goalStatus === 'Not Interested' ? 'default' : 'default'
+                              row.goalStatus === 'Interested' ? 'primary' :
+                                row.goalStatus === 'Not Interested' ? 'default' : 'default'
                           }
                         />
                       </TableCell>
-                      {Object.keys(row).filter(key => !['name', 'phone', 'goalStatus']).map((key) => (
+                      {Object.keys(row).filter(key => !['name', 'phone', 'goalStatus'].includes(key)).map((key) => (
                         <TableCell key={key}>{row[key] || '-'}</TableCell>
                       ))}
                     </TableRow>

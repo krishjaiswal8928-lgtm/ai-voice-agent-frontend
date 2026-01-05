@@ -36,9 +36,9 @@ export function useLeads(campaignId?: number) {
     if (!globalLeadsState[campaignId]) {
       globalLeadsState[campaignId] = { leads: [], loading: false, error: null };
     }
-    
+
     globalLeadsState[campaignId] = { leads, loading, error };
-    
+
     // Notify all listeners for this campaign
     if (listeners.current) {
       listeners.current.forEach(listener => listener(leads, loading, error));
@@ -48,11 +48,11 @@ export function useLeads(campaignId?: number) {
   const fetchLeads = async (campaignIdParam?: number) => {
     const id = campaignIdParam || campaignId;
     if (!id) return [];
-    
+
     try {
       setLoading(true);
       updateGlobalState(id, globalLeadsState[id]?.leads || [], true, null);
-      const response = await leadAPI.getAll(id, 0, 100);
+      const response = await leadAPI.getAll(id.toString(), 0, 100);
       setLeads(response.data);
       updateGlobalState(id, response.data, false, null);
       return response.data;
@@ -70,11 +70,11 @@ export function useLeads(campaignId?: number) {
   const uploadCSV = async (campaignIdParam: number, file: File) => {
     const id = campaignIdParam || campaignId;
     if (!id) throw new Error('Campaign ID is required');
-    
+
     try {
       setLoading(true);
       updateGlobalState(id, globalLeadsState[id]?.leads || [], true, null);
-      const response = await leadAPI.uploadCSV(id, file);
+      const response = await leadAPI.uploadCSV(id.toString(), file);
       // Refresh leads after upload
       await fetchLeads(id);
       return response.data;
@@ -92,15 +92,15 @@ export function useLeads(campaignId?: number) {
   // Subscribe to global state changes for this campaign
   useEffect(() => {
     if (!campaignId) return;
-    
+
     const listener = (leads: Lead[], loading: boolean, error: string | null) => {
       setLeads(leads);
       setLoading(loading);
       setError(error);
     };
-    
+
     listeners.current.push(listener);
-    
+
     // Initialize with current global state
     if (globalLeadsState[campaignId]) {
       listener(
@@ -109,7 +109,7 @@ export function useLeads(campaignId?: number) {
         globalLeadsState[campaignId].error
       );
     }
-    
+
     return () => {
       const index = listeners.current.indexOf(listener);
       if (index > -1) {
