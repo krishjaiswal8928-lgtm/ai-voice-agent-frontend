@@ -52,7 +52,7 @@ export function useLeads(campaignId?: number) {
     try {
       setLoading(true);
       updateGlobalState(id, globalLeadsState[id]?.leads || [], true, null);
-      const response = await leadAPI.getAll(id, 0, 100);
+      const response = await leadAPI.getAll(id.toString(), 0, 100);
       setLeads(response.data);
       updateGlobalState(id, response.data, false, null);
       return response.data;
@@ -74,7 +74,7 @@ export function useLeads(campaignId?: number) {
     try {
       setLoading(true);
       updateGlobalState(id, globalLeadsState[id]?.leads || [], true, null);
-      const response = await leadAPI.uploadCSV(id, file);
+      const response = await leadAPI.uploadCSV(id.toString(), file);
       // Refresh leads after upload
       await fetchLeads(id);
       return response.data;
