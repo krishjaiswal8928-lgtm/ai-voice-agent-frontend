@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Force Vercel cache bust for security update
 const nextConfig = {
   output: 'standalone', // Use standalone mode for server-side rendering (required for dynamic routes)
   reactStrictMode: true,
