@@ -20,16 +20,20 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 # Initialize Deepseek-v3 client
 deepseek_v3_client = None
 
-# Initialize Deepseek-v3 from Hugging Face if HF_TOKEN is available
-if HF_TOKEN:
-    try:
-        deepseek_v3_client = InferenceClient(
-            model="deepseek-ai/DeepSeek-V3",
-            token=HF_TOKEN
-        )
-        logger.info("✅ Deepseek-V3 (Hugging Face) initialized")
-    except Exception as e:
-        logger.error(f"❌ Failed to initialize Deepseek-V3: {e}")
+def get_deepseek_client():
+    global deepseek_v3_client
+    if not deepseek_v3_client and HF_TOKEN:
+        try:
+            from huggingface_hub import InferenceClient
+            deepseek_v3_client = InferenceClient(
+                model="deepseek-ai/DeepSeek-V3",
+                token=HF_TOKEN
+            )
+            logger.info("✅ Deepseek-V3 (Hugging Face) initialized lazily")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Deepseek-V3: {e}")
+            return None
+    return deepseek_v3_client
 
 async def generate_response_stream(transcript: str, goal: str, history: Optional[List[Dict[str, str]]] = None, context: str = "", personality: str = "professional", company_name: str = "", system_prompt: str = "", agent_name: str = "") -> AsyncGenerator[str, None]:
     """
@@ -179,7 +183,9 @@ async def generate_response_stream(transcript: str, goal: str, history: Optional
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            if not deepseek_v3_client:
+            # Use lazy loader
+            client = get_deepseek_client()
+            if not client:
                 raise ValueError("Deepseek-V3 model not initialized")
             
             # Use custom system prompt if provided
@@ -201,7 +207,7 @@ async def generate_response_stream(transcript: str, goal: str, history: Optional
             ]
             
             # Call Deepseek-V3 with streaming (increased tokens for detailed explanations)
-            response = deepseek_v3_client.chat.completions.create(
+            response = client.chat.completions.create(
                 messages=messages,
                 max_tokens=300,  # Increased for complete explanations
                 temperature=0.7,
@@ -372,7 +378,8 @@ def generate_response(transcript: str, goal: str, history: Optional[List[Dict[st
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            if not deepseek_v3_client:
+            client = get_deepseek_client()
+            if not client:
                 raise ValueError("Deepseek-V3 model not initialized")
             
             # Use custom system prompt if provided, otherwise use default
@@ -394,7 +401,7 @@ def generate_response(transcript: str, goal: str, history: Optional[List[Dict[st
             ]
             
             # Call Deepseek-V3 (increased tokens for complete explanations)
-            response = deepseek_v3_client.chat.completions.create(
+            response = client.chat.completions.create(
                 messages=messages,
                 max_tokens=300,  # Increased for detailed answers
                 temperature=0.7,
