@@ -602,8 +602,8 @@ export function NavigationLayout({
                 display: 'flex',
                 alignItems: 'center',
                 ...(pathname === '/reports' && {
-                  background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.4) 0%, rgba(225, 29, 72, 0.4) 100%)',
-                  boxShadow: '0 4px 12px rgba(244, 63, 94, 0.4)',
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.4) 0%, rgba(59, 130, 246, 0.4) 100%)',
+                  boxShadow: '0 4px 12px rgba(14, 165, 233, 0.4)',
                   '&::after': {
                     content: '""',
                     position: 'absolute',
@@ -612,9 +612,9 @@ export function NavigationLayout({
                     transform: 'translateY(-50%)',
                     width: '4px',
                     height: '60%',
-                    background: 'linear-gradient(180deg, #f43f5e 0%, #e11d48 100%)',
+                    background: 'linear-gradient(180deg, #0ea5e9 0%, #3b82f6 100%)',
                     borderRadius: '0 4px 4px 0',
-                    boxShadow: '0 0 12px rgba(244, 63, 94, 0.8)'
+                    boxShadow: '0 0 12px rgba(14, 165, 233, 0.8)'
                   }
                 }),
                 '&::before': {
@@ -624,28 +624,28 @@ export function NavigationLayout({
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.2) 0%, rgba(225, 29, 72, 0.2) 100%)',
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)',
                   opacity: 0,
                   transition: 'opacity 0.3s ease'
                 },
                 '&:hover': {
-                  bgcolor: 'rgba(244, 63, 94, 0.15)',
+                  bgcolor: 'rgba(14, 165, 233, 0.15)',
                   transform: 'translateX(4px)',
                   '&::before': {
                     opacity: 1
                   },
                   '& .MuiSvgIcon-root': {
                     transform: 'scale(1.1) rotate(-5deg)',
-                    filter: 'drop-shadow(0 0 8px rgba(244, 63, 94, 0.6))'
+                    filter: 'drop-shadow(0 0 8px rgba(14, 165, 233, 0.6))'
                   }
                 }
               }}
             >
               <Analytics sx={{
                 mr: sidebarOpen ? 2 : 0,
-                color: '#f43f5e',
+                color: '#0ea5e9',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                filter: 'drop-shadow(0 0 4px rgba(244, 63, 94, 0.3))'
+                filter: 'drop-shadow(0 0 4px rgba(14, 165, 233, 0.3))'
               }} />
               {sidebarOpen && <Typography sx={{ fontWeight: 700, fontSize: '1.05rem', position: 'relative', zIndex: 1, color: '#000000' }}>Reports</Typography>}
             </MenuItem>

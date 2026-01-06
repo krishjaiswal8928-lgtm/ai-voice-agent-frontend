@@ -20,7 +20,9 @@ router = APIRouter()
 
 # Configuration
 NGROK_DOMAIN = os.getenv("NGROK_DOMAIN")
-WEBSOCKET_URL = f"wss://{NGROK_DOMAIN}/twilio/ws"
+if not NGROK_DOMAIN:
+    logger.warning("NGROK_DOMAIN not set in .env")
+WEBSOCKET_URL = f"wss://{NGROK_DOMAIN}/twilio/ws" if NGROK_DOMAIN else ""
 logger.info(f"WEBSOCKET_URL = {WEBSOCKET_URL}")
 
 
@@ -69,14 +71,17 @@ async def voice_webhook(request: Request):
         goal = form_data.get("goal", "")
         rag_document_id = form_data.get("rag_document_id")
         
-        print(f"Form data: CallSid={call_sid}, From={from_num_norm}, To={to_num_norm}")  # MUST PRINT
-        print(f"Context: campaign_id={campaign_id}, lead_id={lead_id}, goal={goal}")  # MUST PRINT
+        if not db:
+            logger.error("❌ Firestore DB client is not initialized")
+            raise Exception("Database connection failed")
+
+        print(f"Form data: CallSid={call_sid}, From={from_num_norm}, To={to_num_norm}")
+        print(f"Context: campaign_id={campaign_id}, lead_id={lead_id}, goal={goal}")
 
         response = VoiceResponse()
         
         # Determine inbound vs outbound strictly from the dialed 'To' number.
         # If the 'To' number matches a configured business line, TREAT AS INBOUND and ignore any client-supplied campaign_id.
-        from app.database.firestore import db
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         def find_phone_record(num_raw: str, num_norm: str):
