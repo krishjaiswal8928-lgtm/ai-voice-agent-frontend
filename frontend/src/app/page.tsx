@@ -376,7 +376,7 @@ export default function DashboardScreen() {
                           borderColor: '#6366f1'
                         }
                       }}
-                      onClick={() => router.push(`/campaigns/${callSession.type}/${callSession.id}`)}
+                      onClick={() => router.push(`/campaigns/by-id/${callSession.id}`)}
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                         <Typography variant="h6" sx={{ color: '#111827', fontWeight: 600 }}>{callSession.name}</Typography>
