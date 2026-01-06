@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Exit on error
-set -e
+# Force Python to print logs immediately
+export PYTHONUNBUFFERED=1
 
-# Default to port 10000 if not set (Render default)
+# Default to port 10000 if not set
 PORT=${PORT:-10000}
 
 echo "==================================================="
-echo "🚀 Starting Voice Agent Backend on Port $PORT"
+echo "🚀 Starting Backend (Debug Mode)"
+echo "Port: $PORT"
+echo "Directory: $(pwd)"
 echo "==================================================="
 
-# Use exec to replace the shell with the process (proper signal handling)
-exec uvicorn main:app --host 0.0.0.0 --port $PORT
+# Use python -m to run uvicorn to ensure path is correct
+# Removed 'exec' to allow shell to trap errors if needed, but for now direct run is fine
+python -m uvicorn main:app --host 0.0.0.0 --port $PORT --log-level debug
