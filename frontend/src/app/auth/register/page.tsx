@@ -35,6 +35,10 @@ export default function RegisterPage() {
   // Fix for hydration error - only render Google components on client
   useEffect(() => {
     setIsClient(true);
+    if (!GOOGLE_CLIENT_ID) {
+      console.error('Google Client ID is missing. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your environment variables.');
+      setError('Configuration Error: Google Client ID is missing. Please check your deployment settings.');
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
