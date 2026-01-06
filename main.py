@@ -21,8 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 #     phone_number_routes  # Add phone number routes
 # )
 
-print("DEBUG: Importing auth_routes...")
-import app.routes.auth_routes as auth_routes
+print("DEBUG: Importing auth_routes... SKIPPING FOR DEBUG")
+# import app.routes.auth_routes as auth_routes
 print("DEBUG: Importing campaign_routes...")
 import app.routes.campaign_routes as campaign_routes
 print("DEBUG: Importing rag_routes...")
@@ -86,7 +86,7 @@ app.add_middleware(
 )
 
 # Register routers
-app.include_router(auth_routes.router)
+# app.include_router(auth_routes.router)
 app.include_router(campaign_routes.router)
 app.include_router(rag_routes.router)
 app.include_router(lead_routes.router)
