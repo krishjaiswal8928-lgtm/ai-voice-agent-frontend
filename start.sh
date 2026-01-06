@@ -11,4 +11,4 @@ echo "Port: $PORT"
 echo "Directory: $(pwd)"
 echo "==================================================="
 
-# Run uvicorn main:app --host 0.0.0.0 --port $PORT --log-level debug
+exec python -m uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info
