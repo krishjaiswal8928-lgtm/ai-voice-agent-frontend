@@ -191,7 +191,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                                 }}
                             >
                                 Orchestrate Your <br />
-                                <span style={{ color: '#60A5FA', textFillColor: '#60A5FA' }}>Digital Voice.</span>
+                                <span style={{ color: '#60A5FA', WebkitTextFillColor: '#60A5FA' }}>Digital Voice.</span>
                             </Typography>
                             <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, maxWidth: '480px', lineHeight: 1.6 }}>
                                 Deploy intelligent voice agents in minutes. Scale your conversations with human-like interactions and seamless integration.
