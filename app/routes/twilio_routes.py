@@ -71,6 +71,7 @@ async def voice_webhook(request: Request):
         goal = form_data.get("goal", "")
         rag_document_id = form_data.get("rag_document_id")
         
+        from app.database.firestore import db
         if not db:
             logger.error("❌ Firestore DB client is not initialized")
             raise Exception("Database connection failed")

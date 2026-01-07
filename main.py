@@ -7,24 +7,42 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Defer imports that might cause issues at startup
+print("DEBUG: Importing auth_routes...", flush=True)
 import app.routes.auth_routes as auth_routes
+print("DEBUG: Importing campaign_routes...", flush=True)
 import app.routes.campaign_routes as campaign_routes
+print("DEBUG: Importing rag_routes...", flush=True)
 import app.routes.rag_routes as rag_routes
+print("DEBUG: Importing lead_routes...", flush=True)
 import app.routes.lead_routes as lead_routes
+print("DEBUG: Importing voice_routes...", flush=True)
 import app.routes.voice_routes as voice_routes
+print("DEBUG: Importing report_routes...", flush=True)
 import app.routes.report_routes as report_routes
+print("DEBUG: Importing twilio_routes...", flush=True)
 import app.routes.twilio_routes as twilio_routes
+print("DEBUG: Importing client_routes...", flush=True)
 import app.routes.client_routes as client_routes
+print("DEBUG: Importing knowledge_routes...", flush=True)
 import app.routes.knowledge_routes as knowledge_routes
+print("DEBUG: Importing custom_agent_routes...", flush=True)
 import app.routes.custom_agent_routes as custom_agent_routes
+print("DEBUG: Importing phone_number_routes...", flush=True)
 import app.routes.phone_number_routes as phone_number_routes
+print("DEBUG: Importing integration_routes...", flush=True)
 import app.routes.integration_routes as integration_routes
+print("DEBUG: Importing pricing_routes...", flush=True)
 import app.routes.pricing_routes as pricing_routes
+print("DEBUG: Importing user_routes...", flush=True)
 import app.routes.user_routes as user_routes
 
+print("DEBUG: Importing security...", flush=True)
 from app.core import security
+print("DEBUG: Importing callback_scheduler...", flush=True)
 from app.services.callback_scheduler import callback_scheduler
+print("DEBUG: Importing outbound_manager...", flush=True)
 from app.services.outbound_service import outbound_manager
+print("DEBUG: main.py imports finished...", flush=True)
 import logging
 
 # Load environment variables
