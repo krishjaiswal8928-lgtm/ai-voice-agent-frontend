@@ -2,22 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
   TextField,
   Button,
-  Card,
-  CardContent,
   Alert,
   CircularProgress,
   Divider,
-  Link
+  Link,
+  Box,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
+import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-
-// Dynamically import Google OAuth components to avoid SSR issues
+// Dynamically import Google OAuth components
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import AuthLayout from '@/components/AuthLayout';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -25,16 +25,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isClient, setIsClient] = useState(false);
 
-  // Fix for hydration error - only render Google components on client
   useEffect(() => {
     setIsClient(true);
     if (!GOOGLE_CLIENT_ID) {
-      console.error('Google Client ID is missing. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your environment variables.');
-      setError('Configuration Error: Google Client ID is missing. Please check your deployment settings.');
+      console.error('Google Client ID is missing.');
     }
   }, []);
 
@@ -48,9 +47,7 @@ export default function LoginPage() {
       localStorage.setItem('token', response.data.access_token);
       router.push('/');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Login failed';
-      setError(errorMessage);
-      console.error('Login error:', err);
+      setError(err.response?.data?.detail || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -59,178 +56,140 @@ export default function LoginPage() {
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading(true);
     setError('');
-
     try {
       const response = await authAPI.googleAuth(credentialResponse.credential);
       localStorage.setItem('token', response.data.access_token);
       router.push('/');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Google authentication failed';
-      setError(errorMessage);
-      console.error('Google auth error:', err);
+      setError('Google authentication failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleError = () => {
-    setError('Google authentication failed. Please try again.');
-  };
-
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          p: 2,
-          bgcolor: '#ffffff',
-          width: '100%'
-        }}
+      <AuthLayout
+        title="Welcome Back"
+        subtitle="Sign in to continue to your dashboard"
       >
-        <Card sx={{
-          maxWidth: 400,
-          width: '100%',
-          bgcolor: '#ffffff',
-          border: '1px solid #e0e0e0',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-        }}>
-          <CardContent>
-            <Typography
-              variant="h4"
-              component="h1"
-              gutterBottom
-              align="center"
-              sx={{ color: '#000000', mb: 3, fontWeight: 700 }}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            fullWidth
+            label="Username"
+            variant="outlined"
+            margin="normal"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Email color="action" />
+                </InputAdornment>
+              ),
+              sx: { borderRadius: 3 }
+            }}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            variant="outlined"
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: { borderRadius: 3 }
+            }}
+            sx={{ mb: 3 }}
+          />
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={loading}
+            size="large"
+            sx={{
+              py: 1.5,
+              borderRadius: 3,
+              fontWeight: 700,
+              textTransform: 'none',
+              fontSize: '1rem',
+              boxShadow: '0 4px 14px 0 rgba(33, 150, 243, 0.3)',
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              '&:hover': {
+                boxShadow: '0 6px 20px 0 rgba(33, 150, 243, 0.4)',
+                background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+              }
+            }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+          </Button>
+        </Box>
+
+        <Box sx={{ my: 3, display: 'flex', alignItems: 'center' }}>
+          <Divider sx={{ flex: 1 }} />
+          <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
+            OR
+          </Typography>
+          <Divider sx={{ flex: 1 }} />
+        </Box>
+
+        {isClient && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google Login Failed')}
+              useOneTap={false}
+              theme="filled_blue"
+              shape="pill"
+              width="100%"
+            />
+          </Box>
+        )}
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            Don't have an account?{' '}
+            <Link
+              href="/auth/register"
+              underline="hover"
+              sx={{
+                fontWeight: 600,
+                color: '#2196F3'
+              }}
             >
-              SpeakSynth.ai Login
-            </Typography>
-
-            {error && (
-              <Alert
-                severity="error"
-                sx={{
-                  mb: 2
-                }}
-              >
-                {error}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                label="Username"
-                variant="outlined"
-                margin="normal"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#000000',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#000000',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: '#000000',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: '#000000',
-                  }
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Password"
-                type="password"
-                variant="outlined"
-                margin="normal"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#000000',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#000000',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: '#000000',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: '#000000',
-                  }
-                }}
-              />
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={loading}
-                sx={{
-                  mt: 3,
-                  mb: 2,
-                  bgcolor: '#000000',
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  py: 1.5,
-                  '&:hover': {
-                    bgcolor: '#333333'
-                  }
-                }}
-              >
-                {loading ? <CircularProgress size={24} sx={{ color: '#ffffff' }} /> : 'Login'}
-              </Button>
-            </Box>
-
-            <Divider sx={{ my: 2 }}>or</Divider>
-
-            {/* Only render Google Login on client to avoid hydration errors */}
-            {isClient && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap={false}
-                  theme="outline"
-                  size="large"
-                  text="continue_with"
-                  shape="rectangular"
-                  width="100%"
-                />
-              </Box>
-            )}
-
-            <Typography
-              variant="body2"
-              align="center"
-              sx={{ color: '#888888' }}
-            >
-              Don't have an account?{' '}
-              <Link href="/auth/register" underline="hover" sx={{ color: '#000000', fontWeight: 700 }}>
-                Register
-              </Link>
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
+              Create Account
+            </Link>
+          </Typography>
+        </Box>
+      </AuthLayout>
     </GoogleOAuthProvider>
   );
 }
