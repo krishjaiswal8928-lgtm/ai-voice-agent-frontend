@@ -47,7 +47,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                     position: 'relative',
                     bgcolor: '#ffffff',
                     zIndex: 2,
-                    borderRight: '1px solid #f0f0f0' // Subtle separation
+                    borderRight: '1px solid #f0f0f0'
                 }}
             >
                 <Box
@@ -58,28 +58,30 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                         p: { xs: 4, md: 6 },
                     }}
                 >
-                    {/* Logo / Brand Name Small */}
-                    <Box sx={{ mb: 6, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box
-                            sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: '8px',
-                                background: 'linear-gradient(135deg, #000000 0%, #333333 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: 'white',
-                                fontWeight: 'bold',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-                            }}
-                        >
-                            S
+                    {/* Mobile Only Logo (if on mobile, we need branding here since right panel is hidden) */}
+                    {isMobile && (
+                        <Box sx={{ mb: 6, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                                sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: '8px',
+                                    background: 'linear-gradient(135deg, #000000 0%, #333333 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                S
+                            </Box>
+                            <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
+                                SpeakSynth
+                            </Typography>
                         </Box>
-                        <Typography variant="h6" fontWeight="bold" color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
-                            SpeakSynth
-                        </Typography>
-                    </Box>
+                    )}
 
                     <Box sx={{ mb: 4 }}>
                         <Typography variant="h4" fontWeight="800" sx={{ mb: 1, color: '#111827', letterSpacing: '-1px' }}>
@@ -104,19 +106,23 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                     lg={8}
                     sx={{
                         position: 'relative',
-                        bgcolor: '#f9fafb', // Very Light Gray
+                        bgcolor: '#f9fafb',
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
+                        // Changed justifyContent to flex-start to put text at top, but we want branding at top and text there too?
+                        // User asked: "text... keep that in the top of box" 
+                        // "logo 'SpeakSynth' also keep that in the top of opposite site" -> "Opposite Side" could correspond to Right vs Left?
+                        // Let's put Logo Top Left of RIGHT Panel, Headline below it.
+                        // Spacing:
                         justifyContent: 'space-between',
                         p: 8,
-                        color: '#111827', // Dark Text
-                        // Dotted Background Pattern
+                        color: '#111827',
                         backgroundImage: 'radial-gradient(#d1d5db 1px, transparent 1px)',
                         backgroundSize: '24px 24px',
                     }}
                 >
-                    {/* Soft Gradient Overlay for depth */}
+                    {/* Soft Gradient Overlay */}
                     <Box
                         sx={{
                             position: 'absolute',
@@ -135,14 +141,14 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                         }}
                     />
 
-                    {/* Animated "Sound Waves" - Darker version for light bg */}
+                    {/* Animated "Sound Waves" */}
                     <Box sx={{
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
                         right: 0,
                         height: '250px',
-                        opacity: 0.1, // Subtle
+                        opacity: 0.1,
                         overflow: 'hidden',
                         zIndex: 0
                     }}>
@@ -156,7 +162,6 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                                     width: '200%',
                                     height: '100%',
                                     backgroundRepeat: 'repeat-x',
-                                    // Black wave for contrast
                                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 198.5'%3E%3Cpath fill='%23000000' d='M800,53.1c-137.5,0-137.5-35.4-275-35.4c-137.5,0-137.5,35.4-275,35.4C112.5,53.1,112.5,17.7,0,17.7v180.8h800V53.1z' opacity='0.3'/%3E%3C/svg%3E")`,
                                     backgroundSize: '50% 100%',
                                     animation: `${wave} ${20 + i * 5}s linear infinite`,
@@ -166,26 +171,34 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                         ))}
                     </Box>
 
-                    {/* Top Right Decoration - Glass Pill */}
-                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                        <Box sx={{
-                            padding: '8px 20px',
-                            bgcolor: 'rgba(255, 255, 255, 0.8)',
-                            backdropFilter: 'blur(12px)',
-                            borderRadius: '50px',
-                            border: '1px solid rgba(0,0,0,0.05)',
-                            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
-                            animation: `${float} 6s ease-in-out infinite`
-                        }}>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#4f46e5', letterSpacing: 1 }}>
-                                AI-POWERED VOICE
+                    {/* Top Section: Logo + Headline */}
+                    <Box sx={{ position: 'relative', zIndex: 2 }}>
+                        {/* Logo - Moved to Right Panel Top Left */}
+                        <Box sx={{ mb: 6, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: '10px',
+                                    background: 'linear-gradient(135deg, #000000 0%, #333333 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: '1.2rem',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                S
+                            </Box>
+                            <Typography variant="h5" fontWeight="800" color="text.primary" sx={{ letterSpacing: '-0.5px' }}>
+                                SpeakSynth
                             </Typography>
                         </Box>
-                    </Box>
 
-                    {/* Center Content */}
-                    <Stack spacing={5} sx={{ position: 'relative', zIndex: 2, maxWidth: '650px' }}>
-                        <Box>
+                        {/* Headline - Moved to Top */}
+                        <Box maxWidth="650px">
                             <Typography
                                 variant="h1"
                                 sx={{
@@ -203,15 +216,23 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
                                 }}>
-                                    Digital Voice.
+                                    AI Agent
                                 </span>
                             </Typography>
                             <Typography variant="h6" sx={{ color: '#4b5563', fontWeight: 500, maxWidth: '480px', lineHeight: 1.6 }}>
                                 Deploy intelligent voice agents in minutes. Scale interactions with human-like precision.
                             </Typography>
                         </Box>
+                    </Box>
 
-                        {/* Social Proof - Clean Cards */}
+                    {/* Middle/Bottom: Badges & Social Proof */}
+                    <Stack spacing={4} sx={{ position: 'relative', zIndex: 2 }}>
+                        {/* Glass Pill (kept, maybe moved slightly down or to the side?) */}
+                        {/* User said "logo... top of opposite site". I put Logo top Left. 
+                 Maybe Pill can go to Top Right? or just stay as a decorative element nearby.
+                 I'll keep the pill near the bottom area as a feature highlight now. */}
+
+                        {/* Social Proof */}
                         <Stack direction="row" spacing={4} alignItems="center">
                             <Box>
                                 <Typography variant="h3" fontWeight="800" sx={{ color: '#111827' }}>98%</Typography>
@@ -236,7 +257,8 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                                     padding: '10px 20px',
                                     bgcolor: '#ffffff',
                                     borderRadius: '50px',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                                    animation: `${float} 6s ease-in-out infinite`
                                 }}>
                                     <Box sx={{
                                         width: 10,
