@@ -1,40 +1,34 @@
-"""
-LangGraph-based Autonomous Agent
-Enhanced version of the autonomous agent with LangGraph capabilities
-"""
-
-from typing import Annotated, Sequence, TypedDict
+from typing import Sequence, TypedDict, List, Dict, Any, Union
 import operator
-from langgraph.graph import StateGraph, END
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 import uuid
 from datetime import datetime, timedelta
 import asyncio
 import re
+import logging
+
 # Use the existing LLM service instead of creating a new one
 from app.services.llm_service import generate_response
 from app.services.outbound_service import make_outbound_call
 # Import the callback scheduler
 from app.services.callback_scheduler import callback_scheduler
 
-# Define the agent state
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], operator.add]
-    goal: str
-    context: str
-    next_action: str
-    scheduled_callbacks: list
-    is_completed: bool
-    phone_number: str  # Add phone number to state
+logger = logging.getLogger(__name__)
+
+# Placeholder for AgentState to avoid heavy imports at module level
+AgentState = Dict[str, Any]
 
 # Define node functions
 def planner_node(state: AgentState) -> AgentState:
     """Plan the next steps based on conversation history"""
+    # Lazy import
+    from langchain_core.messages import BaseMessage
+    
     # Get the last few messages for context
-    recent_messages = state["messages"][-3:] if len(state["messages"]) > 3 else state["messages"]
+    messages = state.get("messages", [])
+    recent_messages = messages[-3:] if len(messages) > 3 else messages
     
     # Simple rule-based planner instead of LLM-based
-    last_message = state["messages"][-1].content.lower() if state["messages"] else ""
+    last_message = messages[-1].content.lower() if messages else ""
     
     if "call me back" in last_message or "callback" in last_message or "remind me" in last_message:
         next_action = "schedule_callback"
@@ -47,15 +41,18 @@ def planner_node(state: AgentState) -> AgentState:
 
 def conversation_node(state: AgentState) -> AgentState:
     """Continue the conversation"""
+    from langchain_core.messages import HumanMessage, AIMessage
+    
     # Get the last user message
     user_message = ""
-    for msg in reversed(state["messages"]):
+    messages = state.get("messages", [])
+    for msg in reversed(messages):
         if isinstance(msg, HumanMessage):
             user_message = msg.content
             break
     
     # Generate a response using the existing LLM service
-    history = [{"role": msg.type, "content": msg.content} for msg in state["messages"]]
+    history = [{"role": msg.type, "content": msg.content} for msg in messages]
     try:
         response = generate_response(user_message, state["goal"], history, state["context"])
     except Exception as e:
@@ -66,8 +63,11 @@ def conversation_node(state: AgentState) -> AgentState:
 
 async def callback_scheduler_node(state: AgentState) -> AgentState:
     """Schedule a callback"""
+    from langchain_core.messages import AIMessage
+    
     # Extract scheduling information from the conversation
-    last_message = state["messages"][-1].content if state["messages"] else ""
+    messages = state.get("messages", [])
+    last_message = messages[-1].content if messages else ""
     
     # Extract callback time using regex patterns
     delay_minutes = 60  # Default to 1 hour
@@ -95,7 +95,7 @@ async def callback_scheduler_node(state: AgentState) -> AgentState:
     callback_id = await callback_scheduler.schedule_callback(
         phone_number=phone_number,
         delay_minutes=delay_minutes,
-        context=state["context"],
+        context=state.get("context", ""),
         campaign_id=None  # Would be extracted from context in real implementation
     )
     
@@ -108,20 +108,22 @@ async def callback_scheduler_node(state: AgentState) -> AgentState:
     }
     
     return {
-        "scheduled_callbacks": state["scheduled_callbacks"] + [scheduled_callback],
+        "scheduled_callbacks": state.get("scheduled_callbacks", []) + [scheduled_callback],
         "messages": [AIMessage(content=f"I'll call you back in {delay_minutes} minutes.")]
     }
 
 def end_node(state: AgentState) -> AgentState:
     """End the conversation"""
+    from langchain_core.messages import AIMessage
     return {"is_completed": True, "messages": [AIMessage(content="Thank you for your time. Have a great day!")]}
 
 # Define edges
 def route_after_planning(state: AgentState) -> str:
     """Route based on the planner's decision"""
-    if state["next_action"] == "schedule_callback":
+    next_action = state.get("next_action", "")
+    if next_action == "schedule_callback":
         return "schedule_callback"
-    elif state["next_action"] == "end_conversation":
+    elif next_action == "end_conversation":
         return "end_conversation"
     else:
         return "continue_conversation"
@@ -129,40 +131,60 @@ def route_after_planning(state: AgentState) -> str:
 # Create the graph
 def create_langgraph_agent():
     """Create the LangGraph agent"""
-    # Initialize the graph
-    workflow = StateGraph(AgentState)
-    
-    # Add nodes
-    workflow.add_node("planner", planner_node)
-    workflow.add_node("conversation", conversation_node)
-    workflow.add_node("schedule_callback", callback_scheduler_node)
-    workflow.add_node("end_conversation", end_node)
-    
-    # Add edges
-    workflow.add_edge("conversation", END)  # Changed from planner to END to avoid recursion
-    workflow.add_edge("schedule_callback", END)  # Changed from planner to END to avoid recursion
-    
-    # Add conditional edges from planner
-    workflow.add_conditional_edges(
-        "planner",
-        route_after_planning,
-        {
-            "continue_conversation": "conversation",
-            "schedule_callback": "schedule_callback",
-            "end_conversation": "end_conversation"
-        }
-    )
-    
-    # Set entry point
-    workflow.set_entry_point("planner")
-    
-    # Add edge from end node to finish
-    workflow.add_edge("end_conversation", END)
-    
-    # Compile the graph
-    app = workflow.compile()
-    
-    return app
+    try:
+        # Lazy imports
+        from typing import Annotated, Sequence
+        import operator
+        from langgraph.graph import StateGraph, END
+        from langchain_core.messages import BaseMessage
+        
+        # Redefine AgentState for use within the graph construction
+        class InternalAgentState(TypedDict):
+            messages: Annotated[Sequence[BaseMessage], operator.add]
+            goal: str
+            context: str
+            next_action: str
+            scheduled_callbacks: list
+            is_completed: bool
+            phone_number: str
+
+        # Initialize the graph
+        workflow = StateGraph(InternalAgentState)
+        
+        # Add nodes
+        workflow.add_node("planner", planner_node)
+        workflow.add_node("conversation", conversation_node)
+        workflow.add_node("schedule_callback", callback_scheduler_node)
+        workflow.add_node("end_conversation", end_node)
+        
+        # Add edges
+        workflow.add_edge("conversation", END)
+        workflow.add_edge("schedule_callback", END)
+        
+        # Add conditional edges from planner
+        workflow.add_conditional_edges(
+            "planner",
+            route_after_planning,
+            {
+                "continue_conversation": "conversation",
+                "schedule_callback": "schedule_callback",
+                "end_conversation": "end_conversation"
+            }
+        )
+        
+        # Set entry point
+        workflow.set_entry_point("planner")
+        
+        # Add edge from end node to finish
+        workflow.add_edge("end_conversation", END)
+        
+        # Compile the graph
+        app = workflow.compile()
+        
+        return app
+    except ImportError as e:
+        logger.error(f"Failed to import LangGraph/LangChain dependencies: {e}")
+        return None
 
 # Agent class that uses the LangGraph
 class LangGraphAgent:
@@ -189,46 +211,40 @@ class LangGraphAgent:
     
     async def process_message(self, user_message: str) -> str:
         """Process a user message and return the agent's response"""
-        # Add the user message to the state
-        self.state["messages"].append(HumanMessage(content=user_message))
-        
-        # Run the graph with a recursion limit
-        config = {"recursion_limit": 10}
-        final_state = await self.graph.ainvoke(self.state, config)
-        
-        # Update the internal state
-        self.state = final_state
-        
-        # Return the last AI message
-        for msg in reversed(final_state["messages"]):
-            if isinstance(msg, AIMessage):
-                return msg.content
-        
-        return "I'm not sure how to respond to that."
+        if not self.graph:
+            return "Agent not initialized correctly (LangGraph missing)"
+
+        try:
+            from langchain_core.messages import HumanMessage, AIMessage
+            
+            # Add the user message to the state
+            self.state["messages"].append(HumanMessage(content=user_message))
+            
+            # Run the graph with a recursion limit
+            config = {"recursion_limit": 10}
+            final_state = await self.graph.ainvoke(self.state, config)
+            
+            # Update the internal state
+            self.state = final_state
+            
+            # Return the last AI message
+            for msg in reversed(final_state["messages"]):
+                if isinstance(msg, AIMessage):
+                    return msg.content
+            
+            return "I'm not sure how to respond to that."
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            return "I apologize, I encountered an error."
     
     def is_conversation_complete(self) -> bool:
         """Check if the conversation is complete"""
-        return self.state["is_completed"]
+        return self.state.get("is_completed", False)
     
     def get_scheduled_callbacks(self) -> list:
         """Get the list of scheduled callbacks"""
-        return self.state["scheduled_callbacks"]
+        return self.state.get("scheduled_callbacks", [])
     
     async def process_user_input(self, user_input: str) -> str:
         """Process user input and return AI response - compatible with orchestrator"""
         return await self.process_message(user_input)
-
-# Example usage
-if __name__ == "__main__":
-    # This is just for demonstration purposes
-    async def main():
-        agent = LangGraphAgent()
-        await agent.initialize("Schedule a product demo", "We are selling AI-powered communication systems")
-        
-        response = await agent.process_message("Hello, I'm interested in your product but I'm busy now. Can you call me back in 30 minutes?")
-        print(f"Agent: {response}")
-        
-        print(f"Scheduled callbacks: {agent.get_scheduled_callbacks()}")
-        print(f"Conversation complete: {agent.is_conversation_complete()}")
-    
-    asyncio.run(main())

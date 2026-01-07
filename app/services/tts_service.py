@@ -3,20 +3,16 @@
 Text-to-Speech Service with support for multiple providers
 Returns PCM audio bytes directly
 """
-print("DEBUG: tts_service: Importing os...", flush=True)
 import os
-print("DEBUG: tts_service: Importing logging...", flush=True)
 import logging
 from typing import Optional
-print("DEBUG: tts_service: Importing dotenv...", flush=True)
 from dotenv import load_dotenv
 import io
 
-print("DEBUG: tts_service: Loading .env...", flush=True)
+# Load environment variables
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-print("DEBUG: tts_service: Imports/Init finished.", flush=True)
 
 # AWS Configuration
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
