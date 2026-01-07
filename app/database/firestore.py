@@ -33,10 +33,19 @@ def get_firestore_client():
         logger.error(f"❌ Error initializing Firestore: {e}", exc_info=True)
         raise e
 
-# Global DB client instance
-try:
-    db = get_firestore_client()
-    logger.info("✅ Global Firestore client initialized")
-except Exception as e:
-    logger.error(f"❌ Failed to initialize global Firestore client: {e}")
-    db = None
+class LazyFirestoreClient:
+    def __init__(self):
+        self._client = None
+    
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = get_firestore_client()
+        return self._client
+        
+    def __getattr__(self, name):
+        return getattr(self.client, name)
+
+# Global lazy DB client instance
+db = LazyFirestoreClient()
+logger.info("✅ Global Firestore client configured (lazy loading)")

@@ -7,21 +7,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Defer imports that might cause issues at startup
-# from app.routes import (
-#     auth_routes,
-#     campaign_routes,
-#     rag_routes,
-#     lead_routes,
-#     voice_routes,
-#     report_routes,
-#     twilio_routes,
-#     client_routes,
-#     knowledge_routes,
-#     custom_agent_routes,
-#     phone_number_routes  # Add phone number routes
-# )
-
-# Defer imports that might cause issues at startup
 import app.routes.auth_routes as auth_routes
 import app.routes.campaign_routes as campaign_routes
 import app.routes.rag_routes as rag_routes
