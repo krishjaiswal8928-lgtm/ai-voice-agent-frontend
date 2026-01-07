@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Button, Container, Grid, useTheme, useMediaQuery, Stack } from '@mui/material';
+import { Box, Typography, Grid, useTheme, useMediaQuery, Stack } from '@mui/material';
 import { keyframes } from '@emotion/react';
 
 const float = keyframes`
