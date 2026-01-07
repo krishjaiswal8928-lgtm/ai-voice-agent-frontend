@@ -14,7 +14,8 @@ from app.models.campaign import CallSession as CallSessionModel
 from app.models.lead import Lead as LeadModel
 from app.schemas.campaign_schema import CallSession, CallSessionCreate, CallSessionUpdate, CallSessionType
 from app.schemas.lead import Lead as LeadSchema
-from app.services import campaign_service, rag_service
+from app.services import campaign_service
+from app.services.rag_service import get_rag_service
 from app.services.outbound_service import outbound_manager
 from app.services.lead_caller import lead_caller_service
 from app.services.callback_scheduler import callback_scheduler

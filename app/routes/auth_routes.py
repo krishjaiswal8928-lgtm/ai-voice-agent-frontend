@@ -1,28 +1,18 @@
-print("DEBUG: auth_routes - importing fastapi")
 from fastapi import APIRouter, Depends, HTTPException, status
-print("DEBUG: auth_routes - importing google.cloud.firestore")
 from google.cloud import firestore
-print("DEBUG: auth_routes - importing datetime")
 from datetime import timedelta
-print("DEBUG: auth_routes - importing app.dependencies")
 from app.dependencies import get_db
-print("DEBUG: auth_routes - importing app.schemas.user")
 from app.schemas.user import UserCreate, User
-print("DEBUG: auth_routes - importing app.models.user")
 from app.models.user import User as UserModel
-print("DEBUG: auth_routes - importing app.core.security")
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
 from app.core.security import ACCESS_TOKEN_EXPIRE_MINUTES
-print("DEBUG: auth_routes - importing os/sqlite")
 import os
 import sqlite3
 # Google OAuth imports
-print("DEBUG: auth_routes - importing google.auth")
 from google.auth.transport import requests
 from google.oauth2 import id_token
 import os
 import json
-print("DEBUG: auth_routes - imports done")
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

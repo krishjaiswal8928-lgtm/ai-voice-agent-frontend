@@ -6,7 +6,7 @@ import uuid
 import asyncio
 from app.dependencies import get_db
 from app.schemas.rag_schema import RAGDocument
-from app.services.rag_service import rag_service
+from app.services.rag_service import get_rag_service
 from app.models.campaign import CallSession
 from app.models.custom_agent import CustomAgent
 from app.models.rag_document import RAGDocument as RAGDocumentModel
@@ -88,7 +88,7 @@ async def upload_pdf(
     try:
         # Create a task to process the document in the background
         document = await asyncio.wait_for(
-            rag_service.process_document(file_path, "pdf", campaign_id if not agent_id else None, db, agent_id),
+            get_rag_service().process_document(file_path, "pdf", campaign_id if not agent_id else None, db, agent_id),
             timeout=120.0  # Increased timeout to 120 seconds
         )
         
@@ -190,7 +190,7 @@ async def upload_docx(
     try:
         # Create a task to process the document in the background
         document = await asyncio.wait_for(
-            rag_service.process_document(file_path, "docx", campaign_id if not agent_id else None, db, agent_id),
+            get_rag_service().process_document(file_path, "docx", campaign_id if not agent_id else None, db, agent_id),
             timeout=120.0  # Increased timeout to 120 seconds
         )
         
@@ -279,7 +279,7 @@ async def upload_url(
     try:
         # Create a task to process the URL in the background
         document = await asyncio.wait_for(
-            rag_service.process_url(url, campaign_id if not agent_id else None, db, agent_id),
+            get_rag_service().process_url(url, campaign_id if not agent_id else None, db, agent_id),
             timeout=120.0  # Increased timeout to 120 seconds
         )
         
@@ -352,7 +352,7 @@ async def crawl_domain(
     # Process domain with timeout
     try:
         result = await asyncio.wait_for(
-            rag_service.process_domain(url, campaign_id, db, agent_id, max_pages),
+            get_rag_service().process_domain(url, campaign_id, db, agent_id, max_pages),
             timeout=600.0  # Increased timeout to 10 minutes for domain crawling with more pages
         )
         return {
@@ -406,7 +406,7 @@ async def crawl_domain_agent(
     # Process domain with timeout
     try:
         result = await asyncio.wait_for(
-            rag_service.process_domain(url, None, db, agent_id, max_pages),
+            get_rag_service().process_domain(url, None, db, agent_id, max_pages),
             timeout=600.0  # Increased timeout to 10 minutes for domain crawling with more pages
         )
         return {

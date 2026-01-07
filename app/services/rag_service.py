@@ -342,4 +342,14 @@ class RAGService:
             print(f"Error in fallback embedding method: {e}")
             raise e
 
-rag_service = RAGService()
+
+# Global instance (Lazy loaded)
+_rag_service_instance = None
+
+def get_rag_service():
+    global _rag_service_instance
+    if _rag_service_instance is None:
+        _rag_service_instance = RAGService()
+    return _rag_service_instance
+
+# rag_service = RAGService() # Removed synchronous init

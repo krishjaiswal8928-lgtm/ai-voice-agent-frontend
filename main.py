@@ -21,42 +21,24 @@ from fastapi.middleware.cors import CORSMiddleware
 #     phone_number_routes  # Add phone number routes
 # )
 
-print("DEBUG: Importing auth_routes... SKIPPING FOR DEBUG")
-# import app.routes.auth_routes as auth_routes
-print("DEBUG: Importing campaign_routes...")
+import app.routes.auth_routes as auth_routes
 import app.routes.campaign_routes as campaign_routes
-print("DEBUG: Importing rag_routes...")
 import app.routes.rag_routes as rag_routes
-print("DEBUG: Importing lead_routes...")
 import app.routes.lead_routes as lead_routes
-print("DEBUG: Importing voice_routes...")
 import app.routes.voice_routes as voice_routes
-print("DEBUG: Importing report_routes...")
 import app.routes.report_routes as report_routes
-print("DEBUG: Importing twilio_routes...")
 import app.routes.twilio_routes as twilio_routes
-print("DEBUG: Importing client_routes...")
 import app.routes.client_routes as client_routes
-print("DEBUG: Importing knowledge_routes...")
 import app.routes.knowledge_routes as knowledge_routes
-print("DEBUG: Importing custom_agent_routes...")
 import app.routes.custom_agent_routes as custom_agent_routes
-print("DEBUG: Importing phone_number_routes...")
 import app.routes.phone_number_routes as phone_number_routes
-print("DEBUG: Importing integration_routes...")
 import app.routes.integration_routes as integration_routes
-print("DEBUG: Importing pricing_routes...")
 import app.routes.pricing_routes as pricing_routes
-print("DEBUG: Importing user_routes...")
 import app.routes.user_routes as user_routes
-print("DEBUG: Importing security...")
 
 from app.core import security
-print("DEBUG: Importing callback_scheduler...")
 from app.services.callback_scheduler import callback_scheduler
-print("DEBUG: Importing outbound_service...")
 from app.services.outbound_service import outbound_manager
-print("DEBUG: All imports done.")
 
 # Load environment variables
 load_dotenv()
@@ -86,7 +68,7 @@ app.add_middleware(
 )
 
 # Register routers
-# app.include_router(auth_routes.router)
+app.include_router(auth_routes.router)
 app.include_router(campaign_routes.router)
 app.include_router(rag_routes.router)
 app.include_router(lead_routes.router)
