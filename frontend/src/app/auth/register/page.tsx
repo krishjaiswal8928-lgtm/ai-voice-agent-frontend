@@ -13,7 +13,7 @@ import {
   IconButton,
   Typography
 } from '@mui/material';
-import { Visibility, VisibilityOff, Person, Email, Lock } from '@mui/icons-material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
@@ -81,26 +81,45 @@ export default function RegisterPage() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthLayout
-        title="Get Started"
-        subtitle="Create your account to join SpeakSynth.ai"
+        title="Create an account"
+        subtitle="Start orchestrating your agents today"
       >
         {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>Registration successful! Redirecting...</Alert>}
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
+          {isClient && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Login Failed')}
+                useOneTap={false}
+                theme="outline"
+                shape="rectangular"
+                width="100%"
+                text="signup_with"
+              />
+            </Box>
+          )}
+
+          <Box sx={{ my: 3, display: 'flex', alignItems: 'center' }}>
+            <Divider sx={{ flex: 1 }} />
+            <Typography variant="body2" color="text.secondary" sx={{ mx: 2, fontSize: '0.8rem' }}>
+              OR SIGN UP WITH EMAIL
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+
           <TextField
             fullWidth
             label="Username"
             name="username"
             variant="outlined"
-            margin="normal"
             value={formData.username}
             onChange={handleChange}
             required
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><Person color="action" /></InputAdornment>,
-              sx: { borderRadius: 3 }
-            }}
+            InputProps={{ sx: { borderRadius: 1.5 } }}
+            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -109,14 +128,11 @@ export default function RegisterPage() {
             name="email"
             type="email"
             variant="outlined"
-            margin="normal"
             value={formData.email}
             onChange={handleChange}
             required
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><Email color="action" /></InputAdornment>,
-              sx: { borderRadius: 3 }
-            }}
+            InputProps={{ sx: { borderRadius: 1.5 } }}
+            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -125,12 +141,10 @@ export default function RegisterPage() {
             name="password"
             type={showPassword ? 'text' : 'password'}
             variant="outlined"
-            margin="normal"
             value={formData.password}
             onChange={handleChange}
             required
             InputProps={{
-              startAdornment: <InputAdornment position="start"><Lock color="action" /></InputAdornment>,
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
@@ -138,8 +152,9 @@ export default function RegisterPage() {
                   </IconButton>
                 </InputAdornment>
               ),
-              sx: { borderRadius: 3 }
+              sx: { borderRadius: 1.5 }
             }}
+            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -148,15 +163,11 @@ export default function RegisterPage() {
             name="confirmPassword"
             type={showPassword ? 'text' : 'password'}
             variant="outlined"
-            margin="normal"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><Lock color="action" /></InputAdornment>,
-              sx: { borderRadius: 3 }
-            }}
-            sx={{ mb: 3 }}
+            InputProps={{ sx: { borderRadius: 1.5 } }}
+            sx={{ mb: 4 }}
           />
 
           <Button
@@ -167,15 +178,16 @@ export default function RegisterPage() {
             size="large"
             sx={{
               py: 1.5,
-              borderRadius: 3,
-              fontWeight: 700,
+              borderRadius: 1.5,
+              fontWeight: 600,
               textTransform: 'none',
               fontSize: '1rem',
-              boxShadow: '0 4px 14px 0 rgba(33, 150, 243, 0.3)',
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              boxShadow: 'none',
+              bgcolor: '#000000',
+              color: '#ffffff',
               '&:hover': {
-                boxShadow: '0 6px 20px 0 rgba(33, 150, 243, 0.4)',
-                background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+                bgcolor: '#333333',
+                boxShadow: 'none',
               }
             }}
           >
@@ -183,28 +195,7 @@ export default function RegisterPage() {
           </Button>
         </Box>
 
-        <Box sx={{ my: 3, display: 'flex', alignItems: 'center' }}>
-          <Divider sx={{ flex: 1 }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
-            OR
-          </Typography>
-          <Divider sx={{ flex: 1 }} />
-        </Box>
-
-        {isClient && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google Login Failed')}
-              useOneTap={false}
-              theme="filled_blue"
-              shape="pill"
-              width="100%"
-            />
-          </Box>
-        )}
-
-        <Box sx={{ textAlign: 'center' }}>
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             Already have an account?{' '}
             <Link
@@ -212,10 +203,10 @@ export default function RegisterPage() {
               underline="hover"
               sx={{
                 fontWeight: 600,
-                color: '#2196F3'
+                color: '#000000'
               }}
             >
-              Sign In
+              Log in
             </Link>
           </Typography>
         </Box>

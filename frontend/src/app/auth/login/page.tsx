@@ -16,7 +16,6 @@ import {
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
-// Dynamically import Google OAuth components
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import AuthLayout from '@/components/AuthLayout';
 
@@ -33,9 +32,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     setIsClient(true);
-    if (!GOOGLE_CLIENT_ID) {
-      console.error('Google Client ID is missing.');
-    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +52,6 @@ export default function LoginPage() {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setLoading(true);
-    setError('');
     try {
       const response = await authAPI.googleAuth(credentialResponse.credential);
       localStorage.setItem('token', response.data.access_token);
@@ -72,7 +67,7 @@ export default function LoginPage() {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthLayout
         title="Welcome Back"
-        subtitle="Sign in to continue to your dashboard"
+        subtitle="Sign in to your dashboard"
       >
         {error && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -81,23 +76,39 @@ export default function LoginPage() {
         )}
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
+          {isClient && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Login Failed')}
+                useOneTap={false}
+                theme="outline"
+                shape="rectangular"
+                width="100%"
+                text="continue_with"
+              />
+            </Box>
+          )}
+
+          <Box sx={{ my: 3, display: 'flex', alignItems: 'center' }}>
+            <Divider sx={{ flex: 1 }} />
+            <Typography variant="body2" color="text.secondary" sx={{ mx: 2, fontSize: '0.8rem' }}>
+              OR CONTINUE WITH EMAIL
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+
           <TextField
             fullWidth
             label="Username"
             variant="outlined"
-            margin="normal"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email color="action" />
-                </InputAdornment>
-              ),
-              sx: { borderRadius: 3 }
+              sx: { borderRadius: 1.5 }
             }}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2.5 }}
           />
 
           <TextField
@@ -105,16 +116,10 @@ export default function LoginPage() {
             label="Password"
             type={showPassword ? 'text' : 'password'}
             variant="outlined"
-            margin="normal"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock color="action" />
-                </InputAdornment>
-              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
@@ -125,9 +130,9 @@ export default function LoginPage() {
                   </IconButton>
                 </InputAdornment>
               ),
-              sx: { borderRadius: 3 }
+              sx: { borderRadius: 1.5 }
             }}
-            sx={{ mb: 3 }}
+            sx={{ mb: 4 }}
           />
 
           <Button
@@ -138,44 +143,24 @@ export default function LoginPage() {
             size="large"
             sx={{
               py: 1.5,
-              borderRadius: 3,
-              fontWeight: 700,
+              borderRadius: 1.5,
+              fontWeight: 600,
               textTransform: 'none',
               fontSize: '1rem',
-              boxShadow: '0 4px 14px 0 rgba(33, 150, 243, 0.3)',
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              boxShadow: 'none',
+              bgcolor: '#000000',
+              color: '#ffffff',
               '&:hover': {
-                boxShadow: '0 6px 20px 0 rgba(33, 150, 243, 0.4)',
-                background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+                bgcolor: '#333333',
+                boxShadow: 'none',
               }
             }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
           </Button>
         </Box>
 
-        <Box sx={{ my: 3, display: 'flex', alignItems: 'center' }}>
-          <Divider sx={{ flex: 1 }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
-            OR
-          </Typography>
-          <Divider sx={{ flex: 1 }} />
-        </Box>
-
-        {isClient && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google Login Failed')}
-              useOneTap={false}
-              theme="filled_blue"
-              shape="pill"
-              width="100%"
-            />
-          </Box>
-        )}
-
-        <Box sx={{ textAlign: 'center' }}>
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             Don't have an account?{' '}
             <Link
@@ -183,10 +168,10 @@ export default function LoginPage() {
               underline="hover"
               sx={{
                 fontWeight: 600,
-                color: '#2196F3'
+                color: '#000000'
               }}
             >
-              Create Account
+              Sign up
             </Link>
           </Typography>
         </Box>

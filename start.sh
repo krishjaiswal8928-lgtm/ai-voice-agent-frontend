@@ -12,7 +12,7 @@ echo "Directory: $(pwd)"
 echo "==================================================="
 
 # Run diagnostics
-python render_debug.py
+# Startup script cleaned up
 
 # Run uvicorn
 exec python -m uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info

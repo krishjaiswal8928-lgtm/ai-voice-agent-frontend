@@ -31,23 +31,39 @@ def _get_embedding_model():
     return embedding_model
 
 
-# ChromaDB local client (in-memory mode for now, or persistent if configured)
-# Using persistent storage to actually keep the data
-persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
-chroma_client = chromadb.Client(
-    Settings(
-        persist_directory=persist_dir,
-        anonymized_telemetry=False,
-        is_persistent=True
-    )
-)
+# ChromaDB lazy loading
+chroma_client = None
+collection = None
 
-# Get or create the collection
-collection_name = os.getenv("CHROMA_COLLECTION_NAME", "voice_agent_rag")
-collection = chroma_client.get_or_create_collection(
-    name=collection_name,
-    metadata={"hnsw:space": "cosine"}
-)
+def _get_collection():
+    """Lazy load ChromaDB collection"""
+    global chroma_client, collection
+    
+    if collection is None:
+        try:
+            # Initialize client if needed
+            if chroma_client is None:
+                persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
+                chroma_client = chromadb.Client(
+                    Settings(
+                        persist_directory=persist_dir,
+                        anonymized_telemetry=False,
+                        is_persistent=True
+                    )
+                )
+                
+            # Get or create collection
+            collection_name = os.getenv("CHROMA_COLLECTION_NAME", "voice_agent_rag")
+            collection = chroma_client.get_or_create_collection(
+                name=collection_name,
+                metadata={"hnsw:space": "cosine"}
+            )
+            logger.info(f"✅ ChromaDB collection '{collection_name}' loaded")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize ChromaDB: {e}")
+            return None
+            
+    return collection
 
 def get_embedding(text: str):
     """
@@ -78,6 +94,11 @@ def store_memory(client_id: str, text: str, metadata: dict | None = None):
     if not embedding:
         return "Embedding generation failed"
 
+    # Get collection (lazy load)
+    coll = _get_collection()
+    if not coll:
+        return "Database unavailable"
+
     # Create a unique ID for the document
     import uuid
     doc_id = f"{client_id}_{uuid.uuid4()}"
@@ -88,7 +109,7 @@ def store_memory(client_id: str, text: str, metadata: dict | None = None):
     metadata["timestamp"] = str(os.times())
 
     try:
-        collection.add(
+        coll.add(
             ids=[doc_id],
             documents=[text],
             metadatas=[metadata],
@@ -113,10 +134,16 @@ def get_relevant_context(query: str, client_id: str, n_results: int = 3):
     if not query_embedding:
         logger.warning(f"Could not generate embedding for query: '{query}'")
         return []
+    
+    # Get collection (lazy load)
+    coll = _get_collection()
+    if not coll:
+        logger.warning("ChromaDB collection unavailable")
+        return []
 
     try:
         logger.info(f"Querying RAG for client {client_id} with query: '{query}'")
-        results = collection.query(
+        results = coll.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
             where={"client_id": str(client_id)} 
@@ -135,7 +162,7 @@ def get_relevant_context(query: str, client_id: str, n_results: int = 3):
         else:
             logger.info(f"No documents found for client {client_id}, checking if any documents exist in collection")
             # Check if any documents exist at all for debugging
-            all_docs = collection.get(where={"client_id": str(client_id)})
+            all_docs = coll.get(where={"client_id": str(client_id)})
             if all_docs and all_docs.get("documents"):
                 logger.info(f"Found {len(all_docs['documents'])} total documents for client {client_id} but none matched query")
             else:

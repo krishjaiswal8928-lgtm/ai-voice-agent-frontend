@@ -1,24 +1,25 @@
 'use client';
 
 import React from 'react';
-import { Box, Container, Paper, Typography, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Button, Container, Grid, useTheme, useMediaQuery, Stack } from '@mui/material';
 import { keyframes } from '@emotion/react';
-
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
 
 const float = keyframes`
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-15px); }
   100% { transform: translateY(0px); }
+`;
+
+const pulse = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(100, 100, 255, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(100, 100, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(100, 100, 255, 0); }
+`;
+
+const wave = keyframes`
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(-25%) translateZ(0) scaleY(0.55); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
 `;
 
 interface AuthLayoutProps {
@@ -29,117 +30,200 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     return (
-        <Box
-            sx={{
-                minHeight: '100vh',
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-                // Modern Aurora Gradient Background
-                background: `
-          radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-          radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-          radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%)
-        `,
-                backgroundColor: '#1a1a1a', // Fallback/Base color
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0) 100%)',
-                    pointerEvents: 'none',
-                }
-            }}
-        >
-            {/* Decorative Orbs */}
-            <Box
+        <Grid container sx={{ minHeight: '100vh', overflow: 'hidden' }}>
+            {/* Left Side - Clean Form */}
+            <Grid
+                item
+                xs={12}
+                md={5}
+                lg={4}
                 sx={{
-                    position: 'absolute',
-                    top: '10%',
-                    left: '10%',
-                    width: '300px',
-                    height: '300px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #556270 100%)',
-                    filter: 'blur(80px)',
-                    opacity: 0.2,
-                    animation: `${float} 8s ease-in-out infinite`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    bgcolor: '#ffffff',
+                    zIndex: 2,
                 }}
-            />
-            <Box
-                sx={{
-                    position: 'absolute',
-                    bottom: '10%',
-                    right: '10%',
-                    width: '250px',
-                    height: '250px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #4ECDC4 0%, #556270 100%)',
-                    filter: 'blur(80px)',
-                    opacity: 0.2,
-                    animation: `${float} 10s ease-in-out infinite reverse`,
-                }}
-            />
-
-            <Container maxWidth="xs" sx={{ position: 'relative', zIndex: 1, p: 2 }}>
-                <Paper
-                    elevation={24}
+            >
+                <Box
                     sx={{
-                        p: { xs: 3, sm: 4 },
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        background: 'rgba(255, 255, 255, 0.95)', // Highly opaque white for readability
-                        backdropFilter: 'blur(20px)',
-                        borderRadius: '24px',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-                        animation: `${fadeIn} 0.8s ease-out`,
+                        width: '100%',
+                        maxWidth: '480px',
+                        mx: 'auto',
+                        p: { xs: 4, md: 6 },
                     }}
                 >
-                    <Box sx={{ mb: 3, textAlign: 'center' }}>
-                        {/* Logo placeholder or Icon could go here */}
-                        <Typography
-                            component="h1"
-                            variant="h4"
+                    {/* Logo / Brand Name Small */}
+                    <Box sx={{ mb: 6, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
                             sx={{
-                                fontWeight: 800,
-                                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                                backgroundClip: 'text',
-                                textFillColor: 'transparent',
-                                mb: 1,
-                                letterSpacing: '-0.5px'
+                                width: 32,
+                                height: 32,
+                                borderRadius: 1,
+                                background: 'linear-gradient(135deg, #000000 0%, #333333 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontWeight: 'bold'
                             }}
                         >
+                            S
+                        </Box>
+                        <Typography variant="h6" fontWeight="bold" color="text.primary">
+                            SpeakSynth
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="h4" fontWeight="800" sx={{ mb: 1, color: '#1a1a1a', letterSpacing: '-0.5px' }}>
                             {title}
                         </Typography>
                         {subtitle && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body1" color="text.secondary">
                                 {subtitle}
                             </Typography>
                         )}
                     </Box>
 
-                    <Box sx={{ width: '100%' }}>
-                        {children}
-                    </Box>
-                </Paper>
-
-                <Box sx={{ mt: 4, textAlign: 'center', opacity: 0.7 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                        © {new Date().getFullYear()} SpeakSynth.ai. All rights reserved.
-                    </Typography>
+                    {children}
                 </Box>
-            </Container>
-        </Box>
+            </Grid>
+
+            {/* Right Side - Creative Visuals */}
+            {!isMobile && (
+                <Grid
+                    item
+                    md={7}
+                    lg={8}
+                    sx={{
+                        position: 'relative',
+                        background: 'radial-gradient(ellipse at bottom right, #1a237e 0%, #000000 100%)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        p: 8,
+                        color: 'white',
+                    }}
+                >
+                    {/* Abstract Animated Background Elements */}
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '150%',
+                            height: '150%',
+                            opacity: 0.4,
+                            background: `
+                radial-gradient(circle at 50% 50%, rgba(76, 29, 149, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 10% 80%, rgba(59, 130, 246, 0.4) 0%, transparent 40%)
+              `,
+                            filter: 'blur(60px)',
+                            pointerEvents: 'none',
+                        }}
+                    />
+
+                    {/* Animated "Sound Waves" */}
+                    <Box sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '300px',
+                        opacity: 0.2,
+                        overflow: 'hidden'
+                    }}>
+                        {[1, 2, 3].map((i) => (
+                            <Box
+                                key={i}
+                                sx={{
+                                    position: 'absolute',
+                                    bottom: -50,
+                                    left: 0,
+                                    width: '200%',
+                                    height: '100%',
+                                    backgroundRepeat: 'repeat-x',
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 198.5'%3E%3Cpath fill='%23FFFFFF' d='M800,53.1c-137.5,0-137.5-35.4-275-35.4c-137.5,0-137.5,35.4-275,35.4C112.5,53.1,112.5,17.7,0,17.7v180.8h800V53.1z' opacity='0.3'/%3E%3C/svg%3E")`,
+                                    backgroundSize: '50% 100%',
+                                    animation: `${wave} ${15 + i * 5}s linear infinite`,
+                                    transform: `translateZ(0) opacity(${0.3 + i * 0.1})`,
+                                }}
+                            />
+                        ))}
+                    </Box>
+
+                    {/* Top Right Decoration */}
+                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Box sx={{
+                            padding: '8px 16px',
+                            bgcolor: 'rgba(255,255,255,0.1)',
+                            backdropFilter: 'blur(10px)',
+                            borderRadius: '50px',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            animation: `${float} 6s ease-in-out infinite`
+                        }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: 1 }}>
+                                AI-POWERED VOICE AGENTS
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {/* Center Content - The "Wow" Factor */}
+                    <Stack spacing={4} sx={{ position: 'relative', zIndex: 2, maxWidth: '600px' }}>
+                        <Box>
+                            <Typography
+                                variant="h1"
+                                sx={{
+                                    fontSize: { md: '3.5rem', lg: '4.5rem' },
+                                    fontWeight: 800,
+                                    lineHeight: 1.1,
+                                    mb: 3,
+                                    background: 'linear-gradient(135deg, #FFFFFF 0%, #94A3B8 100%)',
+                                    backgroundClip: 'text',
+                                    textFillColor: 'transparent',
+                                }}
+                            >
+                                Orchestrate Your <br />
+                                <span style={{ color: '#60A5FA', textFillColor: '#60A5FA' }}>Digital Voice.</span>
+                            </Typography>
+                            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, maxWidth: '480px', lineHeight: 1.6 }}>
+                                Deploy intelligent voice agents in minutes. Scale your conversations with human-like interactions and seamless integration.
+                            </Typography>
+                        </Box>
+
+                        {/* Simulated Live Activity / Social Proof */}
+                        <Stack direction="row" spacing={3} alignItems="center">
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                <Typography variant="h4" fontWeight="bold">98%</Typography>
+                                <Typography variant="caption" sx={{ opacity: 0.6 }}>Satisfaction Rate</Typography>
+                            </Box>
+                            <Box sx={{ width: '1px', height: '40px', bgcolor: 'rgba(255,255,255,0.2)' }} />
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                <Typography variant="h4" fontWeight="bold">24/7</Typography>
+                                <Typography variant="caption" sx={{ opacity: 0.6 }}>Availability</Typography>
+                            </Box>
+                            <Box sx={{ width: '1px', height: '40px', bgcolor: 'rgba(255,255,255,0.2)' }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    bgcolor: '#4ade80',
+                                    animation: `${pulse} 2s infinite`
+                                }} />
+                                <Typography variant="body2" fontWeight="600">System Operational</Typography>
+                            </Box>
+                        </Stack>
+                    </Stack>
+                </Grid>
+            )}
+        </Grid>
     );
 }

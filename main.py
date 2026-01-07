@@ -122,11 +122,13 @@ async def startup_event():
         try:
             logger.info("🔥 Warming up embedding model...")
             from app.services.retriever_service import _get_embedding_model
-            _get_embedding_model()
+            # Run blocking model loading in a separate thread to avoid blocking the event loop
+            await asyncio.to_thread(_get_embedding_model)
             logger.info("✅ Embedding model warmed up")
         except Exception as e:
             logger.warning(f"⚠️ Model warmup failed (non-critical): {e}")
     
+    # Run warmup as a background task
     asyncio.create_task(warmup_models())
 
 
