@@ -21,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 #     phone_number_routes  # Add phone number routes
 # )
 
+# Defer imports that might cause issues at startup
 import app.routes.auth_routes as auth_routes
 import app.routes.campaign_routes as campaign_routes
 import app.routes.rag_routes as rag_routes
@@ -39,6 +40,7 @@ import app.routes.user_routes as user_routes
 from app.core import security
 from app.services.callback_scheduler import callback_scheduler
 from app.services.outbound_service import outbound_manager
+import logging
 
 # Load environment variables
 load_dotenv()

@@ -3,20 +3,20 @@
 Text-to-Speech Service with support for multiple providers
 Returns PCM audio bytes directly
 """
+print("DEBUG: tts_service: Importing os...", flush=True)
 import os
-import boto3
-# import google.generativeai as genai # Lazy import
-import openai
+print("DEBUG: tts_service: Importing logging...", flush=True)
 import logging
-from botocore.exceptions import BotoCoreError, ClientError
 from typing import Optional
+print("DEBUG: tts_service: Importing dotenv...", flush=True)
 from dotenv import load_dotenv
 import io
-import requests
 
+print("DEBUG: tts_service: Loading .env...", flush=True)
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+print("DEBUG: tts_service: Imports/Init finished.", flush=True)
 
 # AWS Configuration
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -51,6 +51,7 @@ def get_polly_client():
     global _polly_client
     if _polly_client is None and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
         try:
+            import boto3
             _polly_client = boto3.client(
                 'polly',
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -78,6 +79,7 @@ def get_openai_client():
     global _openai_client
     if _openai_client is None and OPENAI_API_KEY:
         try:
+            import openai
             _openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
             logger.info("✅ OpenAI TTS initialized")
         except Exception as e:
@@ -325,11 +327,16 @@ async def synthesize_speech_with_provider(provider: str, text: str, voice_id: Op
             logger.error(f"Unsupported TTS provider: {provider}")
             return None
 
-    except (ClientError, BotoCoreError) as e:
-        logger.error(f"TTS error with provider {provider}: {e}")
-        return None
-
     except Exception as e:
+        # Import lazily to avoid top-level dependency
+        try:
+            from botocore.exceptions import BotoCoreError, ClientError
+            if isinstance(e, (ClientError, BotoCoreError)):
+                logger.error(f"TTS error with provider {provider}: {e}")
+                return None
+        except ImportError:
+            pass
+            
         logger.error(f"TTS error with provider {provider}: {e}")
         return None
 

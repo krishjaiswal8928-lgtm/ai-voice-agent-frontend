@@ -1,16 +1,16 @@
-"""
-Enhanced Autonomous Agent Module
-Integrates planning, execution, and learning based on Custom Agent configuration
-"""
-
 import asyncio
 import uuid
 import logging
 from typing import Optional, Dict, Any, List, AsyncGenerator
+print("DEBUG: agent: Importing models.custom_agent...", flush=True)
 from app.models.custom_agent import CustomAgent
+print("DEBUG: agent: Importing models.action...", flush=True)
 from app.models.action import Action, ActionResult, ConversationPlan, SpeakAction, ListenAction
+print("DEBUG: agent: Importing autonomous.planner...", flush=True)
 from app.agent.autonomous.planner import AgentPlanner
+print("DEBUG: agent: Importing autonomous.executor...", flush=True)
 from app.agent.autonomous.executor import AgentExecutor
+print("DEBUG: agent: Imports finished.", flush=True)
 
 logger = logging.getLogger(__name__)
 

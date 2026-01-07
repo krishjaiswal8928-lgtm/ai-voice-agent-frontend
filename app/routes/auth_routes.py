@@ -11,7 +11,6 @@ import sqlite3
 # Google OAuth imports
 from google.auth.transport import requests
 from google.oauth2 import id_token
-import os
 import json
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

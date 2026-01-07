@@ -1,10 +1,9 @@
 import os
-import chromadb
+# import chromadb # Lazy import
 import numpy as np
 from dotenv import load_dotenv
-from chromadb.config import Settings
-# import openai  <-- No longer needed for embeddings
-from sentence_transformers import SentenceTransformer
+# from chromadb.config import Settings # Lazy import
+# from sentence_transformers import SentenceTransformer # Lazy import
 import logging
 
 # --- Load Environment Variables ---
@@ -13,6 +12,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Initialize Sentence Transformer Model (Lazy loading)
+# Using a popular, small, and fast model for RAG
 # Using a popular, small, and fast model for RAG
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 embedding_model = None  # Will be loaded on first use
@@ -23,6 +23,7 @@ def _get_embedding_model():
     if embedding_model is None:
         logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}...")
         try:
+            from sentence_transformers import SentenceTransformer
             embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
             logger.info("✅ Embedding model loaded successfully.")
         except Exception as e:
@@ -41,6 +42,9 @@ def _get_collection():
     
     if collection is None:
         try:
+            import chromadb
+            from chromadb.config import Settings
+            
             # Initialize client if needed
             if chroma_client is None:
                 persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
