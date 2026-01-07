@@ -1,7 +1,7 @@
 import os
 from google import genai
 from google.genai import types
-from .excel_exporter import export_conversation_to_excel
+from .excel_exporter import export_conversation_to_csv as export_conversation_to_excel
 
 # Load Gemini API key
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")

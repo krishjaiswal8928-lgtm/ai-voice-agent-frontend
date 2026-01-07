@@ -2,7 +2,7 @@
 
 import asyncio
 from app.services.summarizer import summarize_conversation
-from app.services.excel_exporter import export_conversation_to_excel
+
 
 async def process_post_call_tasks(conversation, goal, session_id, client_name):
     """
