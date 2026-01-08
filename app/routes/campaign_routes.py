@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/campaigns", tags=["Call Sessions"])
 
-@router.get("/", response_model=List[CallSession])
+@router.get("", response_model=List[CallSession])
 def read_call_sessions(
     skip: int = 0, 
     limit: int = 100, 
@@ -58,7 +58,7 @@ def read_call_session(
         )
     return call_session
 
-@router.post("/", response_model=CallSession)
+@router.post("", response_model=CallSession)
 def create_call_session(
     call_session: CallSessionCreate, 
     db: firestore.Client = Depends(get_db),

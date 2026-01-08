@@ -10,7 +10,7 @@ from app.middleware.usage_tracker import check_resource_limit, increment_resourc
 
 router = APIRouter(prefix="/agents", tags=["Custom Agents"])
 
-@router.post("/", response_model=CustomAgentResponse)
+@router.post("", response_model=CustomAgentResponse)
 async def create_custom_agent(
     agent_data: CustomAgentCreate,
     db = Depends(get_db),
@@ -38,7 +38,7 @@ async def create_custom_agent(
     
     return CustomAgentResponse.from_orm(agent)
 
-@router.get("/", response_model=List[CustomAgentResponse])
+@router.get("", response_model=List[CustomAgentResponse])
 async def list_custom_agents(
     db = Depends(get_db),
     current_user: dict = Depends(get_current_user)
