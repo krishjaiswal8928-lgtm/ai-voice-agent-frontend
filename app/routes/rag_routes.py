@@ -11,7 +11,7 @@ from app.models.campaign import CallSession
 from app.models.custom_agent import CustomAgent
 from app.models.rag_document import RAGDocument as RAGDocumentModel
 from app.core.security import get_current_user
-from app.middleware.usage_tracker import check_resource_limit, increment_resource_usage
+
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
@@ -30,15 +30,6 @@ async def upload_pdf(
 ):
     """Upload a PDF file for RAG processing."""
     user_id = current_user["user_id"]
-    
-    # CHECK DOCUMENT LIMIT BEFORE UPLOADING
-    limit_check = await check_resource_limit(user_id, "documents")
-    if not limit_check.get("allowed"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Document upload limit reached. {limit_check.get('reason')}. Please upgrade your plan.",
-            headers={"X-Upgrade-Required": "true"}
-        )
     
     # Check if this is for an agent instead of a campaign
     if agent_id:
@@ -92,9 +83,6 @@ async def upload_pdf(
             timeout=120.0  # Increased timeout to 120 seconds
         )
         
-        # INCREMENT USAGE COUNTER after successful upload
-        await increment_resource_usage(user_id, "documents")
-        
         return document
     except asyncio.TimeoutError:
         # Clean up file if processing times out
@@ -134,14 +122,6 @@ async def upload_docx(
     """Upload a DOCX file for RAG processing."""
     user_id = current_user["user_id"]
     
-    # CHECK DOCUMENT LIMIT
-    limit_check = await check_resource_limit(user_id, "documents")
-    if not limit_check.get("allowed"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Document upload limit reached. {limit_check.get('reason')}. Please upgrade your plan.",
-            headers={"X-Upgrade-Required": "true"}
-        )
     # Check if this is for an agent instead of a campaign
     if agent_id:
         doc_ref = db.collection('custom_agents').document(agent_id)
@@ -194,9 +174,6 @@ async def upload_docx(
             timeout=120.0  # Increased timeout to 120 seconds
         )
         
-        # INCREMENT USAGE COUNTER
-        await increment_resource_usage(user_id, "documents")
-        
         return document
     except asyncio.TimeoutError:
         # Clean up file if processing times out
@@ -236,14 +213,6 @@ async def upload_url(
     """Upload a URL for RAG processing."""
     user_id = current_user["user_id"]
     
-    # CHECK WEBSITE LIMIT
-    limit_check = await check_resource_limit(user_id, "websites")
-    if not limit_check.get("allowed"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Website upload limit reached. {limit_check.get('reason')}. Please upgrade your plan.",
-            headers={"X-Upgrade-Required": "true"}
-        )
     # Check if this is for an agent instead of a campaign
     if agent_id:
         doc_ref = db.collection('custom_agents').document(agent_id)
@@ -282,9 +251,6 @@ async def upload_url(
             get_rag_service().process_url(url, campaign_id if not agent_id else None, db, agent_id),
             timeout=120.0  # Increased timeout to 120 seconds
         )
-        
-        # INCREMENT USAGE COUNTER
-        await increment_resource_usage(user_id, "websites")
         
         return document
     except asyncio.TimeoutError:

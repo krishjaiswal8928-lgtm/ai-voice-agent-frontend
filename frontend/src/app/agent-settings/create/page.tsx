@@ -134,9 +134,28 @@ export default function CreateAgentWizard() {
 
       await voiceAPI.createCustomAgent(agentData);
       router.push('/agent-settings');
-    } catch (err) {
-      setError('Failed to create agent. Please try again.');
-      console.error('Error creating agent:', err);
+    } catch (err: any) {
+      // Extract detailed error message from API response
+      let errorMessage = 'Failed to create agent. Please try again.';
+
+      if (err.response?.data?.detail) {
+        // Backend returned a specific error message
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Agent limit reached. Please upgrade your plan to create more agents.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (err.message) {
+        errorMessage = `Error: ${err.message}`;
+      }
+
+      setError(errorMessage);
+      console.error('Error creating agent:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+        fullError: err
+      });
     } finally {
       setLoading(false);
     }
