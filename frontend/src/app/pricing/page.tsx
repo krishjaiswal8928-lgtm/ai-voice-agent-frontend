@@ -275,10 +275,10 @@ export default function ModernPricingPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-slate-950">
+            <div className="flex items-center justify-center min-h-screen bg-white">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500 border-t-transparent mx-auto"></div>
-                    <p className="mt-6 text-slate-400 font-semibold text-lg">Loading plans...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto"></div>
+                    <p className="mt-6 text-gray-600 font-medium">Loading plans...</p>
                 </div>
             </div>
         );
@@ -287,7 +287,7 @@ export default function ModernPricingPage() {
     const planOrder = ['free', 'starter', 'growth', 'pro', 'enterprise'];
 
     return (
-        <div className="min-h-screen bg-slate-950 pricing-page-container">
+        <div className="min-h-screen bg-white pricing-page-container">
             <style jsx global>{`
                 @keyframes checkmark-pop {
                     0% { transform: scale(0); opacity: 0; }
@@ -295,43 +295,30 @@ export default function ModernPricingPage() {
                     100% { transform: scale(1); opacity: 1; }
                 }
                 
-                @keyframes gradient-shift {
-                    0%, 100% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                }
-                
-                @keyframes glow-pulse {
-                    0%, 100% { opacity: 0.5; }
-                    50% { opacity: 1; }
-                }
-                
                 .checkmark-animate {
                     animation: checkmark-pop 0.3s ease-out forwards;
                 }
                 
                 .pricing-card {
-                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                    backdrop-filter: blur(10px);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 
                 .pricing-card:hover {
-                    transform: translateY(-12px) scale(1.02);
+                    transform: translateY(-8px);
                 }
                 
                 .cta-button {
-                    transition: all 0.3s ease-out;
-                    background-size: 200% 200%;
+                    transition: all 0.2s ease-out;
                 }
                 
                 .cta-button:hover:not(:disabled) {
                     transform: translateY(-2px);
-                    box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.5);
-                    background-position: right center;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
                 }
 
                 .pricing-page-container {
                     position: relative;
-                    background: #0f172a;
+                    transition: background 0.6s ease;
                 }
 
                 .pricing-page-container::before {
@@ -341,9 +328,9 @@ export default function ModernPricingPage() {
                     left: 0;
                     right: 0;
                     bottom: 0;
-                    background-image: radial-gradient(circle, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
-                    background-size: 20px 20px;
-                    opacity: 1;
+                    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 25%, rgba(255, 255, 255, 0) 60%, #ffffff 100%);
+                    opacity: 0;
+                    transition: opacity 0.6s ease;
                     pointer-events: none;
                     z-index: 0;
                 }
@@ -355,49 +342,45 @@ export default function ModernPricingPage() {
                     right: 0;
                     width: 60%;
                     height: 60%;
-                    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.1) 30%, transparent 70%);
-                    opacity: 1;
+                    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 30%, transparent 70%);
+                    opacity: 0;
+                    transition: opacity 0.6s ease;
                     pointer-events: none;
                     z-index: 0;
-                    animation: glow-pulse 8s ease-in-out infinite;
+                }
+
+                .pricing-page-container:hover::before,
+                .pricing-page-container:hover::after {
+                    opacity: 1;
                 }
 
                 .pricing-page-container > * {
                     position: relative;
                     z-index: 1;
                 }
-                
-                .gradient-text {
-                    background: linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #6366f1 100%);
-                    background-size: 200% 200%;
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                    animation: gradient-shift 8s ease infinite;
-                }
             `}</style>
 
             {/* Hero Section */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="text-center mb-16">
-                    <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight gradient-text">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div className="text-center mb-12">
+                    <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
                         Choose Your AI Journey
                     </h1>
-                    <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed mb-10">
+                    <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
                         From curious explorer to enterprise powerhouse — find the perfect plan for your AI adoption stage
                     </p>
 
                     {/* Currency Toggle */}
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                        <Globe className="w-5 h-5 text-slate-500" />
-                        <div className="inline-flex rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-1.5 shadow-lg">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <Globe className="w-5 h-5 text-gray-500" />
+                        <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
                             {(['USD', 'INR', 'EUR'] as Currency[]).map((curr) => (
                                 <button
                                     key={curr}
                                     onClick={() => handleCurrencyChange(curr)}
-                                    className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${currency === curr
-                                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${currency === curr
+                                        ? 'bg-gray-900 text-white shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
                                     {curr}
@@ -408,7 +391,7 @@ export default function ModernPricingPage() {
                 </div>
 
                 {/* Pricing Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
                     {planOrder.map((planKey) => {
                         const plan = plans[planKey];
                         if (!plan) return null;
@@ -421,47 +404,42 @@ export default function ModernPricingPage() {
                             <div
                                 key={planKey}
                                 className={`
-                                    pricing-card relative bg-slate-900/60 rounded-2xl overflow-hidden
-                                    border-2 ${isCurrent ? plan.borderColor : 'border-slate-700/50'}
-                                    ${isPopular ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-950 scale-105 z-10' : ''}
-                                    shadow-2xl hover:shadow-[0_0_40px_rgba(99,102,241,0.3)]
+                                    pricing-card relative bg-white rounded-2xl overflow-hidden
+                                    border-2 ${isCurrent ? plan.borderColor : 'border-gray-200'}
+                                    ${isPopular ? 'ring-2 ring-blue-500 ring-offset-2 scale-105 z-10' : ''}
+                                    shadow-lg hover:shadow-2xl ${plan.glowColor}
                                 `}
-                                style={{
-                                    boxShadow: isPopular
-                                        ? '0 0 60px rgba(99, 102, 241, 0.4)'
-                                        : '0 10px 40px rgba(0, 0, 0, 0.5)'
-                                }}
                             >
                                 {/* Gradient Accent Bar */}
-                                <div className={`h-1.5 bg-gradient-to-r ${plan.accentColor}`}></div>
+                                <div className={`h-2 bg-gradient-to-r ${plan.accentColor}`}></div>
 
                                 {/* Popular Badge */}
                                 {isPopular && (
-                                    <div className="absolute top-4 -right-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-l-full shadow-lg shadow-blue-500/50 z-10">
+                                    <div className="absolute top-6 right-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-l-full shadow-lg">
                                         ⭐ MOST POPULAR
                                     </div>
                                 )}
 
                                 {/* Current Plan Badge */}
                                 {isCurrent && (
-                                    <div className="absolute top-4 left-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-green-500/50">
+                                    <div className="absolute top-6 left-6 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                                         ✓ CURRENT
                                     </div>
                                 )}
 
                                 <div className="p-6">
                                     {/* Icon */}
-                                    <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${plan.accentColor} mb-5 shadow-xl`}>
-                                        <Icon className="w-7 h-7 text-white" />
+                                    <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${plan.accentColor} mb-4 shadow-lg`}>
+                                        <Icon className="w-6 h-6 text-white" />
                                     </div>
 
                                     {/* Plan Name */}
-                                    <h3 className="text-2xl font-bold text-white mb-3">
+                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
                                         {plan.displayName}
                                     </h3>
 
                                     {/* Tagline */}
-                                    <p className="text-sm text-slate-400 mb-6 min-h-[48px] italic leading-relaxed">
+                                    <p className="text-sm text-gray-600 mb-6 min-h-[48px] italic">
                                         "{plan.tagline}"
                                     </p>
 
@@ -470,19 +448,19 @@ export default function ModernPricingPage() {
                                         {typeof plan.price === 'number' ? (
                                             <div>
                                                 <div className="flex items-baseline">
-                                                    <span className="text-5xl font-bold text-white">
+                                                    <span className="text-4xl font-bold text-gray-900">
                                                         {formatPrice(plan)}
                                                     </span>
-                                                    <span className="text-slate-400 ml-2 text-lg">/month</span>
+                                                    <span className="text-gray-600 ml-2">/month</span>
                                                 </div>
                                                 {plan.yearlyPrice && (
-                                                    <div className="mt-3 text-sm font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-lg inline-block">
+                                                    <div className="mt-2 text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block">
                                                         💰 Save 20% yearly (${plan.yearlyPrice}/mo)
                                                     </div>
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="text-3xl font-bold text-white">
+                                            <div className="text-2xl font-bold text-gray-900">
                                                 Contact Us
                                             </div>
                                         )}
@@ -493,14 +471,14 @@ export default function ModernPricingPage() {
                                         onClick={() => handleSelectPlan(planKey)}
                                         disabled={isCurrent}
                                         className={`
-                                            cta-button w-full py-3.5 px-6 rounded-xl font-bold text-sm
+                                            cta-button w-full py-3 px-6 rounded-xl font-semibold text-sm
                                             ${isCurrent
-                                                ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-slate-600/50'
+                                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                                                 : planKey === 'enterprise'
-                                                    ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-violet-700 text-white shadow-xl shadow-violet-500/30 hover:shadow-violet-500/50'
+                                                    ? 'bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow-lg'
                                                     : isPopular
-                                                        ? 'bg-gradient-to-r from-blue-500 via-indigo-600 to-blue-700 text-white shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50'
-                                                        : `bg-gradient-to-r ${plan.accentColor} text-white shadow-xl hover:shadow-2xl`
+                                                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                                                        : 'bg-gray-900 text-white shadow-md hover:bg-gray-800'
                                             }
                                         `}
                                     >
@@ -508,26 +486,24 @@ export default function ModernPricingPage() {
                                     </button>
 
                                     {/* Prepaid Credits */}
-                                    <div className="mt-6 pt-6 border-t border-slate-700/50">
-                                        <div className="flex justify-between text-sm mb-2.5">
-                                            <span className="text-slate-400">Model Credits</span>
-                                            <span className="font-bold text-white">{plan.credits}</span>
+                                    <div className="mt-6 pt-6 border-t border-gray-200">
+                                        <div className="flex justify-between text-sm mb-2">
+                                            <span className="text-gray-600">Model Credits</span>
+                                            <span className="font-semibold text-gray-900">{plan.credits}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
-                                            <span className="text-slate-400">Agent Credits</span>
-                                            <span className="font-bold text-white">{plan.agentCredits}</span>
+                                            <span className="text-gray-600">Agent Credits</span>
+                                            <span className="font-semibold text-gray-900">{plan.agentCredits}</span>
                                         </div>
                                     </div>
 
                                     {/* Features List */}
                                     <div className="mt-6">
-                                        <h4 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                                            <span className="text-lg">✨</span> Key Features:
-                                        </h4>
-                                        <ul className="space-y-3">
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-3">✨ Key Features:</h4>
+                                        <ul className="space-y-2.5">
                                             {plan.features.slice(0, expandedFeatures[planKey] ? undefined : 5).map((feature, idx) => (
-                                                <li key={idx} className="flex items-start text-sm text-slate-300">
-                                                    <Check className="checkmark-animate w-4 h-4 text-green-400 mr-2.5 mt-0.5 flex-shrink-0" style={{ animationDelay: `${idx * 50}ms` }} />
+                                                <li key={idx} className="flex items-start text-sm text-gray-700">
+                                                    <Check className="checkmark-animate w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" style={{ animationDelay: `${idx * 50}ms` }} />
                                                     <span>{feature}</span>
                                                 </li>
                                             ))}
@@ -537,7 +513,7 @@ export default function ModernPricingPage() {
                                         {plan.features.length > 5 && (
                                             <button
                                                 onClick={() => toggleFeatures(planKey)}
-                                                className="mt-4 text-sm text-blue-400 hover:text-blue-300 flex items-center font-semibold transition-colors"
+                                                className="mt-3 text-sm text-blue-600 hover:text-blue-700 flex items-center font-medium transition-colors"
                                             >
                                                 {expandedFeatures[planKey] ? (
                                                     <>
@@ -553,12 +529,10 @@ export default function ModernPricingPage() {
                                     </div>
 
                                     {/* Support */}
-                                    <div className="mt-6 pt-6 border-t border-slate-700/50">
+                                    <div className="mt-6 pt-6 border-t border-gray-200">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-slate-400 flex items-center gap-2">
-                                                <span className="text-lg">🎧</span> Support
-                                            </span>
-                                            <span className="font-bold text-white">{plan.support}</span>
+                                            <span className="text-gray-600">🎧 Support</span>
+                                            <span className="font-semibold text-gray-900">{plan.support}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -568,36 +542,36 @@ export default function ModernPricingPage() {
                 </div>
 
                 {/* Trust Signals */}
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-3xl p-10 mb-16 shadow-2xl border border-slate-700/50">
-                    <h2 className="text-3xl font-bold text-white text-center mb-10">Why Choose Us?</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-8 mb-12 shadow-inner">
+                    <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Why Choose Us?</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="text-center">
-                            <div className="text-6xl mb-4">🎁</div>
-                            <div className="text-2xl font-bold text-white mb-3">No Credit Card</div>
-                            <p className="text-slate-400 leading-relaxed">Start free, upgrade when ready. No hidden fees.</p>
+                            <div className="text-5xl mb-3">🎁</div>
+                            <div className="text-2xl font-bold text-gray-900 mb-2">No Credit Card</div>
+                            <p className="text-gray-600">Start free, upgrade when ready. No hidden fees.</p>
                         </div>
                         <div className="text-center">
-                            <div className="text-6xl mb-4">💎</div>
-                            <div className="text-2xl font-bold text-white mb-3">Prepaid Credits</div>
-                            <p className="text-slate-400 leading-relaxed">Predictable costs, transparent billing. No surprises.</p>
+                            <div className="text-5xl mb-3">💎</div>
+                            <div className="text-2xl font-bold text-gray-900 mb-2">Prepaid Credits</div>
+                            <p className="text-gray-600">Predictable costs, transparent billing. No surprises.</p>
                         </div>
                         <div className="text-center">
-                            <div className="text-6xl mb-4">🛡️</div>
-                            <div className="text-2xl font-bold text-white mb-3">Enterprise Security</div>
-                            <p className="text-slate-400 leading-relaxed">GDPR, SOC2 compliant. Your data is safe with us.</p>
+                            <div className="text-5xl mb-3">🛡️</div>
+                            <div className="text-2xl font-bold text-gray-900 mb-2">Enterprise Security</div>
+                            <p className="text-gray-600">GDPR, SOC2 compliant. Your data is safe with us.</p>
                         </div>
                     </div>
                 </div>
 
                 {/* FAQ */}
-                <div className="text-center bg-slate-900/60 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-slate-700/50">
-                    <h3 className="text-2xl font-bold text-white mb-5">Have Questions?</h3>
-                    <p className="text-slate-400 mb-6 text-lg leading-relaxed">
+                <div className="text-center bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Have Questions?</h3>
+                    <p className="text-gray-600 mb-4">
                         Our team is here to help you find the perfect plan for your needs.
                     </p>
                     <a
                         href="mailto:support@speaksynth.ai"
-                        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 font-bold text-lg transition-colors"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-lg transition-colors"
                     >
                         📧 Contact our team →
                     </a>
