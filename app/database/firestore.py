@@ -14,15 +14,25 @@ def get_firestore_client():
     try:
         # Check if app is already initialized
         if not firebase_admin._apps:
-            # Path to service account key
+            # Path to service account key or JSON string
             cred_path = os.getenv("FIREBASE_CREDENTIALS", "serviceAccountKey.json")
-
-            if not os.path.exists(cred_path):
-                logger.error(f"❌ Firebase credentials file NOT FOUND at {cred_path}")
-                raise FileNotFoundError(f"Firebase credentials file not found at {cred_path}")
-
-            logger.info(f"✅ Loading Firebase credentials from {cred_path}")
-            cred = credentials.Certificate(cred_path)
+            
+            # Check if it's a JSON string or file path
+            if cred_path.strip().startswith('{'):
+                # It's a JSON string, parse it
+                import json
+                logger.info("✅ Loading Firebase credentials from environment variable (JSON)")
+                cred_dict = json.loads(cred_path)
+                cred = credentials.Certificate(cred_dict)
+            else:
+                # It's a file path
+                if not os.path.exists(cred_path):
+                    logger.error(f"❌ Firebase credentials file NOT FOUND at {cred_path}")
+                    raise FileNotFoundError(f"Firebase credentials file not found at {cred_path}")
+                
+                logger.info(f"✅ Loading Firebase credentials from {cred_path}")
+                cred = credentials.Certificate(cred_path)
+            
             firebase_admin.initialize_app(cred)
             logger.info("✅ Firebase Admin SDK initialized successfully")
 
