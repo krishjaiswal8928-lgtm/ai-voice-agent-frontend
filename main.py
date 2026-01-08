@@ -73,6 +73,21 @@ app.add_middleware(
     max_age=600,
 )
 
+# Add middleware to handle Railway's proxy headers
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class ProxyHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Trust Railway's proxy headers
+        if "x-forwarded-proto" in request.headers:
+            request.scope["scheme"] = request.headers["x-forwarded-proto"]
+        response = await call_next(request)
+        return response
+
+app.add_middleware(ProxyHeadersMiddleware)
+
 # Register routers
 app.include_router(auth_routes.router)
 app.include_router(campaign_routes.router)
