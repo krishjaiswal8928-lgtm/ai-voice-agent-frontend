@@ -19,7 +19,7 @@ import os
 
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
-@router.get("/", response_model=List[IntegrationResponse])
+@router.get("", response_model=List[IntegrationResponse])
 async def get_integrations(
     db: firestore.Client = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -40,7 +40,7 @@ async def get_integrations(
         for integration in integrations
     ]
 
-@router.post("/", response_model=IntegrationResponse)
+@router.post("", response_model=IntegrationResponse)
 async def create_integration(
     integration_data: IntegrationCreate,
     db: firestore.Client = Depends(get_db),
