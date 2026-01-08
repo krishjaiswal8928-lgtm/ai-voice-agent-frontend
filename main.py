@@ -123,18 +123,20 @@ async def startup_event():
     asyncio.create_task(callback_scheduler._run_scheduler())
     
     # Warmup: Pre-load embedding model in background to avoid delays during calls
-    async def warmup_models():
-        try:
-            logger.info("🔥 Warming up embedding model...")
-            from app.services.retriever_service import _get_embedding_model
-            # Run blocking model loading in a separate thread to avoid blocking the event loop
-            await asyncio.to_thread(_get_embedding_model)
-            logger.info("✅ Embedding model warmed up")
-        except Exception as e:
-            logger.warning(f"⚠️ Model warmup failed (non-critical): {e}")
+    # Warmup: Pre-load embedding model - DISABLED for Render Free Tier to save RAM
+    # async def warmup_models():
+    #     try:
+    #         logger.info("🔥 Warming up embedding model...")
+    #         from app.services.retriever_service import _get_embedding_model
+    #         # Run blocking model loading in a separate thread to avoid blocking the event loop
+    #         await asyncio.to_thread(_get_embedding_model)
+    #         logger.info("✅ Embedding model warmed up")
+    #     except Exception as e:
+    #         logger.warning(f"⚠️ Model warmup failed (non-critical): {e}")
     
     # Run warmup as a background task
-    asyncio.create_task(warmup_models())
+    # asyncio.create_task(warmup_models())
+    logger.info("ℹ️ Model warmup skipped to optimize memory usage")
 
 
 @app.on_event("shutdown")
