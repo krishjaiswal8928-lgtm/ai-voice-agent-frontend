@@ -13,7 +13,7 @@ from app.services.phone_number_service import phone_number_service
 
 router = APIRouter(prefix="/phone-numbers", tags=["Phone Numbers"])
 
-@router.get("/", response_model=List[VirtualPhoneNumberResponse])
+@router.get("", response_model=List[VirtualPhoneNumberResponse])
 async def get_phone_numbers(
     db: firestore.Client = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -21,7 +21,7 @@ async def get_phone_numbers(
     """Get all phone numbers for the current user."""
     return phone_number_service.get_phone_numbers(db, current_user["user_id"])
 
-@router.post("/", response_model=VirtualPhoneNumberResponse)
+@router.post("", response_model=VirtualPhoneNumberResponse)
 async def create_phone_number(
     phone_data: VirtualPhoneNumberCreate,
     db: firestore.Client = Depends(get_db),
