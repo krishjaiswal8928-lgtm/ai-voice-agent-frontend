@@ -59,7 +59,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="AI Voice Agent SaaS Platform",
     description="AI Voice Agent Platform with Twilio Integration",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False  # Prevent automatic slash redirects
 )
 
 # Configure CORS
