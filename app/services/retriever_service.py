@@ -2,35 +2,24 @@ import os
 # import chromadb # Lazy import
 import numpy as np
 from dotenv import load_dotenv
-# from chromadb.config import Settings # Lazy import
-# from sentence_transformers import SentenceTransformer # Lazy import
 import logging
+import google.generativeai as genai
 
 # --- Load Environment Variables ---
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Initialize Sentence Transformer Model (Lazy loading)
-# Using a popular, small, and fast model for RAG
-# Using a popular, small, and fast model for RAG
-EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-embedding_model = None  # Will be loaded on first use
+# Configure Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+else:
+    logger.warning("⚠️ GEMINI_API_KEY not found. Embeddings will fail.")
 
 def _get_embedding_model():
-    """Lazy load the embedding model on first use"""
-    global embedding_model
-    if embedding_model is None:
-        logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}...")
-        try:
-            from sentence_transformers import SentenceTransformer
-            embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-            logger.info("✅ Embedding model loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to load embedding model: {e}")
-            embedding_model = None
-    return embedding_model
-
+    """Deprecated: No longer needed for API-based embeddings"""
+    return None
 
 # ChromaDB lazy loading
 chroma_client = None
@@ -48,12 +37,9 @@ def _get_collection():
             # Initialize client if needed
             if chroma_client is None:
                 persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
-                chroma_client = chromadb.Client(
-                    Settings(
-                        persist_directory=persist_dir,
-                        anonymized_telemetry=False,
-                        is_persistent=True
-                    )
+                chroma_client = chromadb.PersistentClient(
+                    path=str(persist_dir),
+                    settings=Settings(anonymized_telemetry=False)
                 )
                 
             # Get or create collection
@@ -71,20 +57,31 @@ def _get_collection():
 
 def get_embedding(text: str):
     """
-    Generate embedding using HuggingFace 'sentence-transformers/all-MiniLM-L6-v2'.
+    Generate embedding using Google Gemini (text-embedding-004).
+    Replaces local sentence-transformers to save >500MB RAM.
     """
+    if not GEMINI_API_KEY:
+        logger.error("GEMINI_API_KEY missing.")
+        return None
+        
     try:
-        model = _get_embedding_model()
-        if not model:
-            logger.error("Embedding model not initialized.")
+        clean_text = text.replace("\n", " ")
+        response = genai.embed_content(
+            model="models/text-embedding-004",
+            content=clean_text,
+            task_type="retrieval_query"
+        )
+        
+        if "embedding" in response:
+            return response["embedding"]
+        elif hasattr(response, "embedding"):
+            return response.embedding
+        else:
+            logger.error("Invalid response from Gemini Embeddings")
             return None
 
-        clean_text = text.replace("\n", " ")
-        # encode returns valid numpy array, we convert to list for Chroma/JSON
-        embeddings = model.encode(clean_text)
-        return embeddings.tolist()
     except Exception as e:
-        logger.error(f"Error generating embedding: {e}")
+        logger.error(f"Error generating Gemini embedding: {e}")
         return None
 
 def store_memory(client_id: str, text: str, metadata: dict | None = None):

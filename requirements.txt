@@ -46,7 +46,7 @@ python-docx
 pypdf2
 pandas
 tiktoken
-sentence-transformers
+# sentence-transformers # Removed for Render Lite (uses API)
 chromadb
 langchain
 langchain-text-splitters
@@ -54,7 +54,7 @@ langchain-google-genai
 langgraph
 
 # Vector Stores
-faiss-cpu>=1.7.0
+# faiss-cpu>=1.7.0 # Removed for Render Lite
 pinecone-client>=2.2.0
 
 # Task Queue
