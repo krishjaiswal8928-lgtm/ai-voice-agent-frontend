@@ -39,14 +39,7 @@ async def voice_webhook_info():
 
 @router.post("/voice/webhook")
 async def voice_webhook(request: Request):
-    # File logging for debugging
-    import datetime
-    log_file = "c:/voice-agent-theme-update-app/webhook_debug.log"
-    with open(log_file, "a") as f:
-        f.write(f"\n{'='*80}\n")
-        f.write(f"WEBHOOK CALLED: {datetime.datetime.now()}\n")
-        f.flush()
-    
+    # Logging for debugging
     print("\nWEBHOOK CALLED — START")  # MUST PRINT
     logger.info("WEBHOOK: Request received")
 
@@ -213,11 +206,7 @@ async def voice_webhook(request: Request):
         print(error_msg)
         logger.error("Timeout processing Twilio webhook request")
         
-        # Write to log file
-        import datetime
-        with open("c:/voice-agent-theme-update-app/webhook_debug.log", "a") as f:
-            f.write(f"ERROR: {datetime.datetime.now()} - Timeout\n")
-            f.flush()
+        # Log timeout error
         
         response = VoiceResponse()
         response.say("Sorry, there was a timeout. Please try again.", voice="Polly.Joanna")
@@ -227,14 +216,7 @@ async def voice_webhook(request: Request):
         print(error_msg)
         logger.error(f"Error processing Twilio webhook request: {e}", exc_info=True)
         
-        # Write detailed error to log file
-        import datetime
-        import traceback
-        with open("c:/voice-agent-theme-update-app/webhook_debug.log", "a") as f:
-            f.write(f"ERROR: {datetime.datetime.now()}\n")
-            f.write(f"Exception: {str(e)}\n")
-            f.write(f"Traceback:\n{traceback.format_exc()}\n")
-            f.flush()
+        # Detailed error already logged by logger.error above
         
         # Provide a more user-friendly error message
         response = VoiceResponse()
