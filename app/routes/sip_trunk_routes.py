@@ -7,7 +7,7 @@ from datetime import datetime
 
 from app.database.firestore import db
 from app.services.telnyx_service import telnyx_sip_service
-from app.middleware.auth import get_current_user
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/sip-trunks", tags=["sip_trunks"])
 logger = logging.getLogger(__name__)
