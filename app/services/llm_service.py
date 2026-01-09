@@ -8,7 +8,7 @@ import time
 import logging
 from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
-from typing import List, Dict, Optional, AsyncGenerator
+from typing import List, Dict, Optional, AsyncGenerator, Any
 
 load_dotenv()
 
