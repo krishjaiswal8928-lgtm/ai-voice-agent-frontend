@@ -23,9 +23,6 @@ google-auth-httplib2>=0.1.1
 twilio>=8.0.0
 websockets>=11.0.0
 
-# Telnyx Integration (SIP Trunks)
-telnyx>=2.0.0
-
 # AI Services
 huggingface-hub>=0.20.0
 google-cloud-speech>=2.18.0

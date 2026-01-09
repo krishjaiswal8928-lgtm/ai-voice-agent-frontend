@@ -35,8 +35,6 @@ print("DEBUG: Importing pricing_routes...", flush=True)
 import app.routes.pricing_routes as pricing_routes
 print("DEBUG: Importing user_routes...", flush=True)
 import app.routes.user_routes as user_routes
-print("DEBUG: Importing sip_trunk_routes...", flush=True)
-import app.routes.sip_trunk_routes as sip_trunk_routes
 
 print("DEBUG: Importing security...", flush=True)
 from app.core import security
@@ -105,7 +103,6 @@ app.include_router(phone_number_routes.router)  # Register phone number router
 app.include_router(integration_routes.router)  # Register integrations router
 app.include_router(pricing_routes.router)  # Register pricing router
 app.include_router(user_routes.router)  # Register user router
-app.include_router(sip_trunk_routes.router)  # Register SIP trunk router
 
 
 @app.get("/", tags=["Health"])
