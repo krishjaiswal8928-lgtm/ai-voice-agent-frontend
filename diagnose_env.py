@@ -11,7 +11,9 @@ print("-" * 20)
 
 # Check Envs
 ngrok = os.getenv("NGROK_DOMAIN")
-print(f"NGROK_DOMAIN: {'SET' if ngrok else 'MISSING'} ({ngrok})")
+webhook_domain = os.getenv("WEBHOOK_BASE_DOMAIN")
+print(f"WEBHOOK_BASE_DOMAIN: {'SET' if webhook_domain else 'MISSING'} ({webhook_domain})")
+print(f"NGROK_DOMAIN (legacy): {'SET' if ngrok else 'MISSING'} ({ngrok})")
 
 creds = os.getenv("FIREBASE_CREDENTIALS", "serviceAccountKey.json")
 print(f"FIREBASE_CREDENTIALS path: {creds}")

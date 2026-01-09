@@ -62,12 +62,12 @@ class PhoneNumberService:
 
         # 2. Configure webhook URLs for the phone number (Twilio only for now)
         if phone_data.provider.lower() == 'twilio':
-            ngrok_domain = os.getenv("NGROK_DOMAIN")
-            if not ngrok_domain:
-                raise ValueError("NGROK_DOMAIN not configured in environment variables. Required for webhook setup.")
+            webhook_domain = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
+            if not webhook_domain:
+                raise ValueError("WEBHOOK_BASE_DOMAIN not configured in environment variables. Required for webhook setup.")
             
-            webhook_url = f"https://{ngrok_domain}/twilio/voice/webhook"
-            status_callback_url = f"https://{ngrok_domain}/twilio/status"
+            webhook_url = f"https://{webhook_domain}/twilio/voice/webhook"
+            status_callback_url = f"https://{webhook_domain}/twilio/status"
             
             # Configure the webhook on Twilio's side
             webhook_configured = provider.configure_phone_number_webhook(

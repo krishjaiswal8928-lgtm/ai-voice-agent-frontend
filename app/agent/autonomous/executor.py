@@ -380,3 +380,275 @@ class AgentExecutor:
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
             return "I apologize, I'm having trouble processing that. Could you please repeat?"
+    
+    async def execute_with_intelligence(
+        self,
+        user_input: str,
+        context: Dict[str, Any]
+    ) -> ActionResult:
+        """
+        Execute agent action with intelligent tool selection.
+        This is the new intelligent entry point that uses LLM function calling.
+        """
+        from app.services.llm_service import generate_response_with_tools
+        
+        # Get LLM decision (text or tool call)
+        llm_response = generate_response_with_tools(
+            transcript=user_input,
+            goal=context.get("goal", ""),
+            history=context.get("history", []),
+            context=context.get("rag_context", ""),
+            personality=self.personality,
+            company_name=self.company_name,
+            agent_name=context.get("agent_name", "")
+        )
+        
+        if llm_response["type"] == "tool_call":
+            # LLM decided to use a tool
+            tool_name = llm_response["tool"]
+            args = llm_response["arguments"]
+            
+            logger.info(f"🤖 Executing intelligent tool: {tool_name}")
+            
+            if tool_name == "end_call":
+                return await self._execute_intelligent_end_call(args, context)
+            
+            elif tool_name == "schedule_callback":
+                return await self._execute_intelligent_callback(args, context)
+            
+            elif tool_name == "continue_conversation":
+                return await self._execute_continue_conversation(args, context)
+            
+            elif tool_name == "transfer_to_human":
+                return await self._execute_transfer_to_human(args, context)
+            
+            else:
+                logger.warning(f"Unknown tool: {tool_name}, falling back to text response")
+                return await self._execute_speak_response(llm_response.get("content", "I understand."), context)
+        
+        else:
+            # Regular text response
+            return await self._execute_speak_response(llm_response["content"], context)
+    
+    async def _execute_intelligent_end_call(
+        self,
+        args: Dict[str, Any],
+        context: Dict[str, Any]
+    ) -> ActionResult:
+        """Execute intelligent call ending with lead classification"""
+        
+        final_message = args.get("final_message", "Thank you for your time. Goodbye!")
+        reason = args.get("reason", "other")
+        classification = args.get("lead_classification", "unqualified")
+        
+        logger.info(f"🔴 AI ending call - Reason: {reason}, Classification: {classification}")
+        
+        # Update lead in database if lead_id is available
+        lead_id = context.get("lead_id")
+        if lead_id:
+            try:
+                from app.database.firestore import db
+                db.collection("leads").document(lead_id).update({
+                    "status": "completed",
+                    "classification": classification,
+                    "end_reason": reason,
+                    "notes": f"AI ended call: {reason}",
+                    "ai_decision": True
+                })
+                logger.info(f"✅ Updated lead {lead_id} with classification: {classification}")
+            except Exception as e:
+                logger.error(f"Failed to update lead: {e}")
+        
+        # Generate TTS for final message
+        try:
+            audio = await synthesize_speech_with_provider("cartesia", final_message)
+        except Exception as e:
+            logger.error(f"TTS failed for end call: {e}")
+            audio = None
+        
+        return ActionResult(
+            action=EndConversationAction(
+                final_message=final_message,
+                reason=reason
+            ),
+            success=True,
+            output={
+                "text": final_message,
+                "audio": audio,
+                "conversation_ended": True,
+                "intelligent_decision": True,
+                "classification": classification,
+                "reason": reason
+            },
+            requires_user_input=False,
+            metadata={"tool": "end_call", "ai_decision": True}
+        )
+    
+    async def _execute_intelligent_callback(
+        self,
+        args: Dict[str, Any],
+        context: Dict[str, Any]
+    ) -> ActionResult:
+        """Execute intelligent callback scheduling"""
+        
+        delay_minutes = args.get("delay_minutes", 60)
+        reason = args.get("reason", "Lead requested callback")
+        confirmation_message = args.get("confirmation_message", f"I'll call you back in {delay_minutes} minutes.")
+        
+        logger.info(f"📞 AI scheduling callback - Delay: {delay_minutes} min, Reason: {reason}")
+        
+        # Schedule callback using existing service
+        phone_number = context.get("phone_number")
+        lead_id = context.get("lead_id")
+        
+        if phone_number:
+            try:
+                from app.services.callback_scheduler import callback_scheduler
+                callback_id = await callback_scheduler.schedule_callback(
+                    phone_number=phone_number,
+                    delay_minutes=delay_minutes,
+                    context=context.get("rag_context", ""),
+                    campaign_id=context.get("campaign_id")
+                )
+                logger.info(f"✅ Callback scheduled: {callback_id}")
+                
+                # Update lead status
+                if lead_id:
+                    from app.database.firestore import db
+                    db.collection("leads").document(lead_id).update({
+                        "status": "callback_scheduled",
+                        "callback_id": callback_id,
+                        "callback_reason": reason
+                    })
+            except Exception as e:
+                logger.error(f"Failed to schedule callback: {e}")
+        
+        # Generate TTS
+        try:
+            audio = await synthesize_speech_with_provider("cartesia", confirmation_message)
+        except Exception as e:
+            logger.error(f"TTS failed for callback: {e}")
+            audio = None
+        
+        return ActionResult(
+            action=ScheduleCallbackAction(
+                phone_number=phone_number,
+                delay_minutes=delay_minutes,
+                reason=reason
+            ),
+            success=True,
+            output={
+                "text": confirmation_message,
+                "audio": audio,
+                "conversation_ended": True,  # End call after scheduling
+                "callback_scheduled": True
+            },
+            requires_user_input=False,
+            metadata={"tool": "schedule_callback", "delay_minutes": delay_minutes}
+        )
+    
+    async def _execute_continue_conversation(
+        self,
+        args: Dict[str, Any],
+        context: Dict[str, Any]
+    ) -> ActionResult:
+        """Execute conversation continuation with strategic response"""
+        
+        strategy = args.get("strategy", "build_rapport")
+        response = args.get("response", "I understand. How can I help you?")
+        
+        logger.info(f"💬 AI continuing conversation - Strategy: {strategy}")
+        
+        # Generate TTS
+        try:
+            audio = await synthesize_speech_with_provider("cartesia", response)
+        except Exception as e:
+            logger.error(f"TTS failed for continue: {e}")
+            audio = None
+        
+        return ActionResult(
+            action=SpeakAction(content=response),
+            success=True,
+            output={
+                "text": response,
+                "audio": audio,
+                "conversation_ended": False
+            },
+            requires_user_input=True,  # Wait for user response
+            metadata={"tool": "continue_conversation", "strategy": strategy}
+        )
+    
+    async def _execute_transfer_to_human(
+        self,
+        args: Dict[str, Any],
+        context: Dict[str, Any]
+    ) -> ActionResult:
+        """Execute transfer to human agent"""
+        
+        reason = args.get("reason", "Customer requested human agent")
+        transfer_message = args.get("transfer_message", "Let me connect you with a specialist.")
+        urgency = args.get("urgency", "medium")
+        
+        logger.info(f"👤 AI transferring to human - Reason: {reason}, Urgency: {urgency}")
+        
+        # Update lead for human follow-up
+        lead_id = context.get("lead_id")
+        if lead_id:
+            try:
+                from app.database.firestore import db
+                db.collection("leads").document(lead_id).update({
+                    "status": "transfer_requested",
+                    "transfer_reason": reason,
+                    "transfer_urgency": urgency,
+                    "requires_human": True
+                })
+            except Exception as e:
+                logger.error(f"Failed to update lead for transfer: {e}")
+        
+        # Generate TTS
+        try:
+            audio = await synthesize_speech_with_provider("cartesia", transfer_message)
+        except Exception as e:
+            logger.error(f"TTS failed for transfer: {e}")
+            audio = None
+        
+        return ActionResult(
+            action=EndConversationAction(
+                final_message=transfer_message,
+                reason="transfer_to_human"
+            ),
+            success=True,
+            output={
+                "text": transfer_message,
+                "audio": audio,
+                "conversation_ended": True,
+                "transfer_requested": True,
+                "urgency": urgency
+            },
+            requires_user_input=False,
+            metadata={"tool": "transfer_to_human", "urgency": urgency}
+        )
+    
+    async def _execute_speak_response(
+        self,
+        text: str,
+        context: Dict[str, Any]
+    ) -> ActionResult:
+        """Execute a simple speak action"""
+        
+        try:
+            audio = await synthesize_speech_with_provider("cartesia", text)
+        except Exception as e:
+            logger.error(f"TTS failed: {e}")
+            audio = None
+        
+        return ActionResult(
+            action=SpeakAction(content=text),
+            success=True,
+            output={
+                "text": text,
+                "audio": audio,
+                "conversation_ended": False
+            },
+            requires_user_input=True
+        )

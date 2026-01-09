@@ -126,7 +126,7 @@ async def startup_event():
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     from_number = os.getenv("TWILIO_NUMBER")
-    ngrok_domain = os.getenv("NGROK_DOMAIN")
+    ngrok_domain = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
     
     if account_sid and auth_token and from_number and ngrok_domain:
         webhook_base = f"https://{ngrok_domain}"

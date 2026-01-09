@@ -459,3 +459,173 @@ def generate_response(transcript: str, goal: str, history: Optional[List[Dict[st
     
     # Fallback return in case all retries are exhausted
     return "I'm sorry, I'm unable to assist right now. Please try again later."
+
+
+def generate_response_with_tools(
+    transcript: str,
+    goal: str,
+    history: Optional[List[Dict[str, str]]] = None,
+    context: str = "",
+    personality: str = "professional",
+    company_name: str = "",
+    agent_name: str = ""
+) -> Dict[str, Any]:
+    """
+    Generate response with intelligent tool calling capability.
+    Returns either a text response or a tool call decision.
+    
+    This enables the AI agent to proactively:
+    - End calls with unqualified leads (competitors, not interested, etc.)
+    - Schedule callbacks when timing is bad
+    - Continue conversations strategically
+    - Transfer to human agents when needed
+    """
+    import json
+    from app.agent.tools.agent_tools import AGENT_TOOLS
+    
+    if not transcript or not transcript.strip():
+        return {
+            "type": "text",
+            "content": "Hello! I'm here to help you. How can I assist you today?"
+        }
+    
+    if history is None:
+        history = []
+    
+    # Build conversation context
+    conversation_history = ""
+    for msg in history:
+        if isinstance(msg, dict) and "role" in msg and "content" in msg:
+            role = "Customer" if msg["role"] == "user" else "Assistant"
+            content = msg.get("content", msg.get("text", ""))
+            if content and content.strip():
+                conversation_history += f"{role}: {content}\n"
+    
+    # Detect language
+    is_hindi = any("\u0900" <= ch <= "\u097F" for ch in transcript)
+    language_instruction = (
+        "Respond in Hindi/Hinglish if appropriate."
+        if is_hindi else
+        "Respond in English."
+    )
+    
+    # Build enhanced system prompt for intelligent decision making
+    system_prompt = f"""You are {agent_name or 'an AI sales agent'} from {company_name or 'our company'}.
+
+Your goal: {goal or 'Help the customer'}
+
+You are a {personality} communicator with access to intelligent tools to make strategic decisions.
+
+AVAILABLE TOOLS:
+1. end_call - Use when lead is unqualified (competitor, not interested, already has product, hostile, wrong demographics)
+2. schedule_callback - Use when timing is bad but lead might be interested later
+3. continue_conversation - Use when lead is engaged and conversation should continue
+4. transfer_to_human - Use when situation requires human judgment
+
+DECISION-MAKING GUIDELINES:
+- Be PROACTIVE and STRATEGIC - don't waste time on clearly unqualified leads
+- COMPETITOR detected? → Use end_call immediately with polite goodbye
+- "Already have product" + no interest? → Use end_call to save time
+- "Not interested" clearly stated? → Use end_call respectfully
+- Lead is busy/driving? → Use schedule_callback
+- Lead engaged/asking questions? → Use continue_conversation
+- Complex situation? → Use transfer_to_human
+
+IMPORTANT: Analyze each customer response intelligently and choose the RIGHT tool.
+Don't continue conversations that are clearly unproductive.
+
+{language_instruction}
+
+Knowledge Base: {context if context else 'Limited information available'}
+"""
+
+    # Build user message with conversation context
+    user_message = f"""Conversation History:
+{conversation_history}
+
+Customer's Latest Message: {transcript}
+
+Analyze this message and decide:
+1. Is this lead qualified and worth continuing?
+2. Should I end the call, schedule callback, continue, or transfer?
+3. What's the most strategic action?
+
+Make your decision and use the appropriate tool."""
+
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            # Try OpenAI first (has best function calling)
+            import openai
+            openai_key = os.getenv("OPENAI_API_KEY")
+            
+            if not openai_key:
+                # Fallback to regular response without tools
+                logger.warning("OpenAI API key not found, falling back to regular response")
+                return {
+                    "type": "text",
+                    "content": generate_response(transcript, goal, history, context, personality, company_name, "", agent_name)
+                }
+            
+            openai.api_key = openai_key
+            
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ]
+            
+            response = openai.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=messages,
+                tools=AGENT_TOOLS,
+                tool_choice="auto",  # Let AI decide when to use tools
+                temperature=0.7
+            )
+            
+            message = response.choices[0].message
+            
+            # Check if AI decided to use a tool
+            if message.tool_calls and len(message.tool_calls) > 0:
+                tool_call = message.tool_calls[0]
+                tool_name = tool_call.function.name
+                
+                try:
+                    arguments = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to parse tool arguments: {tool_call.function.arguments}")
+                    arguments = {}
+                
+                logger.info(f"🤖 AI decided to use tool: {tool_name} with args: {arguments}")
+                
+                return {
+                    "type": "tool_call",
+                    "tool": tool_name,
+                    "arguments": arguments
+                }
+            else:
+                # Regular text response
+                response_text = message.content if message.content else "I understand. How can I help you?"
+                
+                return {
+                    "type": "text",
+                    "content": response_text
+                }
+        
+        except Exception as e:
+            logger.error(f"Error in generate_response_with_tools (attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(1)
+                continue
+            else:
+                # Fallback to regular response
+                logger.warning("Function calling failed, falling back to regular response")
+                return {
+                    "type": "text",
+                    "content": generate_response(transcript, goal, history, context, personality, company_name, "", agent_name)
+                }
+    
+    # Final fallback
+    return {
+        "type": "text",
+        "content": "I'm here to help. What can I do for you?"
+    }

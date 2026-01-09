@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Configuration
-NGROK_DOMAIN = os.getenv("NGROK_DOMAIN")
-if not NGROK_DOMAIN:
-    logger.warning("NGROK_DOMAIN not set in .env")
-WEBSOCKET_URL = f"wss://{NGROK_DOMAIN}/twilio/ws" if NGROK_DOMAIN else ""
+WEBHOOK_DOMAIN = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
+if not WEBHOOK_DOMAIN:
+    logger.warning("WEBHOOK_BASE_DOMAIN not set in environment variables")
+WEBSOCKET_URL = f"wss://{WEBHOOK_DOMAIN}/twilio/ws" if WEBHOOK_DOMAIN else ""
 logger.info(f"WEBSOCKET_URL = {WEBSOCKET_URL}")
 
 
@@ -31,7 +31,7 @@ async def voice_webhook_info():
     """GET endpoint for testing webhook URL"""
     return {
         "message": "Twilio Voice Webhook is active!",
-        "webhook_url": f"https://{NGROK_DOMAIN}/twilio/voice/webhook",
+        "webhook_url": f"https://{WEBHOOK_DOMAIN}/twilio/voice/webhook",
         "websocket_url": WEBSOCKET_URL,
         "status": "ready"
     }
@@ -264,9 +264,9 @@ async def twilio_health_check():
 async def get_twilio_config():
     """Get Twilio configuration"""
     return {
-        "webhook_url": f"https://{NGROK_DOMAIN}/twilio/voice/webhook",
+        "webhook_url": f"https://{WEBHOOK_DOMAIN}/twilio/voice/webhook",
         "websocket_url": WEBSOCKET_URL,
-        "ngrok_domain": NGROK_DOMAIN
+        "webhook_domain": WEBHOOK_DOMAIN
     }
 
 
