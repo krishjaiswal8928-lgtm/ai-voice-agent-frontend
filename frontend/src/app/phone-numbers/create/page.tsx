@@ -20,8 +20,16 @@ import {
     Grid,
     Checkbox,
     ListItemText,
-    OutlinedInput
+    OutlinedInput,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    IconButton,
+    InputAdornment,
+    Snackbar
 } from '@mui/material';
+import { ContentCopy as CopyIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
 import { ExotelForm } from '@/components/phone-numbers/forms/ExotelForm';
@@ -46,6 +54,8 @@ export default function CreatePhoneNumberPage() {
         phone_number: '' // Will be populated from provider form
     });
     const [assignedAgents, setAssignedAgents] = useState<string[]>([]);
+    const [createdSipDomain, setCreatedSipDomain] = useState<string>('');
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
     useEffect(() => {
         // Fetch agents for assignment step
@@ -132,8 +142,11 @@ export default function CreatePhoneNumberPage() {
                     assigned_agent_id: assignedAgents.length > 0 ? assignedAgents[0] : null
                 };
 
-                await sipTrunkAPI.create(sipPayload);
-                router.push('/phone-numbers');
+                const response = await sipTrunkAPI.create(sipPayload);
+
+                // Show success dialog with SIP domain
+                setCreatedSipDomain(response.data.sip_domain);
+                setShowSuccessDialog(true);
             } else {
                 // Handle regular provider-based phone numbers
                 const payload = {
@@ -300,6 +313,83 @@ export default function CreatePhoneNumberPage() {
                         </Box>
                     </CardContent>
                 </Card>
+
+                {/* Success Dialog for SIP Trunk */}
+                <Dialog
+                    open={showSuccessDialog}
+                    onClose={() => { }}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle sx={{ bgcolor: '#4caf50', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CheckIcon />
+                        SIP Trunk Created Successfully!
+                    </DialogTitle>
+                    <DialogContent sx={{ mt: 3 }}>
+                        <Alert severity="success" sx={{ mb: 3 }}>
+                            Your SIP trunk has been created. Configure this SIP domain in your PBX system (3CX, FreePBX, etc.) to route calls to your AI agents.
+                        </Alert>
+
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                            Your SIP Domain:
+                        </Typography>
+
+                        <TextField
+                            fullWidth
+                            value={createdSipDomain}
+                            InputProps={{
+                                readOnly: true,
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(createdSipDomain);
+                                                alert('SIP domain copied to clipboard!');
+                                            }}
+                                            edge="end"
+                                        >
+                                            <CopyIcon />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                                sx: {
+                                    bgcolor: '#f5f5f5',
+                                    fontFamily: 'monospace',
+                                    fontSize: '1.1rem',
+                                    fontWeight: 600
+                                }
+                            }}
+                        />
+
+                        <Box sx={{ mt: 3, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                Next Steps:
+                            </Typography>
+                            <Typography variant="body2" component="ol" sx={{ pl: 2 }}>
+                                <li>Copy the SIP domain above</li>
+                                <li>Open your PBX system (3CX, FreePBX, etc.)</li>
+                                <li>Create a new SIP trunk</li>
+                                <li>Configure it with the SIP domain</li>
+                                <li>Route calls to your AI agents!</li>
+                            </Typography>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 3 }}>
+                        <Button
+                            variant="contained"
+                            onClick={() => {
+                                setShowSuccessDialog(false);
+                                router.push('/phone-numbers');
+                            }}
+                            sx={{
+                                bgcolor: '#000000',
+                                '&:hover': { bgcolor: '#333333' }
+                            }}
+                        >
+                            Go to Phone Numbers
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </Box>
         </NavigationLayout>
     );

@@ -125,14 +125,6 @@ async def startup_event():
     logger.info("🚀 AI Voice Agent API Started")
     logger.info("=" * 60)
     
-    # TEMPORARY: Log public IP address for Railway debugging
-    try:
-        import requests
-        my_ip = requests.get('https://api.ipify.org').text
-        logger.info(f"🌐 My Public IP: {my_ip}")
-        print(f"My Public IP: {my_ip}", flush=True)
-    except Exception as e:
-        logger.warning(f"⚠️ Could not fetch public IP: {e}")
     
     # Initialize Twilio outbound service
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
