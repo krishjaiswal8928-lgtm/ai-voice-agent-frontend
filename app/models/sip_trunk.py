@@ -23,6 +23,11 @@ class SIPTrunk:
         # Agent assignment
         assigned_agent_id: Optional[str] = None,
         is_active: bool = True,
+        # Connection status (ElevenLabs model)
+        connection_status: str = "pending",
+        last_connected_at: datetime = None,
+        last_checked_at: datetime = None,
+        error_message: Optional[str] = None,
         created_at: datetime = None,
         updated_at: datetime = None
     ):
@@ -49,6 +54,13 @@ class SIPTrunk:
         # Agent assignment
         self.assigned_agent_id = assigned_agent_id
         self.is_active = is_active
+        
+        # Connection status monitoring (ElevenLabs model)
+        self.connection_status = connection_status or "pending"  # pending, connected, disconnected, error
+        self.last_connected_at = last_connected_at
+        self.last_checked_at = last_checked_at
+        self.error_message = error_message
+        
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
 
@@ -70,6 +82,10 @@ class SIPTrunk:
             auth_password=source.get('auth_password'),
             assigned_agent_id=source.get('assigned_agent_id'),
             is_active=source.get('is_active', True),
+            connection_status=source.get('connection_status', 'pending'),
+            last_connected_at=source.get('last_connected_at'),
+            last_checked_at=source.get('last_checked_at'),
+            error_message=source.get('error_message'),
             created_at=source.get('created_at'),
             updated_at=source.get('updated_at')
         )
@@ -91,6 +107,10 @@ class SIPTrunk:
             'auth_password': self.auth_password,
             'assigned_agent_id': self.assigned_agent_id,
             'is_active': self.is_active,
+            'connection_status': self.connection_status,
+            'last_connected_at': self.last_connected_at,
+            'last_checked_at': self.last_checked_at,
+            'error_message': self.error_message,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }

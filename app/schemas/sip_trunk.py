@@ -70,6 +70,11 @@ class SIPTrunkResponse(BaseModel):
     auth_username: Optional[str] = None  # Password not included in response
     assigned_agent_id: Optional[str] = None
     is_active: bool
+    # Connection status (ElevenLabs model)
+    connection_status: str = "pending"  # pending, connected, disconnected, error
+    last_connected_at: Optional[datetime] = None
+    last_checked_at: Optional[datetime] = None
+    error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
