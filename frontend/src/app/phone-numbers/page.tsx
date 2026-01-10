@@ -29,15 +29,19 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
-import { phoneNumberAPI } from '@/lib/api';
+import { phoneNumberAPI, sipTrunkAPI } from '@/lib/api';
 
 interface PhoneNumber {
     id: string;
     phone_number: string;
-    display_name: string;
+    display_name?: string;
+    label?: string;
     provider: string;
     is_active: boolean;
-    assigned_agents: string[];
+    assigned_agents?: string[];
+    type: 'provider' | 'sip';
+    connection_status?: string;
+    sip_domain?: string;
 }
 
 export default function PhoneNumbersPage() {
@@ -53,8 +57,29 @@ export default function PhoneNumbersPage() {
     const fetchPhoneNumbers = async () => {
         try {
             setLoading(true);
-            const response = await phoneNumberAPI.getAll();
-            setPhoneNumbers(response.data);
+
+            // Fetch both provider numbers and SIP trunks
+            const [providerResponse, sipResponse] = await Promise.all([
+                phoneNumberAPI.getAll().catch(() => ({ data: [] })),
+                sipTrunkAPI.getAll().catch(() => ({ data: [] }))
+            ]);
+
+            // Combine both lists
+            const providerNumbers = (providerResponse.data || []).map((phone: any) => ({
+                ...phone,
+                type: 'provider' as const,
+                display_name: phone.display_name || phone.phone_number
+            }));
+
+            const sipTrunks = (sipResponse.data || []).map((trunk: any) => ({
+                ...trunk,
+                type: 'sip' as const,
+                provider: 'SIP Trunk',
+                display_name: trunk.label,
+                assigned_agents: trunk.assigned_agent_id ? [trunk.assigned_agent_id] : []
+            }));
+
+            setPhoneNumbers([...providerNumbers, ...sipTrunks]);
             setError('');
         } catch (err) {
             console.error('Error fetching phone numbers:', err);
@@ -165,29 +190,70 @@ export default function PhoneNumbersPage() {
                                                 label={phone.provider.toUpperCase()}
                                                 size="small"
                                                 variant="outlined"
+                                                sx={{
+                                                    bgcolor: phone.type === 'sip' ? '#f0f9ff' : 'transparent',
+                                                    borderColor: phone.type === 'sip' ? '#6366f1' : 'default'
+                                                }}
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            {phone.is_active ? (
-                                                <Chip
-                                                    icon={<CheckCircleIcon />}
-                                                    label="Active"
-                                                    color="success"
-                                                    size="small"
-                                                    variant="outlined"
-                                                />
+                                            {phone.type === 'sip' ? (
+                                                // Show connection status for SIP trunks
+                                                phone.connection_status === 'connected' ? (
+                                                    <Chip
+                                                        icon={<CheckCircleIcon />}
+                                                        label="Connected"
+                                                        color="success"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                ) : phone.connection_status === 'disconnected' ? (
+                                                    <Chip
+                                                        icon={<CancelIcon />}
+                                                        label="Disconnected"
+                                                        color="error"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                ) : phone.connection_status === 'error' ? (
+                                                    <Chip
+                                                        icon={<CancelIcon />}
+                                                        label="Error"
+                                                        color="warning"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                ) : (
+                                                    <Chip
+                                                        label="Pending"
+                                                        color="default"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                )
                                             ) : (
-                                                <Chip
-                                                    icon={<CancelIcon />}
-                                                    label="Inactive"
-                                                    color="default"
-                                                    size="small"
-                                                    variant="outlined"
-                                                />
+                                                // Show active/inactive for provider numbers
+                                                phone.is_active ? (
+                                                    <Chip
+                                                        icon={<CheckCircleIcon />}
+                                                        label="Active"
+                                                        color="success"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                ) : (
+                                                    <Chip
+                                                        icon={<CancelIcon />}
+                                                        label="Inactive"
+                                                        color="default"
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                )
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            {phone.assigned_agents.length > 0 ? (
+                                            {phone.assigned_agents && phone.assigned_agents.length > 0 ? (
                                                 <Chip label={`${phone.assigned_agents.length} Agents`} size="small" />
                                             ) : (
                                                 <Typography variant="caption" color="textSecondary">None</Typography>

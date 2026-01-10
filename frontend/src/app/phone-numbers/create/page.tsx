@@ -178,9 +178,12 @@ export default function CreatePhoneNumberPage() {
                     assigned_agent_id: assignedAgents.length > 0 ? assignedAgents[0] : null
                 };
 
+
                 const response = await sipTrunkAPI.create(sipPayload);
-                setCreatedSipDomain(response.data.sip_domain);
-                setShowSuccessDialog(true);
+
+                // Show success message and redirect
+                alert(`✅ SIP Trunk Created Successfully!\n\nYour SIP Domain: ${response.data.sip_domain}\n\nConfigure this domain in your PBX system.`);
+                router.push('/phone-numbers');
             } else {
                 const payload = {
                     phone_number: basicInfo.phone_number,
