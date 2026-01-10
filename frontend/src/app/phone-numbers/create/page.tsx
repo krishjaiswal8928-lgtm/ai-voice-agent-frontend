@@ -4,12 +4,8 @@ import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
-    Stepper,
-    Step,
-    StepLabel,
     Button,
     Card,
-    CardContent,
     FormControl,
     InputLabel,
     Select,
@@ -17,7 +13,6 @@ import {
     TextField,
     Alert,
     CircularProgress,
-    Grid,
     Checkbox,
     ListItemText,
     OutlinedInput,
@@ -27,9 +22,21 @@ import {
     DialogActions,
     IconButton,
     InputAdornment,
-    Snackbar
+    Fade,
+    Paper,
+    Chip,
+    Stack
 } from '@mui/material';
-import { ContentCopy as CopyIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
+import {
+    ContentCopy as CopyIcon,
+    CheckCircle as CheckIcon,
+    ArrowBack as ArrowBackIcon,
+    ArrowForward as ArrowForwardIcon,
+    Phone as PhoneIcon,
+    Settings as SettingsIcon,
+    Label as LabelIcon,
+    People as PeopleIcon
+} from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
 import { ExotelForm } from '@/components/phone-numbers/forms/ExotelForm';
@@ -37,7 +44,12 @@ import { TwilioForm } from '@/components/phone-numbers/forms/TwilioForm';
 import { SIPTrunkForm } from '@/components/phone-numbers/forms/SIPTrunkForm';
 import { phoneNumberAPI, voiceAPI, sipTrunkAPI } from '@/lib/api';
 
-const steps = ['Select Provider', 'Configure Credentials', 'Basic Info', 'Assign Agents'];
+const steps = [
+    { label: 'Select Provider', icon: PhoneIcon },
+    { label: 'Configure', icon: SettingsIcon },
+    { label: 'Basic Info', icon: LabelIcon },
+    { label: 'Assign Agents', icon: PeopleIcon }
+];
 
 export default function CreatePhoneNumberPage() {
     const router = useRouter();
@@ -51,14 +63,13 @@ export default function CreatePhoneNumberPage() {
     const [credentials, setCredentials] = useState<any>({});
     const [basicInfo, setBasicInfo] = useState({
         display_name: '',
-        phone_number: '' // Will be populated from provider form
+        phone_number: ''
     });
     const [assignedAgents, setAssignedAgents] = useState<string[]>([]);
     const [createdSipDomain, setCreatedSipDomain] = useState<string>('');
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
     useEffect(() => {
-        // Fetch agents for assignment step
         const fetchAgents = async () => {
             try {
                 const response = await voiceAPI.getCustomAgents();
@@ -91,13 +102,11 @@ export default function CreatePhoneNumberPage() {
                 return false;
             }
         } else if (activeStep === 1) {
-            // Basic validation based on provider
             if (provider === 'exotel') {
                 if (!credentials.api_key || !credentials.api_token || !credentials.account_sid || !credentials.exotel_number) {
                     setError('Please fill in all required fields');
                     return false;
                 }
-                // Auto-populate phone number for next steps
                 setBasicInfo(prev => ({ ...prev, phone_number: credentials.exotel_number }));
             } else if (provider === 'twilio') {
                 if (!credentials.account_sid || !credentials.auth_token || !credentials.phone_number) {
@@ -126,7 +135,6 @@ export default function CreatePhoneNumberPage() {
         setError('');
 
         try {
-            // Handle SIP trunk separately
             if (provider === 'sip') {
                 const sipPayload = {
                     phone_number: credentials.phone_number,
@@ -143,12 +151,9 @@ export default function CreatePhoneNumberPage() {
                 };
 
                 const response = await sipTrunkAPI.create(sipPayload);
-
-                // Show success dialog with SIP domain
                 setCreatedSipDomain(response.data.sip_domain);
                 setShowSuccessDialog(true);
             } else {
-                // Handle regular provider-based phone numbers
                 const payload = {
                     phone_number: basicInfo.phone_number,
                     provider: provider,
@@ -160,7 +165,6 @@ export default function CreatePhoneNumberPage() {
                 const response = await phoneNumberAPI.create(payload);
                 const phoneId = response.data.id;
 
-                // Assign agents if selected
                 if (assignedAgents.length > 0) {
                     for (const agentId of assignedAgents) {
                         await phoneNumberAPI.assignAgent(phoneId, agentId);
@@ -181,84 +185,126 @@ export default function CreatePhoneNumberPage() {
         switch (step) {
             case 0:
                 return (
-                    <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Select Provider</InputLabel>
-                            <Select
-                                value={provider}
-                                label="Select Provider"
-                                onChange={(e) => setProvider(e.target.value)}
-                            >
-                                <MenuItem value="exotel">Exotel (India)</MenuItem>
-                                <MenuItem value="twilio">Twilio (Global)</MenuItem>
-                                <MenuItem value="knowlarity" disabled>Knowlarity (Coming Soon)</MenuItem>
-                                <MenuItem value="sip">SIP Trunk (Import from your PBX)</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
+                    <Fade in timeout={500}>
+                        <Box>
+                            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#1a1a1a' }}>
+                                Choose Your Phone Number Source
+                            </Typography>
+                            <Stack spacing={2}>
+                                {[
+                                    { value: 'exotel', label: 'Exotel', subtitle: 'India-based provider', available: true },
+                                    { value: 'twilio', label: 'Twilio', subtitle: 'Global provider', available: true },
+                                    { value: 'knowlarity', label: 'Knowlarity', subtitle: 'Coming Soon', available: false },
+                                    { value: 'sip', label: 'SIP Trunk', subtitle: 'Import from your PBX (3CX, FreePBX, etc.)', available: true }
+                                ].map((option) => (
+                                    <Paper
+                                        key={option.value}
+                                        elevation={provider === option.value ? 8 : 1}
+                                        sx={{
+                                            p: 3,
+                                            cursor: option.available ? 'pointer' : 'not-allowed',
+                                            border: provider === option.value ? '2px solid #000' : '2px solid transparent',
+                                            transition: 'all 0.3s ease',
+                                            opacity: option.available ? 1 : 0.5,
+                                            '&:hover': option.available ? {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: 6
+                                            } : {}
+                                        }}
+                                        onClick={() => option.available && setProvider(option.value)}
+                                    >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <Box>
+                                                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                                    {option.label}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {option.subtitle}
+                                                </Typography>
+                                            </Box>
+                                            {provider === option.value && (
+                                                <CheckIcon sx={{ color: '#4caf50', fontSize: 32 }} />
+                                            )}
+                                        </Box>
+                                    </Paper>
+                                ))}
+                            </Stack>
+                        </Box>
+                    </Fade>
                 );
             case 1:
                 return (
-                    <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-                        {provider === 'exotel' && (
-                            <ExotelForm data={credentials} onChange={setCredentials} />
-                        )}
-                        {provider === 'twilio' && (
-                            <TwilioForm data={credentials} onChange={setCredentials} />
-                        )}
-                        {provider === 'sip' && (
-                            <SIPTrunkForm data={credentials} onChange={setCredentials} />
-                        )}
-                    </Box>
+                    <Fade in timeout={500}>
+                        <Box>
+                            {provider === 'exotel' && <ExotelForm data={credentials} onChange={setCredentials} />}
+                            {provider === 'twilio' && <TwilioForm data={credentials} onChange={setCredentials} />}
+                            {provider === 'sip' && <SIPTrunkForm data={credentials} onChange={setCredentials} />}
+                        </Box>
+                    </Fade>
                 );
             case 2:
                 return (
-                    <Box sx={{ maxWidth: 600, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <TextField
-                            label="Phone Number"
-                            value={basicInfo.phone_number}
-                            disabled
-                            fullWidth
-                            helperText="Phone number from provider settings"
-                        />
-                        <TextField
-                            label="Display Name"
-                            placeholder="e.g., Sales Line 1"
-                            value={basicInfo.display_name}
-                            onChange={(e) => setBasicInfo({ ...basicInfo, display_name: e.target.value })}
-                            fullWidth
-                            required
-                            helperText="A friendly name to identify this number"
-                        />
-                    </Box>
+                    <Fade in timeout={500}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: '#1a1a1a' }}>
+                                Basic Information
+                            </Typography>
+                            <TextField
+                                label="Phone Number"
+                                value={basicInfo.phone_number}
+                                disabled
+                                fullWidth
+                                helperText="Phone number from provider settings"
+                                sx={{
+                                    '& .MuiInputBase-root': {
+                                        bgcolor: '#f5f5f5'
+                                    }
+                                }}
+                            />
+                            <TextField
+                                label="Display Name"
+                                placeholder="e.g., Sales Line 1"
+                                value={basicInfo.display_name}
+                                onChange={(e) => setBasicInfo({ ...basicInfo, display_name: e.target.value })}
+                                fullWidth
+                                required
+                                helperText="A friendly name to identify this number"
+                            />
+                        </Box>
+                    </Fade>
                 );
             case 3:
                 return (
-                    <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                            Select which agents can use this phone number for outbound calls.
-                        </Typography>
-                        <FormControl fullWidth>
-                            <InputLabel>Assigned Agents</InputLabel>
-                            <Select
-                                multiple
-                                value={assignedAgents}
-                                onChange={(e) => setAssignedAgents(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
-                                input={<OutlinedInput label="Assigned Agents" />}
-                                renderValue={(selected) => {
-                                    if (selected.length === 0) return 'None';
-                                    return selected.map(id => agents.find(a => a.id === id)?.name || id).join(', ');
-                                }}
-                            >
-                                {agents.map((agent) => (
-                                    <MenuItem key={agent.id} value={agent.id}>
-                                        <Checkbox checked={assignedAgents.indexOf(agent.id) > -1} />
-                                        <ListItemText primary={agent.name} secondary={agent.personality} />
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Box>
+                    <Fade in timeout={500}>
+                        <Box>
+                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#1a1a1a' }}>
+                                Assign AI Agents
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                                Select which agents can use this phone number for outbound calls.
+                            </Typography>
+                            <FormControl fullWidth>
+                                <InputLabel>Assigned Agents</InputLabel>
+                                <Select
+                                    multiple
+                                    value={assignedAgents}
+                                    onChange={(e) => setAssignedAgents(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                                    input={<OutlinedInput label="Assigned Agents" />}
+                                    renderValue={(selected) => {
+                                        if (selected.length === 0) return 'None';
+                                        return selected.map(id => agents.find(a => a.id === id)?.name || id).join(', ');
+                                    }}
+                                >
+                                    {agents.map((agent) => (
+                                        <MenuItem key={agent.id} value={agent.id}>
+                                            <Checkbox checked={assignedAgents.indexOf(agent.id) > -1} />
+                                            <ListItemText primary={agent.name} secondary={agent.personality} />
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Fade>
                 );
             default:
                 return null;
@@ -267,35 +313,112 @@ export default function CreatePhoneNumberPage() {
 
     return (
         <NavigationLayout>
-            <Box sx={{ p: 3 }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4 }}>
-                    Add Phone Number
-                </Typography>
+            <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
+                {/* Header */}
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
+                        Add Phone Number
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Connect a phone number to your AI voice agents
+                    </Typography>
+                </Box>
 
-                <Card>
-                    <CardContent sx={{ p: 4 }}>
-                        <Stepper activeStep={activeStep} sx={{ mb: 5 }}>
-                            {steps.map((label) => (
-                                <Step key={label}>
-                                    <StepLabel>{label}</StepLabel>
-                                </Step>
-                            ))}
-                        </Stepper>
+                {/* Modern Stepper */}
+                <Box sx={{ mb: 4 }}>
+                    <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+                        {steps.map((step, index) => {
+                            const StepIcon = step.icon;
+                            const isActive = index === activeStep;
+                            const isCompleted = index < activeStep;
 
+                            return (
+                                <Box
+                                    key={step.label}
+                                    sx={{
+                                        flex: 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        position: 'relative'
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            width: 56,
+                                            height: 56,
+                                            borderRadius: '50%',
+                                            bgcolor: isActive ? '#000' : isCompleted ? '#4caf50' : '#e0e0e0',
+                                            color: isActive || isCompleted ? '#fff' : '#757575',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mb: 1,
+                                            transition: 'all 0.3s ease',
+                                            boxShadow: isActive ? 4 : 0
+                                        }}
+                                    >
+                                        {isCompleted ? <CheckIcon /> : <StepIcon />}
+                                    </Box>
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            fontWeight: isActive ? 600 : 400,
+                                            color: isActive ? '#000' : '#757575',
+                                            textAlign: 'center'
+                                        }}
+                                    >
+                                        {step.label}
+                                    </Typography>
+                                    {index < steps.length - 1 && (
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 28,
+                                                left: 'calc(50% + 28px)',
+                                                width: 'calc(100% - 56px)',
+                                                height: 2,
+                                                bgcolor: isCompleted ? '#4caf50' : '#e0e0e0',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        />
+                                    )}
+                                </Box>
+                            );
+                        })}
+                    </Stack>
+                </Box>
+
+                {/* Content Card */}
+                <Card
+                    elevation={0}
+                    sx={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 2,
+                        overflow: 'hidden'
+                    }}
+                >
+                    <Box sx={{ p: 4 }}>
                         {error && (
                             <Alert severity="error" sx={{ mb: 3 }}>
                                 {error}
                             </Alert>
                         )}
 
-                        <Box sx={{ minHeight: 300 }}>
+                        <Box sx={{ minHeight: 400 }}>
                             {renderStepContent(activeStep)}
                         </Box>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, gap: 2 }}>
+                        {/* Navigation Buttons */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
                             <Button
                                 disabled={activeStep === 0 || loading}
                                 onClick={handleBack}
+                                startIcon={<ArrowBackIcon />}
+                                sx={{
+                                    color: '#000',
+                                    '&:hover': { bgcolor: '#f5f5f5' }
+                                }}
                             >
                                 Back
                             </Button>
@@ -303,29 +426,37 @@ export default function CreatePhoneNumberPage() {
                                 variant="contained"
                                 onClick={handleNext}
                                 disabled={loading}
+                                endIcon={loading ? null : activeStep === steps.length - 1 ? <CheckIcon /> : <ArrowForwardIcon />}
                                 sx={{
-                                    bgcolor: '#000000',
-                                    '&:hover': { bgcolor: '#333333' }
+                                    bgcolor: '#000',
+                                    px: 4,
+                                    '&:hover': { bgcolor: '#333' },
+                                    '&:disabled': { bgcolor: '#e0e0e0' }
                                 }}
                             >
-                                {loading ? <CircularProgress size={24} /> : activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+                                {loading ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : activeStep === steps.length - 1 ? 'Finish' : 'Next'}
                             </Button>
                         </Box>
-                    </CardContent>
+                    </Box>
                 </Card>
 
-                {/* Success Dialog for SIP Trunk */}
+                {/* Success Dialog */}
                 <Dialog
                     open={showSuccessDialog}
                     onClose={() => { }}
                     maxWidth="md"
                     fullWidth
+                    PaperProps={{
+                        sx: { borderRadius: 2 }
+                    }}
                 >
-                    <DialogTitle sx={{ bgcolor: '#4caf50', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckIcon />
-                        SIP Trunk Created Successfully!
+                    <DialogTitle sx={{ bgcolor: '#4caf50', color: 'white', display: 'flex', alignItems: 'center', gap: 1, py: 3 }}>
+                        <CheckIcon sx={{ fontSize: 32 }} />
+                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                            SIP Trunk Created Successfully!
+                        </Typography>
                     </DialogTitle>
-                    <DialogContent sx={{ mt: 3 }}>
+                    <DialogContent sx={{ mt: 3, px: 4 }}>
                         <Alert severity="success" sx={{ mb: 3 }}>
                             Your SIP trunk has been created. Configure this SIP domain in your PBX system (3CX, FreePBX, etc.) to route calls to your AI agents.
                         </Alert>
@@ -361,18 +492,18 @@ export default function CreatePhoneNumberPage() {
                             }}
                         />
 
-                        <Box sx={{ mt: 3, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                        <Paper sx={{ mt: 3, p: 3, bgcolor: '#f9f9f9' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
                                 Next Steps:
                             </Typography>
-                            <Typography variant="body2" component="ol" sx={{ pl: 2 }}>
+                            <Typography variant="body2" component="ol" sx={{ pl: 2, '& li': { mb: 1 } }}>
                                 <li>Copy the SIP domain above</li>
                                 <li>Open your PBX system (3CX, FreePBX, etc.)</li>
                                 <li>Create a new SIP trunk</li>
                                 <li>Configure it with the SIP domain</li>
                                 <li>Route calls to your AI agents!</li>
                             </Typography>
-                        </Box>
+                        </Paper>
                     </DialogContent>
                     <DialogActions sx={{ p: 3 }}>
                         <Button
@@ -382,8 +513,9 @@ export default function CreatePhoneNumberPage() {
                                 router.push('/phone-numbers');
                             }}
                             sx={{
-                                bgcolor: '#000000',
-                                '&:hover': { bgcolor: '#333333' }
+                                bgcolor: '#000',
+                                px: 4,
+                                '&:hover': { bgcolor: '#333' }
                             }}
                         >
                             Go to Phone Numbers
