@@ -222,15 +222,17 @@ export default function CreatePhoneNumberPage() {
                 <Stack spacing={3} sx={{ maxWidth: 800, mx: 'auto' }}>
                     {/* From Providers Option */}
                     <Paper
-                        elevation={sourceType === 'provider' ? 8 : 2}
+                        elevation={0}
                         sx={{
                             p: 4,
                             cursor: 'pointer',
-                            border: sourceType === 'provider' ? '3px solid #000' : '2px solid transparent',
+                            bgcolor: '#ffffff',
+                            border: sourceType === 'provider' ? '2px solid #6366f1' : '1px solid #e5e7eb',
                             transition: 'all 0.3s ease',
+                            boxShadow: sourceType === 'provider' ? '0 4px 12px rgba(99,102,241,0.2)' : '0 1px 3px rgba(99,102,241,0.1)',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
-                                boxShadow: 8
+                                boxShadow: '0 8px 24px rgba(99,102,241,0.2)'
                             }
                         }}
                         onClick={() => {
@@ -250,7 +252,7 @@ export default function CreatePhoneNumberPage() {
                                     justifyContent: 'center'
                                 }}
                             >
-                                <CloudIcon sx={{ fontSize: 36, color: '#000' }} />
+                                <CloudIcon sx={{ fontSize: 36, color: '#6366f1' }} />
                             </Box>
                             <Box sx={{ flex: 1 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
@@ -273,15 +275,17 @@ export default function CreatePhoneNumberPage() {
 
                     {/* SIP Trunks Option */}
                     <Paper
-                        elevation={sourceType === 'sip' ? 8 : 2}
+                        elevation={0}
                         sx={{
                             p: 4,
                             cursor: 'pointer',
-                            border: sourceType === 'sip' ? '3px solid #000' : '2px solid transparent',
+                            bgcolor: '#ffffff',
+                            border: sourceType === 'sip' ? '2px solid #6366f1' : '1px solid #e5e7eb',
                             transition: 'all 0.3s ease',
+                            boxShadow: sourceType === 'sip' ? '0 4px 12px rgba(99,102,241,0.2)' : '0 1px 3px rgba(99,102,241,0.1)',
                             '&:hover': {
                                 transform: 'translateY(-4px)',
-                                boxShadow: 8
+                                boxShadow: '0 8px 24px rgba(99,102,241,0.2)'
                             }
                         }}
                         onClick={() => {
@@ -302,7 +306,7 @@ export default function CreatePhoneNumberPage() {
                                     justifyContent: 'center'
                                 }}
                             >
-                                <CableIcon sx={{ fontSize: 36, color: '#000' }} />
+                                <CableIcon sx={{ fontSize: 36, color: '#6366f1' }} />
                             </Box>
                             <Box sx={{ flex: 1 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
@@ -346,16 +350,18 @@ export default function CreatePhoneNumberPage() {
                                     ].map((option) => (
                                         <Paper
                                             key={option.value}
-                                            elevation={provider === option.value ? 8 : 1}
+                                            elevation={0}
                                             sx={{
                                                 p: 3,
                                                 cursor: option.available ? 'pointer' : 'not-allowed',
-                                                border: provider === option.value ? '2px solid #000' : '2px solid transparent',
+                                                bgcolor: '#ffffff',
+                                                border: provider === option.value ? '2px solid #6366f1' : '1px solid #e5e7eb',
                                                 transition: 'all 0.3s ease',
                                                 opacity: option.available ? 1 : 0.5,
+                                                boxShadow: provider === option.value ? '0 4px 12px rgba(99,102,241,0.2)' : '0 1px 3px rgba(99,102,241,0.1)',
                                                 '&:hover': option.available ? {
                                                     transform: 'translateY(-4px)',
-                                                    boxShadow: 6
+                                                    boxShadow: '0 8px 24px rgba(99,102,241,0.2)'
                                                 } : {}
                                             }}
                                             onClick={() => option.available && setProvider(option.value)}
@@ -503,10 +509,30 @@ export default function CreatePhoneNumberPage() {
 
     return (
         <NavigationLayout>
-            <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
+            <Box sx={{
+                p: 4,
+                maxWidth: 1200,
+                mx: 'auto',
+                background: '#f5f5f5',
+                minHeight: '100vh',
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                    opacity: 0.3,
+                    pointerEvents: 'none',
+                    zIndex: 0
+                }
+            }}>
                 {/* Header */}
-                <Box sx={{ mb: 4 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
+                <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
                         Add Phone Number
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
@@ -520,7 +546,7 @@ export default function CreatePhoneNumberPage() {
                 ) : (
                     <>
                         {/* Modern Stepper */}
-                        <Box sx={{ mb: 4 }}>
+                        <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
                             <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
                                 {steps.map((step, index) => {
                                     const StepIcon = step.icon;
@@ -543,14 +569,14 @@ export default function CreatePhoneNumberPage() {
                                                     width: 56,
                                                     height: 56,
                                                     borderRadius: '50%',
-                                                    bgcolor: isActive ? '#000' : isCompleted ? '#4caf50' : '#e0e0e0',
+                                                    bgcolor: isActive ? '#6366f1' : isCompleted ? '#4caf50' : '#e0e0e0',
                                                     color: isActive || isCompleted ? '#fff' : '#757575',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     mb: 1,
                                                     transition: 'all 0.3s ease',
-                                                    boxShadow: isActive ? 4 : 0
+                                                    boxShadow: isActive ? '0 4px 12px rgba(99,102,241,0.3)' : 0
                                                 }}
                                             >
                                                 {isCompleted ? <CheckIcon /> : <StepIcon />}
@@ -559,7 +585,7 @@ export default function CreatePhoneNumberPage() {
                                                 variant="caption"
                                                 sx={{
                                                     fontWeight: isActive ? 600 : 400,
-                                                    color: isActive ? '#000' : '#757575',
+                                                    color: isActive ? '#111827' : '#757575',
                                                     textAlign: 'center'
                                                 }}
                                             >
@@ -585,7 +611,19 @@ export default function CreatePhoneNumberPage() {
                         </Box>
 
                         {/* Content Card */}
-                        <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, overflow: 'hidden' }}>
+                        <Card
+                            elevation={0}
+                            sx={{
+                                bgcolor: '#ffffff',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                boxShadow: '0 1px 3px rgba(99,102,241,0.1)',
+                                '&:hover': { boxShadow: '0 4px 12px rgba(99,102,241,0.15)' },
+                                position: 'relative',
+                                zIndex: 1
+                            }}
+                        >
                             <Box sx={{ p: 4 }}>
                                 {error && (
                                     <Alert severity="error" sx={{ mb: 3 }}>
@@ -598,12 +636,15 @@ export default function CreatePhoneNumberPage() {
                                 </Box>
 
                                 {/* Navigation Buttons */}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 3, borderTop: '1px solid #e5e7eb' }}>
                                     <Button
                                         disabled={loading}
                                         onClick={handleBack}
                                         startIcon={<ArrowBackIcon />}
-                                        sx={{ color: '#000', '&:hover': { bgcolor: '#f5f5f5' } }}
+                                        sx={{
+                                            color: '#6366f1',
+                                            '&:hover': { bgcolor: 'rgba(99,102,241,0.1)' }
+                                        }}
                                     >
                                         Back
                                     </Button>
@@ -613,9 +654,10 @@ export default function CreatePhoneNumberPage() {
                                         disabled={loading}
                                         endIcon={loading ? null : activeStep === steps.length - 1 ? <CheckIcon /> : <ArrowForwardIcon />}
                                         sx={{
-                                            bgcolor: '#000',
+                                            bgcolor: '#6366f1',
                                             px: 4,
-                                            '&:hover': { bgcolor: '#333' },
+                                            fontWeight: 700,
+                                            '&:hover': { bgcolor: '#4f46e5' },
                                             '&:disabled': { bgcolor: '#e0e0e0' }
                                         }}
                                     >
@@ -646,7 +688,7 @@ export default function CreatePhoneNumberPage() {
                             Your SIP trunk has been created. Configure this SIP domain in your PBX system (3CX, FreePBX, etc.) to route calls to your AI agents.
                         </Alert>
 
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#111827' }}>
                             Your SIP Domain:
                         </Typography>
 
@@ -663,6 +705,7 @@ export default function CreatePhoneNumberPage() {
                                                 alert('SIP domain copied to clipboard!');
                                             }}
                                             edge="end"
+                                            sx={{ color: '#6366f1' }}
                                         >
                                             <CopyIcon />
                                         </IconButton>
@@ -672,16 +715,17 @@ export default function CreatePhoneNumberPage() {
                                     bgcolor: '#f5f5f5',
                                     fontFamily: 'monospace',
                                     fontSize: '1.1rem',
-                                    fontWeight: 600
+                                    fontWeight: 600,
+                                    border: '1px solid #e5e7eb'
                                 }
                             }}
                         />
 
-                        <Paper sx={{ mt: 3, p: 3, bgcolor: '#f9f9f9' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                        <Paper sx={{ mt: 3, p: 3, bgcolor: '#f9f9f9', border: '1px solid #e5e7eb' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#111827' }}>
                                 Next Steps:
                             </Typography>
-                            <Typography variant="body2" component="ol" sx={{ pl: 2, '& li': { mb: 1 } }}>
+                            <Typography variant="body2" component="ol" sx={{ pl: 2, '& li': { mb: 1 }, color: '#6b7280' }}>
                                 <li>Copy the SIP domain above</li>
                                 <li>Open your PBX system (3CX, FreePBX, etc.)</li>
                                 <li>Create a new SIP trunk</li>
@@ -698,9 +742,10 @@ export default function CreatePhoneNumberPage() {
                                 router.push('/phone-numbers');
                             }}
                             sx={{
-                                bgcolor: '#000',
+                                bgcolor: '#6366f1',
                                 px: 4,
-                                '&:hover': { bgcolor: '#333' }
+                                fontWeight: 700,
+                                '&:hover': { bgcolor: '#4f46e5' }
                             }}
                         >
                             Go to Phone Numbers
