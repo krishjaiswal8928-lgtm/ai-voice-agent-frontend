@@ -309,4 +309,22 @@ export const integrationAPI = {
     api.post(`/integrations/${integrationId}/import`, data),
 };
 
+// SIP Trunk endpoints
+export const sipTrunkAPI = {
+  getAll: () =>
+    api.get('/sip-trunks'),
+
+  getById: (id: string) =>
+    api.get(`/sip-trunks/${id}`),
+
+  create: (data: any) =>
+    api.post('/sip-trunks', data),
+
+  update: (id: string, data: any) =>
+    api.put(`/sip-trunks/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/sip-trunks/${id}`),
+};
+
 export default api;

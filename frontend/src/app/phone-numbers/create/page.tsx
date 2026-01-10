@@ -26,7 +26,8 @@ import { useRouter } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
 import { ExotelForm } from '@/components/phone-numbers/forms/ExotelForm';
 import { TwilioForm } from '@/components/phone-numbers/forms/TwilioForm';
-import { phoneNumberAPI, voiceAPI } from '@/lib/api';
+import { SIPTrunkForm } from '@/components/phone-numbers/forms/SIPTrunkForm';
+import { phoneNumberAPI, voiceAPI, sipTrunkAPI } from '@/lib/api';
 
 const steps = ['Select Provider', 'Configure Credentials', 'Basic Info', 'Assign Agents'];
 
@@ -94,6 +95,12 @@ export default function CreatePhoneNumberPage() {
                     return false;
                 }
                 setBasicInfo(prev => ({ ...prev, phone_number: credentials.phone_number }));
+            } else if (provider === 'sip') {
+                if (!credentials.phone_number || !credentials.label || !credentials.outbound_address) {
+                    setError('Please fill in all required fields (Phone Number, Label, and Outbound Address)');
+                    return false;
+                }
+                setBasicInfo(prev => ({ ...prev, phone_number: credentials.phone_number }));
             }
         } else if (activeStep === 2) {
             if (!basicInfo.display_name) {
@@ -109,25 +116,46 @@ export default function CreatePhoneNumberPage() {
         setError('');
 
         try {
-            const payload = {
-                phone_number: basicInfo.phone_number,
-                provider: provider,
-                display_name: basicInfo.display_name,
-                credentials: credentials,
-                is_active: true
-            };
+            // Handle SIP trunk separately
+            if (provider === 'sip') {
+                const sipPayload = {
+                    phone_number: credentials.phone_number,
+                    label: credentials.label,
+                    outbound_address: credentials.outbound_address,
+                    inbound_transport: credentials.inbound_transport || 'tcp',
+                    outbound_transport: credentials.outbound_transport || 'tcp',
+                    inbound_media_encryption: credentials.inbound_media_encryption || 'disabled',
+                    outbound_media_encryption: credentials.outbound_media_encryption || 'disabled',
+                    auth_username: credentials.auth_username || null,
+                    auth_password: credentials.auth_password || null,
+                    custom_headers: credentials.custom_headers || null,
+                    assigned_agent_id: assignedAgents.length > 0 ? assignedAgents[0] : null
+                };
 
-            const response = await phoneNumberAPI.create(payload);
-            const phoneId = response.data.id;
+                await sipTrunkAPI.create(sipPayload);
+                router.push('/phone-numbers');
+            } else {
+                // Handle regular provider-based phone numbers
+                const payload = {
+                    phone_number: basicInfo.phone_number,
+                    provider: provider,
+                    display_name: basicInfo.display_name,
+                    credentials: credentials,
+                    is_active: true
+                };
 
-            // Assign agents if selected
-            if (assignedAgents.length > 0) {
-                for (const agentId of assignedAgents) {
-                    await phoneNumberAPI.assignAgent(phoneId, agentId);
+                const response = await phoneNumberAPI.create(payload);
+                const phoneId = response.data.id;
+
+                // Assign agents if selected
+                if (assignedAgents.length > 0) {
+                    for (const agentId of assignedAgents) {
+                        await phoneNumberAPI.assignAgent(phoneId, agentId);
+                    }
                 }
-            }
 
-            router.push('/phone-numbers');
+                router.push('/phone-numbers');
+            }
         } catch (err: any) {
             console.error('Error creating phone number:', err);
             setError(err.response?.data?.detail || 'Failed to create phone number');
@@ -151,7 +179,7 @@ export default function CreatePhoneNumberPage() {
                                 <MenuItem value="exotel">Exotel (India)</MenuItem>
                                 <MenuItem value="twilio">Twilio (Global)</MenuItem>
                                 <MenuItem value="knowlarity" disabled>Knowlarity (Coming Soon)</MenuItem>
-                                <MenuItem value="sip" disabled>Custom SIP (Coming Soon)</MenuItem>
+                                <MenuItem value="sip">SIP Trunk (Import from your PBX)</MenuItem>
                             </Select>
                         </FormControl>
                     </Box>
@@ -164,6 +192,9 @@ export default function CreatePhoneNumberPage() {
                         )}
                         {provider === 'twilio' && (
                             <TwilioForm data={credentials} onChange={setCredentials} />
+                        )}
+                        {provider === 'sip' && (
+                            <SIPTrunkForm data={credentials} onChange={setCredentials} />
                         )}
                     </Box>
                 );

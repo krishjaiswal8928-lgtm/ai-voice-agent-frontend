@@ -56,6 +56,9 @@ export function NavigationLayout({
   const [userMenuAnchor, setUserMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [userData, setUserData] = React.useState<{ username: string; email: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [sidebarWidth, setSidebarWidth] = React.useState(drawerWidth);
+  const [isResizing, setIsResizing] = React.useState(false);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -110,7 +113,47 @@ export function NavigationLayout({
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+    if (!sidebarOpen) {
+      setSidebarWidth(drawerWidth);
+    }
   };
+
+  // Handle mouse down on resize handle
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  // Handle mouse move for resizing
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !sidebarOpen) return;
+
+      const newWidth = e.clientX;
+      // Set min and max width constraints
+      if (newWidth >= 200 && newWidth <= 400) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, sidebarOpen]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
@@ -152,17 +195,17 @@ export function NavigationLayout({
 
         {/* Sidebar Navigation - Modern AI Theme */}
         <Box
+          ref={sidebarRef}
           component="nav"
           sx={{
-            width: { sm: sidebarOpen ? drawerWidth : collapsedDrawerWidth },
+            width: { sm: sidebarOpen ? `${sidebarWidth}px` : `${collapsedDrawerWidth}px` },
             flexShrink: { sm: 0 },
             background: '#f5f5f5',
             borderRight: '1px solid rgba(0,0,0,0.1)',
             height: '100vh',
             position: 'fixed',
             mt: '64px',
-
-            transition: 'width 0.3s ease',
+            transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             '&::before': {
               content: '""',
               position: 'absolute',
@@ -836,6 +879,45 @@ export function NavigationLayout({
             {/* Spacer to push menu items up */}
             <Box sx={{ flexGrow: 1 }} />
           </Box>
+
+          {/* Resize Handle */}
+          {sidebarOpen && (
+            <Box
+              onMouseDown={handleMouseDown}
+              sx={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: '6px',
+                cursor: 'ew-resize',
+                zIndex: 1000,
+                transition: 'background-color 0.2s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(99, 102, 241, 0.3)',
+                },
+                '&:active': {
+                  backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                },
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '2px',
+                  height: '40px',
+                  backgroundColor: 'rgba(99, 102, 241, 0.4)',
+                  borderRadius: '2px',
+                  opacity: 0,
+                  transition: 'opacity 0.2s ease',
+                },
+                '&:hover::before': {
+                  opacity: 1,
+                }
+              }}
+            />
+          )}
         </Box>
 
         {/* Main Content */}
@@ -844,11 +926,11 @@ export function NavigationLayout({
           sx={{
             flexGrow: 1,
             p: 0,
-            width: { sm: `calc(100% - ${sidebarOpen ? drawerWidth : collapsedDrawerWidth}px)` },
-            ml: { sm: `${sidebarOpen ? drawerWidth : collapsedDrawerWidth}px` },
+            width: { sm: `calc(100% - ${sidebarOpen ? sidebarWidth : collapsedDrawerWidth}px)` },
+            ml: { sm: `${sidebarOpen ? sidebarWidth : collapsedDrawerWidth}px` },
             mt: '64px',
             minHeight: 'calc(100vh - 64px)',
-            transition: 'margin-left 0.3s ease, width 0.3s ease'
+            transition: isResizing ? 'none' : 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
           {children}
