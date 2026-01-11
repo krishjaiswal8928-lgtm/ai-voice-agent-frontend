@@ -22,6 +22,9 @@ router = APIRouter()
 WEBHOOK_DOMAIN = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
 if not WEBHOOK_DOMAIN:
     logger.warning("WEBHOOK_BASE_DOMAIN not set in environment variables")
+else:
+    # Clean the domain - remove protocol and trailing slashes
+    WEBHOOK_DOMAIN = WEBHOOK_DOMAIN.replace("https://", "").replace("http://", "").replace("wss://", "").replace("ws://", "").strip("/")
 WEBSOCKET_URL = f"wss://{WEBHOOK_DOMAIN}/twilio/ws" if WEBHOOK_DOMAIN else ""
 logger.info(f"WEBSOCKET_URL = {WEBSOCKET_URL}")
 
