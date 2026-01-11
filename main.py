@@ -37,6 +37,12 @@ print("DEBUG: Importing user_routes...", flush=True)
 import app.routes.user_routes as user_routes
 print("DEBUG: Importing sip_trunk_routes...", flush=True)
 import app.routes.sip_trunk_routes as sip_trunk_routes
+print("DEBUG: Importing sip_webhook_routes...", flush=True)
+import app.routes.sip_webhook_routes as sip_webhook_routes
+print("DEBUG: Importing sip_call_routes...", flush=True)
+import app.routes.sip_call_routes as sip_call_routes
+
+
 
 print("DEBUG: Importing security...", flush=True)
 from app.core import security
@@ -106,6 +112,10 @@ app.include_router(integration_routes.router)  # Register integrations router
 app.include_router(pricing_routes.router)  # Register pricing router
 app.include_router(user_routes.router)  # Register user router
 app.include_router(sip_trunk_routes.router)  # Register SIP trunk router
+app.include_router(sip_webhook_routes.router)  # Register SIP webhook router
+app.include_router(sip_call_routes.router)  # Register SIP call router
+
+
 
 
 @app.get("/", tags=["Health"])

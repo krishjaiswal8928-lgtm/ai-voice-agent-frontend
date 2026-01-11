@@ -64,80 +64,60 @@ def run_background_tasks(conversation, goal, session_id, client_name):
 async def check_sip_trunk_status(db, trunk_id: str):
     """
     Check if a SIP trunk's PBX is reachable.
-    This simulates a SIP OPTIONS ping to the user's outbound_address.
+    Uses provider's SIP OPTIONS implementation.
     """
     from datetime import datetime
     from app.services.sip_trunk_service import SIPTrunkService
-    import socket
+    from app.services.sip_provider import get_sip_provider
     
     print(f"[INFO] Checking SIP trunk status: {trunk_id}")
     
     try:
         service = SIPTrunkService()
+        provider = get_sip_provider()
+        
         trunk = service.get_sip_trunk(db, trunk_id)
         
         if not trunk:
             print(f"[ERROR] Trunk not found: {trunk_id}")
             return
         
-        # Extract hostname from outbound_address
-        outbound_host = trunk.outbound_address
-        if '://' in outbound_host:
-            outbound_host = outbound_host.split('://')[1]
-        if ':' in outbound_host:
-            outbound_host, port = outbound_host.split(':')
-            port = int(port)
-        else:
-            port = 5060  # Default SIP port
+        # Send SIP OPTIONS to PBX
+        result = provider.send_sip_options(trunk.outbound_address, timeout=5)
         
-        # Try to connect to the PBX
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)  # 5 second timeout
-            result = sock.connect_ex((outbound_host, port))
-            sock.close()
-            
-            if result == 0:
-                # Connection successful
-                update_data = {
-                    'connection_status': 'connected',
-                    'last_connected_at': datetime.utcnow(),
-                    'last_checked_at': datetime.utcnow(),
-                    'error_message': None
-                }
-                print(f"[SUCCESS] SIP trunk {trunk_id} is connected")
-            else:
-                # Connection failed
-                update_data = {
-                    'connection_status': 'disconnected',
-                    'last_checked_at': datetime.utcnow(),
-                    'error_message': f'Cannot reach PBX at {outbound_host}:{port}'
-                }
-                print(f"[WARNING] SIP trunk {trunk_id} is disconnected")
-                
-        except socket.gaierror:
-            # DNS resolution failed
+        if result['success']:
+            # Connection successful
             update_data = {
-                'connection_status': 'error',
+                'connection_status': 'connected',
+                'last_connected_at': datetime.utcnow(),
                 'last_checked_at': datetime.utcnow(),
-                'error_message': f'DNS resolution failed for {outbound_host}'
+                'error_message': None
             }
-            print(f"[ERROR] DNS resolution failed for {trunk_id}")
-            
-        except Exception as e:
-            # Other connection errors
+            print(f"[SUCCESS] SIP trunk {trunk_id} is connected (latency: {result.get('latency_ms')}ms)")
+        else:
+            # Connection failed
             update_data = {
-                'connection_status': 'error',
+                'connection_status': 'disconnected',
                 'last_checked_at': datetime.utcnow(),
-                'error_message': str(e)
+                'error_message': result.get('error', 'Unknown error')
             }
-            print(f"[ERROR] Connection error for {trunk_id}: {e}")
+            print(f"[WARNING] SIP trunk {trunk_id} is disconnected: {result.get('error')}")
         
         # Update trunk status in database
         db.collection('sip_trunks').document(trunk_id).update(update_data)
         
     except Exception as e:
         print(f"[ERROR] Failed to check SIP trunk status: {e}")
+        # Update with error status
+        try:
+            db.collection('sip_trunks').document(trunk_id).update({
+                'connection_status': 'error',
+                'last_checked_at': datetime.utcnow(),
+                'error_message': str(e)
+            })
+        except:
+            pass
+
 
 
 async def monitor_all_sip_trunks(db):

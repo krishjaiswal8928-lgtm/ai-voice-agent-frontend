@@ -162,6 +162,28 @@ class SIPTrunkService:
             'username': self.decrypt_credential(trunk.auth_username) if trunk.auth_username else None,
             'password': self.decrypt_credential(trunk.auth_password) if trunk.auth_password else None
         }
+    
+    def get_by_phone_number(self, db: firestore.Client, phone_number: str) -> Optional[SIPTrunk]:
+        """
+        Get SIP trunk by phone number.
+        Used for routing inbound calls.
+        
+        Args:
+            db: Firestore client
+            phone_number: Phone number in E.164 format (e.g., +15551234567)
+            
+        Returns:
+            SIPTrunk if found, None otherwise
+        """
+        trunks_ref = db.collection('sip_trunks')
+        query = trunks_ref.where('phone_number', '==', phone_number).where('is_active', '==', True).limit(1)
+        
+        results = list(query.stream())
+        if results:
+            return SIPTrunk.from_dict(results[0].to_dict())
+        
+        return None
+
 
 
 # Singleton instance
