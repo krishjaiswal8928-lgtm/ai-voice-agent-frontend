@@ -1,13 +1,15 @@
 # app/tasks/background_jobs.py
 
 import asyncio
-from app.services.summarizer import summarize_conversation
 
 
 async def process_post_call_tasks(conversation, goal, session_id, client_name):
     """
     Asynchronous background task to summarize and export after a call ends.
     """
+    # Import here to avoid startup crash if GEMINI_API_KEY is missing
+    from app.services.summarizer import summarize_conversation
+
 
     print(f"[INFO] Starting background tasks for session: {session_id}")
 
