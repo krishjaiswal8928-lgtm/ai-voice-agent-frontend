@@ -89,10 +89,16 @@ export default function PhoneNumbersPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: string, type: 'provider' | 'sip') => {
         if (window.confirm('Are you sure you want to delete this phone number?')) {
             try {
-                await phoneNumberAPI.delete(id);
+                if (type === 'sip') {
+                    // Delete SIP trunk
+                    await sipTrunkAPI.delete(id);
+                } else {
+                    // Delete provider number
+                    await phoneNumberAPI.delete(id);
+                }
                 fetchPhoneNumbers();
             } catch (err) {
                 console.error('Error deleting phone number:', err);
@@ -269,7 +275,7 @@ export default function PhoneNumbersPage() {
                                             <IconButton
                                                 size="small"
                                                 color="error"
-                                                onClick={() => handleDelete(phone.id)}
+                                                onClick={() => handleDelete(phone.id, phone.type)}
                                             >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>

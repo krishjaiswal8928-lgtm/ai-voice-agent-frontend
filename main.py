@@ -152,6 +152,24 @@ async def startup_event():
     # Start the callback scheduler
     asyncio.create_task(callback_scheduler._run_scheduler())
     
+    # Start SIP trunk monitoring
+    logger.info("🔍 Starting SIP trunk monitoring...")
+    from google.cloud import firestore
+    from app.tasks.background_jobs import monitor_all_sip_trunks
+    
+    async def sip_monitoring_loop():
+        """Run SIP monitoring every 60 seconds"""
+        db = firestore.Client()
+        while True:
+            try:
+                await monitor_all_sip_trunks(db)
+            except Exception as e:
+                logger.error(f"SIP monitoring error: {e}")
+            await asyncio.sleep(60)  # Check every 60 seconds
+    
+    asyncio.create_task(sip_monitoring_loop())
+    logger.info("✅ SIP trunk monitoring started")
+    
     # Warmup: Pre-load embedding model in background to avoid delays during calls
     # Warmup: Pre-load embedding model - DISABLED for Render Free Tier to save RAM
     # async def warmup_models():

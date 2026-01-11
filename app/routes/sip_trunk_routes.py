@@ -93,3 +93,38 @@ async def delete_sip_trunk(
     
     sip_trunk_service.delete_sip_trunk(db, trunk_id)
     return None
+
+@router.post("/{trunk_id}/check-connection")
+async def check_connection(
+    trunk_id: str,
+    db: firestore.Client = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Manually check SIP trunk connection status."""
+    trunk = sip_trunk_service.get_sip_trunk(db, trunk_id)
+    
+    if not trunk:
+        raise HTTPException(status_code=404, detail="SIP trunk not found")
+    
+    if trunk.user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        # Run connection check immediately
+        from app.tasks.background_jobs import check_sip_trunk_status
+        import asyncio
+        
+        await check_sip_trunk_status(db, trunk_id)
+        
+        # Get updated trunk
+        updated_trunk = sip_trunk_service.get_sip_trunk(db, trunk_id)
+        
+        return {
+            "success": True,
+            "connection_status": updated_trunk.connection_status,
+            "last_checked_at": updated_trunk.last_checked_at,
+            "error_message": updated_trunk.error_message
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Check failed: {str(e)}")
+
