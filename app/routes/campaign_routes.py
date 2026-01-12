@@ -121,7 +121,7 @@ def delete_call_session(
         )
 
 @router.post("/{campaign_id}/start", response_model=CallSession)
-def start_call_session(
+async def start_call_session(
     campaign_id: str, 
     db: firestore.Client = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -142,18 +142,11 @@ def start_call_session(
         )
     
     if started_call_session.type == "outbound": # Check string value directly
-        if not outbound_manager.client:
-            account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-            auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-            from_number = os.getenv("TWILIO_NUMBER")
-            ngrok_domain = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
-            
-            if account_sid and auth_token and from_number and ngrok_domain:
-                webhook_base = f"https://{ngrok_domain}"
-                outbound_manager.initialize(account_sid, auth_token, from_number, webhook_base)
-        
+        # Start lead dialing in background
         try:
+            # Create background task properly
             asyncio.create_task(lead_caller_service.start_campaign_dialing(campaign_id, db))
+            logger.info(f"✅ Started lead dialing service for campaign {campaign_id}")
         except Exception as e:
             logger.error(f"Failed to start lead dialing for call session {campaign_id}: {e}")
     
