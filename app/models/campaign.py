@@ -14,6 +14,7 @@ class CallSession:
         status: str = "draft",
         goal: Optional[str] = None,
         custom_agent_id: Optional[Union[int, str]] = None,
+        phone_number_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
         id: Optional[str] = None # Firestore IDs are strings
@@ -25,6 +26,7 @@ class CallSession:
         self.status = status
         self.goal = goal
         self.custom_agent_id = custom_agent_id
+        self.phone_number_id = phone_number_id
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or datetime.now()
 
@@ -36,6 +38,7 @@ class CallSession:
             "status": self.status,
             "goal": self.goal,
             "custom_agent_id": self.custom_agent_id,
+            "phone_number_id": self.phone_number_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
@@ -50,6 +53,7 @@ class CallSession:
             status=source.get("status", "draft"),
             goal=source.get("goal"),
             custom_agent_id=source.get("custom_agent_id"),
+            phone_number_id=source.get("phone_number_id"),
             created_at=source.get("created_at"),
             updated_at=source.get("updated_at")
         )

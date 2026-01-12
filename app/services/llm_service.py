@@ -137,6 +137,8 @@ async def generate_response_stream(transcript: str, goal: str, history: Optional
     
     # Add company introduction if this is the first message
     intro_instruction = ""
+    is_outbound_call = context and "CALL PURPOSE:" in context
+    
     if len(history) == 0:
         # Sanitize defaults
         safe_agent = agent_name or "Assistant"
@@ -147,8 +149,31 @@ async def generate_response_stream(transcript: str, goal: str, history: Optional
              safe_agent = "Assistant"
         if "[" in safe_company or "{" in safe_company or "Your Company" in safe_company:
              safe_company = "Digitale"
-             
-        intro_instruction = f"Introduce yourself as {safe_agent} from {safe_company}. "
+        
+        if is_outbound_call:
+            # OUTBOUND CALL: Agent initiates, introduces self, states purpose
+            intro_instruction = (
+                f"IMPORTANT: This is an OUTBOUND call that YOU initiated to the customer.\n"
+                f"Your Identity:\n"
+                f"- Your name: {safe_agent}\n"
+                f"- Company: {safe_company}\n\n"
+                f"Introduction Guidelines:\n"
+                f"- Start by introducing yourself naturally\n"
+                f"- Mention why you're calling (the purpose is in the Knowledge Base)\n"
+                f"- Be friendly and professional\n"
+                f"- DON'T ask 'How can I help you?' - YOU called THEM\n\n"
+                f"Example opening:\n"
+                f"'Hello! This is {safe_agent} from {safe_company}. "
+                f"I'm calling to [mention the purpose from Knowledge Base]. "
+                f"Do you have a moment to chat?'\n\n"
+            )
+        else:
+            # INBOUND CALL: Customer called, ask how to help
+            intro_instruction = (
+                f"This is an INBOUND call - the customer called YOU.\n"
+                f"Introduce yourself as {safe_agent} from {safe_company}. "
+                f"Ask how you can help them.\n\n"
+            )
     
     # Build enhanced prompt with RAG enforcement and memory awareness
     rag_instruction = ""

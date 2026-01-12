@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import Response
 from google.cloud import firestore
 from typing import List
 import csv
@@ -10,6 +11,39 @@ from app.models.lead import Lead as LeadModel
 from app.core.security import get_current_user
 
 router = APIRouter(prefix="/leads", tags=["Leads"])
+
+@router.get("/template/download")
+async def download_lead_template():
+    """
+    Download CSV template for lead upload.
+    Returns a sample CSV file with proper headers and example data.
+    """
+    csv_content = """name,phone,email,purpose
+John Doe,+15551234567,john@example.com,Follow up on product inquiry
+Jane Smith,+15559876543,jane@example.com,Schedule product demo
+Bob Johnson,+15555555555,bob@example.com,Discuss pricing options
+
+# Instructions:
+# - name: Customer's full name (optional)
+# - phone: Must be in E.164 format with + (required)
+# - email: Customer email (optional)
+# - purpose: Why you're calling them - this will be mentioned in the introduction (optional but recommended)
+#
+# Example purposes:
+# - "Follow up on your inquiry about our premium plan"
+# - "Schedule a demo of our new features"
+# - "Discuss your recent support ticket"
+# - "Confirm your appointment for tomorrow"
+"""
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=leads_template.csv"
+        }
+    )
+
 
 @router.post("/upload-csv/{campaign_id}", response_model=List[Lead])
 async def upload_leads_csv(

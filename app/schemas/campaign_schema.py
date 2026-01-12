@@ -18,6 +18,7 @@ class CallSessionBase(BaseModel):
     goal: Optional[str] = None
     rag_document_id: Optional[str] = None  # Changed from int to str for Firestore
     custom_agent_id: Optional[str] = None  # Added for Firestore compatibility
+    phone_number_id: Optional[str] = None  # Phone source (Twilio or SIP trunk)
     
     @validator('type', pre=True)
     def validate_call_session_type(cls, v):
@@ -35,6 +36,7 @@ class CallSessionUpdate(CallSessionBase):
     goal: Optional[str] = None
     rag_document_id: Optional[str] = None  # Changed from int to str
     custom_agent_id: Optional[str] = None
+    phone_number_id: Optional[str] = None
 
 class CallSessionInDBBase(CallSessionBase):
     id: str  # Changed from int to str for Firestore

@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
+import {
+  Box,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Paper,
   Alert,
   CircularProgress,
@@ -18,7 +18,7 @@ import {
   CardContent
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { UploadFile } from '@mui/icons-material';
+import { UploadFile, Download } from '@mui/icons-material';
 
 const UploadArea = styled('div')(({ theme }) => ({
   border: '2px dashed #ccc',
@@ -35,6 +35,7 @@ interface Lead {
   name: string;
   phone: string;
   email?: string;
+  purpose?: string;
 }
 
 interface LeadCSVUploaderProps {
@@ -61,7 +62,7 @@ export function LeadCSVUploader({ onFileUpload, leads, loading }: LeadCSVUploade
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.name.endsWith('.csv')) {
@@ -93,6 +94,16 @@ export function LeadCSVUploader({ onFileUpload, leads, loading }: LeadCSVUploade
     }
   };
 
+  const handleDownloadTemplate = () => {
+    // Download CSV template from backend
+    const link = document.createElement('a');
+    link.href = `${process.env.NEXT_PUBLIC_API_URL}/leads/template/download`;
+    link.download = 'leads_template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Card>
       <CardContent>
@@ -102,13 +113,24 @@ export function LeadCSVUploader({ onFileUpload, leads, loading }: LeadCSVUploade
         <Typography variant="body2" color="textSecondary" gutterBottom>
           Upload a CSV file containing your leads (Max 10MB)
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
-        
+
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="text"
+            startIcon={<Download />}
+            onClick={handleDownloadTemplate}
+            size="small"
+          >
+            Download CSV Template
+          </Button>
+        </Box>
+
         <UploadArea
           onDragEnter={handleDrag}
           onDragOver={handleDrag}
@@ -147,7 +169,7 @@ export function LeadCSVUploader({ onFileUpload, leads, loading }: LeadCSVUploade
             </Box>
           )}
         </UploadArea>
-        
+
         {leads.length > 0 && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -160,6 +182,7 @@ export function LeadCSVUploader({ onFileUpload, leads, loading }: LeadCSVUploade
                     <TableCell>Name</TableCell>
                     <TableCell>Phone</TableCell>
                     <TableCell>Email</TableCell>
+                    <TableCell>Purpose</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -168,11 +191,12 @@ export function LeadCSVUploader({ onFileUpload, leads, loading }: LeadCSVUploade
                       <TableCell>{lead.name || '-'}</TableCell>
                       <TableCell>{lead.phone}</TableCell>
                       <TableCell>{lead.email || '-'}</TableCell>
+                      <TableCell>{lead.purpose || '-'}</TableCell>
                     </TableRow>
                   ))}
                   {leads.length > 5 && (
                     <TableRow>
-                      <TableCell colSpan={3} align="center">
+                      <TableCell colSpan={4} align="center">
                         ... and {leads.length - 5} more
                       </TableCell>
                     </TableRow>

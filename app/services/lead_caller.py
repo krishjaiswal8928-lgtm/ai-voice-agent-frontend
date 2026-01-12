@@ -9,7 +9,7 @@ import os
 from google.cloud import firestore
 from app.models.lead import Lead
 from app.models.campaign import CallSession
-from app.services.outbound_service import make_outbound_call, outbound_manager
+from app.services.unified_outbound_service import unified_outbound_service
 from app.database.firestore import db as global_db # Import the global db instance
 
 class LeadCallerService:
@@ -53,20 +53,17 @@ class LeadCallerService:
                 "campaign_id": campaign_id,
                 "campaign_name": call_session.name,
                 "goal": call_session.goal,
-                "rag_document_id": call_session.rag_document_id
+                "custom_agent_id": call_session.custom_agent_id
             }
             
-            # Initialize Twilio client if not already initialized
-            if not outbound_manager.client:
-                account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-                auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-                from_number = os.getenv("TWILIO_NUMBER")
-                ngrok_domain = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
-                
-                if account_sid and auth_token and from_number and ngrok_domain:
-                    webhook_base = f"https://{ngrok_domain}"
-                    outbound_manager.initialize(account_sid, auth_token, from_number, webhook_base)
-                    print("✅ Twilio outbound service initialized in lead caller service")
+            # Check if phone source is configured
+            phone_source_id = call_session.phone_number_id
+            if not phone_source_id:
+                print(f"❌ No phone source configured for campaign {campaign_id}")
+                print(f"   Please assign a phone number or SIP trunk to this campaign")
+                return
+            
+            print(f"📱 Using phone source: {phone_source_id}")
             
             # Count total leads for this campaign
             # Note: Count queries in Firestore can be expensive/slow if many documents.
@@ -88,30 +85,40 @@ class LeadCallerService:
                 
                 try:
                     print(f"📞 Attempting to call lead {lead.id}: {lead.phone} ({lead.name or 'Unknown'})")
+                    if lead.purpose:
+                        print(f"   Purpose: {lead.purpose}")
                     
-                    # Prepare call context
+                    # Prepare call context with lead purpose
                     call_context = {
                         "campaign_id": str(campaign_id),
                         "lead_id": str(lead.id),
-                        "lead_name": lead.name or "Unknown",
+                        "lead_name": lead.name or "",
+                        "lead_purpose": lead.purpose or "",  # NEW - Pass purpose
                         "goal": call_session.goal or "",
-                        "rag_document_id": str(call_session.rag_document_id) if call_session.rag_document_id else ""
+                        "custom_agent_id": str(call_session.custom_agent_id) if call_session.custom_agent_id else ""
                     }
                     
-                    # Initiate call using the autonomous agent
-                    result = await make_outbound_call(lead.phone, call_context)
+                    # Use unified outbound service
+                    result = await unified_outbound_service.initiate_call(
+                        phone_source_id=phone_source_id,
+                        to_number=lead.phone,
+                        call_context=call_context,
+                        db=db
+                    )
                     
                     lead_ref = db.collection('leads').document(lead.id)
                     
                     if result.get("success"):
                         call_sid = result.get("call_sid")
+                        provider = result.get("provider", "unknown")
                         # Update lead status
                         lead_ref.update({
                             "status": "in_progress",
                             "call_sid": call_sid
                         })
                         calls_made += 1
-                        print(f"✅ Initiated call to {lead.phone} for lead {lead.id}, call SID: {call_sid}")
+                        print(f"✅ Initiated call to {lead.phone} via {provider.upper()}")
+                        print(f"   Call SID: {call_sid}")
                         print(f"📈 Total calls made: {calls_made}/{new_leads}")
                     else:
                         # Mark as failed

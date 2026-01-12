@@ -11,6 +11,7 @@ class Lead:
         phone: str,
         name: Optional[str] = None,
         email: Optional[str] = None,
+        purpose: Optional[str] = None,
         status: str = "new",
         created_at: Optional[datetime] = None,
         id: Optional[str] = None
@@ -20,6 +21,7 @@ class Lead:
         self.name = name
         self.phone = phone
         self.email = email
+        self.purpose = purpose
         self.status = status
         self.created_at = created_at or datetime.now()
 
@@ -29,6 +31,7 @@ class Lead:
             "name": self.name,
             "phone": self.phone,
             "email": self.email,
+            "purpose": self.purpose,
             "status": self.status,
             "created_at": self.created_at
         }
@@ -41,6 +44,7 @@ class Lead:
             name=source.get("name"),
             phone=source.get("phone"),
             email=source.get("email"),
+            purpose=source.get("purpose"),
             status=source.get("status", "new"),
             created_at=source.get("created_at")
         )

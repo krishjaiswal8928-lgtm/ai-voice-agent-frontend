@@ -77,7 +77,8 @@ def create_campaign(db: firestore.Client, call_session_data: CallSessionCreate, 
             name=sanitize_input(call_session_data.name),
             type=campaign_type,
             goal=sanitize_input(call_session_data.goal) if call_session_data.goal else None,
-            custom_agent_id=call_session_data.custom_agent_id
+            custom_agent_id=call_session_data.custom_agent_id,
+            phone_number_id=call_session_data.phone_number_id
         )
         
         # Add to Firestore
@@ -118,6 +119,8 @@ def update_campaign(db: firestore.Client, campaign_id: str, call_session_data: C
         updates['goal'] = sanitize_input(call_session_data.goal)
     if call_session_data.custom_agent_id is not None:
         updates['custom_agent_id'] = call_session_data.custom_agent_id
+    if call_session_data.phone_number_id is not None:
+        updates['phone_number_id'] = call_session_data.phone_number_id
         
     doc_ref.update(updates)
     
@@ -210,7 +213,8 @@ async def process_lead_csv(file_path: str, campaign_id: str, db: firestore.Clien
                     campaign_id=campaign_id,
                     name=sanitize_input(row.get('name', '')) if row.get('name') else '',
                     phone=sanitize_input(row['phone']),
-                    email=sanitize_input(row.get('email', '')) if row.get('email') else None
+                    email=sanitize_input(row.get('email', '')) if row.get('email') else None,
+                    purpose=sanitize_input(row.get('purpose', '')) if row.get('purpose') else None
                 )
                 
                 doc_ref = db.collection('leads').document()

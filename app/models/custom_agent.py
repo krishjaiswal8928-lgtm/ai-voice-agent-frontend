@@ -11,6 +11,7 @@ class CustomAgent:
         user_id: Union[int, str],
         name: str,
         description: Optional[str] = None,
+        agent_name: Optional[str] = None,
         company_name: Optional[str] = None,
         personality: str = "professional",
         tone: str = "formal",
@@ -55,6 +56,7 @@ class CustomAgent:
         self.user_id = user_id
         self.name = name
         self.description = description
+        self.agent_name = agent_name
         self.company_name = company_name
         self.personality = personality
         self.tone = tone
@@ -103,6 +105,7 @@ class CustomAgent:
             "user_id": self.user_id,
             "name": self.name,
             "description": self.description,
+            "agent_name": self.agent_name,
             "company_name": self.company_name,
             "personality": self.personality,
             "tone": self.tone,
@@ -150,6 +153,7 @@ class CustomAgent:
             user_id=source.get("user_id"),
             name=source.get("name"),
             description=source.get("description"),
+            agent_name=source.get("agent_name"),
             company_name=source.get("company_name"),
             personality=source.get("personality", "professional"),
             tone=source.get("tone", "formal"),

@@ -576,6 +576,23 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                     logger.info(f"📚 RAG Context Found: {len(rag_context)} chars")
             except Exception as e:
                 logger.error(f"Error fetching RAG context: {e}")
+        
+        # --- 2.5. Fetch Lead Purpose for Outbound Calls ---
+        lead_purpose = None
+        if state.lead_id:
+            try:
+                from app.database.firestore import db
+                lead_doc = db.collection('leads').document(state.lead_id).get()
+                if lead_doc.exists:
+                    from app.models.lead import Lead
+                    lead = Lead.from_dict(lead_doc.to_dict(), lead_doc.id)
+                    lead_purpose = lead.purpose
+                    if lead_purpose:
+                        logger.info(f"📋 Lead Purpose: {lead_purpose}")
+                        # Add purpose to RAG context
+                        rag_context = f"CALL PURPOSE: {lead_purpose}\n\n{rag_context}"
+            except Exception as e:
+                logger.error(f"Error fetching lead purpose: {e}")
 
         # --- 3. Response Generation ---
         sentence_buffer = ""

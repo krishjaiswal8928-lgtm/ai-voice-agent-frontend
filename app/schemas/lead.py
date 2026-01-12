@@ -6,6 +6,7 @@ class LeadBase(BaseModel):
     name: Optional[str] = None
     phone: str
     email: Optional[EmailStr] = None
+    purpose: Optional[str] = None
 
 class LeadCreate(LeadBase):
     campaign_id: Union[int, str]  # Accept both int and str for compatibility

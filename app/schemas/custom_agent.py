@@ -6,6 +6,7 @@ import json
 class CustomAgentCreate(BaseModel):
     name: str
     description: str = ""
+    agent_name: Optional[str] = None
     company_name: Optional[str] = None
     personality: str = "professional"
     tone: str = "formal"
@@ -34,6 +35,7 @@ class CustomAgentCreate(BaseModel):
 class CustomAgentUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    agent_name: Optional[str] = None
     company_name: Optional[str] = None
     personality: Optional[str] = None
     tone: Optional[str] = None
@@ -77,6 +79,7 @@ class CustomAgentResponse(CustomAgentCreate):
             "user_id": getattr(obj, 'user_id', ''),
             "name": getattr(obj, 'name', ''),
             "description": getattr(obj, 'description', ''),
+            "agent_name": getattr(obj, 'agent_name', None) or '',
             "company_name": getattr(obj, 'company_name', None) or '',
             "personality": getattr(obj, 'personality', 'professional'),
             "tone": getattr(obj, 'tone', 'formal'),
