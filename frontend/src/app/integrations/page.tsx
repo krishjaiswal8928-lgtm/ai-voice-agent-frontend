@@ -56,7 +56,7 @@ export default function IntegrationsPage() {
             name: 'Twilio',
             description: 'Connect your Twilio account to import and manage phone numbers',
             // Local image downloaded from Google Drive
-            icon: <img src="/twilio-logo.png" alt="Twilio" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />,
+            icon: <img src="/twilio-logo.png" alt="Twilio" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />,
             color: '#F22F46'
         },
         {
