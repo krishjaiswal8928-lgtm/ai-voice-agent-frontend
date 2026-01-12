@@ -49,7 +49,14 @@ interface AgentData {
   system_prompt: string;
   website_urls: string[];
   trained_documents: string[];
+  phone_number_id?: string;  // Phone number assignment
   created_at: string;
+}
+
+interface PhoneNumber {
+  id: string;
+  phone_number: string;
+  provider: string;
 }
 
 const llmProviders = [
@@ -84,6 +91,7 @@ export default function EditAgentPage() {
   const agentId = params.id as string;
 
   const [agentData, setAgentData] = useState<AgentData | null>(null);
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +100,18 @@ export default function EditAgentPage() {
   useEffect(() => {
     if (agentId) {
       fetchAgent();
+      fetchPhoneNumbers();
     }
   }, [agentId]);
+
+  const fetchPhoneNumbers = async () => {
+    try {
+      const response = await voiceAPI.getPhoneNumbers();
+      setPhoneNumbers(response.data || []);
+    } catch (err) {
+      console.error('Error fetching phone numbers:', err);
+    }
+  };
 
   const fetchAgent = async () => {
     try {
@@ -151,7 +169,8 @@ export default function EditAgentPage() {
         sales_aggressiveness: agentData.sales_aggressiveness,
         confidence_level: agentData.confidence_level,
         system_prompt: agentData.system_prompt,
-        website_urls: agentData.website_urls
+        website_urls: agentData.website_urls,
+        phone_number_id: agentData.phone_number_id
       });
 
       // Redirect to agent settings
@@ -282,6 +301,41 @@ export default function EditAgentPage() {
                   margin="normal"
                   sx={{ mb: 2 }}
                 />
+              </CardContent>
+            </Card>
+
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                  📞 Phone Number Assignment
+                </Typography>
+
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Assign a phone number to this agent for both inbound and outbound calls.
+                </Typography>
+
+                <FormControl fullWidth margin="normal">
+                  <InputLabel>Phone Number</InputLabel>
+                  <Select
+                    value={agentData.phone_number_id || ''}
+                    onChange={(e) => handleChange('phone_number_id', e.target.value)}
+                  >
+                    <MenuItem value="">
+                      <em>No phone number assigned</em>
+                    </MenuItem>
+                    {phoneNumbers.map((phone) => (
+                      <MenuItem key={phone.id} value={phone.id}>
+                        {phone.phone_number} ({phone.provider})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {phoneNumbers.length === 0 && (
+                  <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                    ⚠️ No phone numbers available. Please import a phone number from Twilio first.
+                  </Typography>
+                )}
               </CardContent>
             </Card>
 
