@@ -27,9 +27,9 @@ class VirtualPhoneNumber:
         self.updated_at = updated_at or datetime.utcnow()
 
     @staticmethod
-    def from_dict(source: Dict[str, Any]) -> 'VirtualPhoneNumber':
+    def from_dict(source: Dict[str, Any], id: Optional[str] = None) -> 'VirtualPhoneNumber':
         return VirtualPhoneNumber(
-            id=source.get('id'),
+            id=id or source.get('id'),
             user_id=source.get('user_id'),
             phone_number=source.get('phone_number'),
             provider=source.get('provider'),
