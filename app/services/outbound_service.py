@@ -21,8 +21,18 @@ class OutboundCallService:
         try:
             self.client = Client(account_sid, auth_token)
             self.from_number = from_number
+            # Ensure webhook_base is just the protocol + domain
+            if webhook_base:
+                # Remove trailing slashes
+                webhook_base = webhook_base.rstrip('/')
+                # Check if it accidentally includes the path already (common config error)
+                if '/twilio/voice/webhook' in webhook_base:
+                    webhook_base = webhook_base.split('/twilio/voice/webhook')[0]
+                elif '/twilio/status' in webhook_base:
+                     webhook_base = webhook_base.split('/twilio/status')[0]
+            
             self.webhook_base = webhook_base
-            logger.info("✅ Twilio client initialized")
+            logger.info(f"✅ Twilio client initialized with base: {self.webhook_base}")
         except Exception as e:
             logger.error(f"❌ Twilio client init error: {e}")
             self.client = None
