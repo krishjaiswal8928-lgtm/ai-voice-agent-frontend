@@ -50,7 +50,9 @@ class CustomAgent:
         total_conversations: int = 0,
         success_rate: float = 0.0,
         average_satisfaction: float = 0.0,
-        last_learning_update: Optional[datetime] = None
+        last_learning_update: Optional[datetime] = None,
+        # Phone Number Assignment
+        phone_number_id: Optional[str] = None
     ):
         self.id = id
         self.user_id = user_id
@@ -99,6 +101,7 @@ class CustomAgent:
         self.success_rate = success_rate
         self.average_satisfaction = average_satisfaction
         self.last_learning_update = last_learning_update
+        self.phone_number_id = phone_number_id
 
     def to_dict(self):
         return {
@@ -143,7 +146,9 @@ class CustomAgent:
             "total_conversations": self.total_conversations,
             "success_rate": self.success_rate,
             "average_satisfaction": self.average_satisfaction,
-            "last_learning_update": self.last_learning_update
+            "last_learning_update": self.last_learning_update,
+            # Phone Number
+            "phone_number_id": self.phone_number_id
         }
 
     @staticmethod
@@ -191,5 +196,7 @@ class CustomAgent:
             total_conversations=source.get("total_conversations", 0),
             success_rate=source.get("success_rate", 0.0),
             average_satisfaction=source.get("average_satisfaction", 0.0),
-            last_learning_update=source.get("last_learning_update")
+            last_learning_update=source.get("last_learning_update"),
+            # Phone Number
+            phone_number_id=source.get("phone_number_id")
         )

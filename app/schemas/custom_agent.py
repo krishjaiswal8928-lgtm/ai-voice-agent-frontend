@@ -31,6 +31,8 @@ class CustomAgentCreate(BaseModel):
     # Goals & Success Criteria
     primary_goal: Optional[str] = None
     success_criteria: Optional[List[str]] = None
+    # Phone Number Assignment
+    phone_number_id: Optional[str] = None
 
 class CustomAgentUpdate(BaseModel):
     name: Optional[str] = None
@@ -60,6 +62,8 @@ class CustomAgentUpdate(BaseModel):
     # Goals & Success Criteria
     primary_goal: Optional[str] = None
     success_criteria: Optional[List[str]] = None
+    # Phone Number Assignment
+    phone_number_id: Optional[str] = None
 
 class CustomAgentResponse(CustomAgentCreate):
     id: str

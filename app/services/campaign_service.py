@@ -77,8 +77,7 @@ def create_campaign(db: firestore.Client, call_session_data: CallSessionCreate, 
             name=sanitize_input(call_session_data.name),
             type=campaign_type,
             goal=sanitize_input(call_session_data.goal) if call_session_data.goal else None,
-            custom_agent_id=call_session_data.custom_agent_id,
-            phone_number_id=call_session_data.phone_number_id
+            custom_agent_id=call_session_data.custom_agent_id
         )
         
         # Add to Firestore
@@ -119,8 +118,6 @@ def update_campaign(db: firestore.Client, campaign_id: str, call_session_data: C
         updates['goal'] = sanitize_input(call_session_data.goal)
     if call_session_data.custom_agent_id is not None:
         updates['custom_agent_id'] = call_session_data.custom_agent_id
-    if call_session_data.phone_number_id is not None:
-        updates['phone_number_id'] = call_session_data.phone_number_id
         
     doc_ref.update(updates)
     

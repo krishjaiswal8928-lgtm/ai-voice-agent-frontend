@@ -56,14 +56,31 @@ class LeadCallerService:
                 "custom_agent_id": call_session.custom_agent_id
             }
             
-            # Check if phone source is configured
-            phone_source_id = call_session.phone_number_id
+            # Get phone number from AGENT (not campaign)
+            phone_source_id = None
+            if call_session.custom_agent_id:
+                try:
+                    agent_doc = db.collection('custom_agents').document(call_session.custom_agent_id).get()
+                    if agent_doc.exists:
+                        agent = CustomAgent.from_dict(agent_doc.to_dict(), agent_doc.id)
+                        phone_source_id = agent.phone_number_id
+                        if phone_source_id:
+                            logger.info(f"📱 Agent {agent.name} has phone number: {phone_source_id}")
+                        else:
+                            logger.warning(f"⚠️ Agent {agent.name} has no phone number assigned")
+                    else:
+                        logger.error(f"❌ Agent {call_session.custom_agent_id} not found")
+                except Exception as e:
+                    logger.error(f"Error fetching agent: {e}")
+            else:
+                logger.error(f"❌ No agent assigned to campaign {campaign_id}")
+            
             if not phone_source_id:
-                print(f"❌ No phone source configured for campaign {campaign_id}")
-                print(f"   Please assign a phone number or SIP trunk to this campaign")
+                print(f"❌ No phone number configured for this campaign's agent")
+                print(f"   Please assign a phone number to the agent in agent settings")
                 return
             
-            print(f"📱 Using phone source: {phone_source_id}")
+            print(f"📱 Using agent's phone number: {phone_source_id}")
             
             # Count total leads for this campaign
             # Note: Count queries in Firestore can be expensive/slow if many documents.
