@@ -8,6 +8,7 @@ from typing import Optional, List
 import os
 import logging
 from google.cloud import firestore
+from google.cloud.firestore import FieldFilter
 from app.models.lead import Lead
 from app.models.campaign import CallSession
 from app.models.custom_agent import CustomAgent
@@ -90,8 +91,8 @@ class LeadCallerService:
             # Note: Count queries in Firestore can be expensive/slow if many documents.
             # Using aggregation queries if available, or just simple count for now.
             leads_ref = db.collection('leads')
-            total_leads = len(leads_ref.where('campaign_id', '==', campaign_id).get())
-            new_leads = len(leads_ref.where('campaign_id', '==', campaign_id).where('status', '==', 'new').get())
+            total_leads = len(leads_ref.where(filter=FieldFilter('campaign_id', '==', campaign_id)).get())
+            new_leads = len(leads_ref.where(filter=FieldFilter('campaign_id', '==', campaign_id)).where(filter=FieldFilter('status', '==', 'new')).get())
             
             print(f"📊 Campaign {campaign_id} has {total_leads} total leads, {new_leads} new leads")
             
@@ -174,7 +175,7 @@ class LeadCallerService:
     def _get_next_lead(self, campaign_id: str, db: firestore.Client) -> Optional[Lead]:
         """Get the next lead to call"""
         campaign_id = str(campaign_id)
-        docs = db.collection('leads').where('campaign_id', '==', campaign_id).where('status', '==', 'new').limit(1).stream()
+        docs = db.collection('leads').where(filter=FieldFilter('campaign_id', '==', campaign_id)).where(filter=FieldFilter('status', '==', 'new')).limit(1).stream()
         
         for doc in docs:
             return Lead.from_dict(doc.to_dict(), doc.id)

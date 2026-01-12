@@ -1,19 +1,39 @@
-import sqlite3
+import os
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+from dotenv import load_dotenv
 
-# Connect to the database
-conn = sqlite3.connect('ai_voice_agent.db')
-cursor = conn.cursor()
+load_dotenv()
 
-# Reset lead statuses for campaign 4
-cursor.execute("UPDATE leads SET status='new' WHERE campaign_id=4")
-conn.commit()
-print('Leads reset to new status')
+# Initialize Firebase
+if not firebase_admin._apps:
+    cred = credentials.ApplicationDefault()
+    firebase_admin.initialize_app(cred, {
+        'projectId': os.getenv('GOOGLE_CLOUD_PROJECT'),
+    })
 
-# Check current leads status
-cursor.execute('SELECT id, phone, status FROM leads WHERE campaign_id=4')
-leads = cursor.fetchall()
-print('Current leads status:')
-for lead in leads:
-    print(f'  - Lead {lead[0]}: {lead[1]} ({lead[2]})')
+db = firestore.client()
+
+def reset_leads(campaign_id):
+    print(f"Resetting failed leads for campaign {campaign_id}...")
     
-conn.close()
+    leads_ref = db.collection('leads')
+    # Use simple where for now to avoid import issues if FieldFilter not avail globally here
+    docs = leads_ref.where('campaign_id', '==', campaign_id).where('status', '==', 'failed').stream()
+    
+    count = 0
+    for doc in docs:
+        print(f"Resetting lead {doc.id}...")
+        doc.reference.update({
+            'status': 'new',
+            'notes': firestore.DELETE_FIELD,
+            'call_sid': firestore.DELETE_FIELD
+        })
+        count += 1
+        
+    print(f"Reset {count} leads to 'new' status.")
+
+if __name__ == "__main__":
+    campaign_id = "Piv0CGJ5KGFHlrtD3LIv"  # Hardcoded from logs
+    reset_leads(campaign_id)
