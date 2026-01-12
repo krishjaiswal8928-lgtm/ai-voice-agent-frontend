@@ -62,10 +62,11 @@ async def voice_webhook(request: Request):
         to_num_norm = normalize_phone(to_num)
 
         # Check if this is an outbound call by looking at call context
-        campaign_id = form_data.get("campaign_id")
-        lead_id = form_data.get("lead_id")
-        goal = form_data.get("goal", "")
-        rag_document_id = form_data.get("rag_document_id")
+        # Params might be in query string (from outbound_service) or body (Twilio standard)
+        campaign_id = form_data.get("campaign_id") or request.query_params.get("campaign_id")
+        lead_id = form_data.get("lead_id") or request.query_params.get("lead_id")
+        goal = form_data.get("goal") or request.query_params.get("goal") or ""
+        rag_document_id = form_data.get("rag_document_id") or request.query_params.get("rag_document_id")
         
         from app.database.firestore import db
         if not db:

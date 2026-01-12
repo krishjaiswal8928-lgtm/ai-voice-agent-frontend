@@ -97,13 +97,61 @@ class LeadCallerService:
             print(f"📊 Campaign {campaign_id} has {total_leads} total leads, {new_leads} new leads")
             
             while campaign_id in self.active_campaigns:
+                # 1. Check Campaign Status
+                try:
+                    # Re-fetch campaign doc to check for status updates (pause/stop)
+                    doc = db.collection('campaigns').document(campaign_id).get()
+                    if not doc.exists:
+                        print(f"Campaign {campaign_id} no longer exists, stopping.")
+                        break
+                    
+                    current_status = doc.to_dict().get('status')
+                    
+                    if current_status == 'paused':
+                        print(f"⏸️ Campaign {campaign_id} is PAUSED. Waiting...")
+                        await asyncio.sleep(10)
+                        continue
+                    
+                    if current_status in ['completed', 'cancelled', 'archived']:
+                        print(f"⏹️ Campaign {campaign_id} is {current_status.upper()}. Stopping dialing.")
+                        break
+                        
+                except Exception as e:
+                    logger.error(f"Error checking campaign status: {e}")
+
                 # Get next lead to call
                 lead = self._get_next_lead(campaign_id, db)
                 if not lead:
-                    # No more leads, wait and check again
-                    print(f"📭 No more new leads for campaign {campaign_id}, waiting...")
-                    await asyncio.sleep(30)
-                    continue
+                    # No more *new* leads. Check if we really are done (all leads processed?)
+                    # If there are NO leads in 'new', 'ringing', 'in_progress', 'queued'
+                    # Then the campaign is effectively complete.
+                    
+                    # NOTE: This check might be heavy if millions of leads. 
+                    # For now assuming manageable size.
+                    
+                    leads_ref = db.collection('leads')
+                    # Check for any active/pending leads
+                    active_statuses = ['new', 'ringing', 'in_progress', 'queued']
+                    # Firestore OR queries are limited, so we check counts. 
+                    # If 'new' is 0 (which lead is None implies), check others.
+                    
+                    # Optimization: We know 'new' is 0 because _get_next_lead returned None.
+                    # Just check for in-flight calls.
+                    in_flight = len(leads_ref.where(filter=FieldFilter('campaign_id', '==', campaign_id)).where(filter=FieldFilter('status', 'in', ['ringing', 'in_progress', 'queued'])).get())
+                    
+                    if in_flight > 0:
+                        print(f"⏳ Waiting for {in_flight} active calls to complete...")
+                        await asyncio.sleep(10)
+                        continue
+                    else:
+                        # No new leads, no active calls. We are DONE.
+                        print(f"✅ All leads processed for campaign {campaign_id}. Marking as COMPLETED.")
+                        db.collection('campaigns').document(campaign_id).update({
+                            'status': 'completed',
+                            'completed_at': firestore.SERVER_TIMESTAMP
+                        })
+                        self.stop_campaign_dialing(campaign_id)
+                        break
                 
                 try:
                     print(f"📞 Attempting to call lead {lead.id}: {lead.phone} ({lead.name or 'Unknown'})")
@@ -141,7 +189,7 @@ class LeadCallerService:
                         calls_made += 1
                         print(f"✅ Initiated call to {lead.phone} via {provider.upper()}")
                         print(f"   Call SID: {call_sid}")
-                        print(f"📈 Total calls made: {calls_made}/{new_leads}")
+                        print(f"📈 Total calls made: {calls_made}")
                     else:
                         # Mark as failed
                         error = result.get("error", "Unknown error")
