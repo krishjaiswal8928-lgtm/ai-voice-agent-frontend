@@ -247,6 +247,9 @@ export const voiceAPI = {
 
   deleteCustomAgent: (id: string) =>
     api.delete(`/agents/${id}`),
+
+  getPhoneNumbers: () =>
+    api.get('/phone-numbers'),
 };
 
 // Report endpoints
