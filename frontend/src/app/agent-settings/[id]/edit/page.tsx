@@ -627,7 +627,7 @@ export default function EditAgentPage() {
                 <Button
                   fullWidth
                   variant="outlined"
-                  onClick={() => router.push(`/agent-settings/${agentData.id}/train`)}
+                  onClick={() => router.push(`/knowledge-base?agent_id=${agentData.id}`)}
                   sx={{
                     mt: 2,
                     color: '#000000',

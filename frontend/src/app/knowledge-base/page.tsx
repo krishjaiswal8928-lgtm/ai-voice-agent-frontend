@@ -48,7 +48,7 @@ import {
     FilterList,
     MenuBook
 } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
 import { voiceAPI, ragAPI } from '@/lib/api';
 import api from '@/lib/api'; // Import the default api instance
@@ -74,6 +74,7 @@ interface Agent {
 
 export default function KnowledgeBasePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const theme = useTheme();
     const [activeTab, setActiveTab] = useState(0);
     const [documents, setDocuments] = useState<Document[]>([]);
@@ -110,6 +111,18 @@ export default function KnowledgeBasePage() {
     useEffect(() => {
         fetchAgents();
     }, []);
+
+    // Effect to handle URL query param for agent_id
+    useEffect(() => {
+        const agentIdParam = searchParams.get('agent_id');
+        if (agentIdParam && agents.length > 0) {
+            const agentId = parseInt(agentIdParam);
+            // Verify the agent exists in the fetched list
+            if (agents.some(a => a.id === agentId)) {
+                setSelectedAgent(agentId);
+            }
+        }
+    }, [searchParams, agents]);
 
     useEffect(() => {
         fetchDocuments();
