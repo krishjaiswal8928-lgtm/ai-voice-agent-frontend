@@ -38,6 +38,7 @@ class CustomAgentService:
                     trained_documents TEXT,
                     website_urls TEXT,
                     vector_db_namespace TEXT,
+                    phone_number_id TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -72,7 +73,9 @@ class CustomAgentService:
                     "system_prompt": agent_data.get("system_prompt", ""),
                     "trained_documents": json.dumps(agent_data.get("trained_documents", [])),
                     "website_urls": json.dumps(agent_data.get("website_urls", [])),
-                    "vector_db_namespace": agent_data.get("vector_db_namespace", "")
+                    "website_urls": json.dumps(agent_data.get("website_urls", [])),
+                    "vector_db_namespace": agent_data.get("vector_db_namespace", ""),
+                    "phone_number_id": agent_data.get("phone_number_id")
                 }
                 
                 doc_ref = self.db.collection('custom_agents').document()
@@ -107,15 +110,17 @@ class CustomAgentService:
                 "system_prompt": str(agent_data.get("system_prompt", "")),
                 "trained_documents": json.dumps(agent_data.get("trained_documents", [])),
                 "website_urls": json.dumps(agent_data.get("website_urls", [])),
-                "vector_db_namespace": str(agent_data.get("vector_db_namespace", ""))
+                "website_urls": json.dumps(agent_data.get("website_urls", [])),
+                "vector_db_namespace": str(agent_data.get("vector_db_namespace", "")),
+                "phone_number_id": str(agent_data.get("phone_number_id")) if agent_data.get("phone_number_id") else None
             }
             
             cursor.execute('''
                 INSERT INTO custom_agents (
                     id, user_id, name, description, llm_provider, tts_provider, stt_provider,
                     personality, tone, response_style, politeness_level, sales_aggressiveness,
-                    confidence_level, system_prompt, trained_documents, website_urls, vector_db_namespace
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    confidence_level, system_prompt, trained_documents, website_urls, vector_db_namespace, phone_number_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 agent_id, agent_dict["user_id"], agent_dict["name"], agent_dict["description"],
                 agent_dict["llm_provider"], agent_dict["tts_provider"], agent_dict["stt_provider"],
@@ -123,7 +128,7 @@ class CustomAgentService:
                 agent_dict["politeness_level"], agent_dict["sales_aggressiveness"],
                 agent_dict["confidence_level"], agent_dict["system_prompt"],
                 agent_dict["trained_documents"], agent_dict["website_urls"],
-                agent_dict["vector_db_namespace"]
+                agent_dict["vector_db_namespace"], agent_dict["phone_number_id"]
             ))
             
             conn.commit()
@@ -279,6 +284,8 @@ class CustomAgentService:
                     updates["website_urls"] = json.dumps(agent_data["website_urls"])
                 if "vector_db_namespace" in agent_data:
                     updates["vector_db_namespace"] = str(agent_data["vector_db_namespace"])
+                if "phone_number_id" in agent_data:
+                    updates["phone_number_id"] = str(agent_data["phone_number_id"]) if agent_data["phone_number_id"] else None
                 
                 # Update in Firestore
                 doc_ref = self.db.collection('custom_agents').document(agent_id)
@@ -345,6 +352,9 @@ class CustomAgentService:
             if "vector_db_namespace" in agent_data:
                 update_fields.append("vector_db_namespace = ?")
                 values.append(str(agent_data["vector_db_namespace"]))
+            if "phone_number_id" in agent_data:
+                update_fields.append("phone_number_id = ?")
+                values.append(str(agent_data["phone_number_id"]) if agent_data["phone_number_id"] else None)
             
             if update_fields:
                 update_fields.append("updated_at = CURRENT_TIMESTAMP")
