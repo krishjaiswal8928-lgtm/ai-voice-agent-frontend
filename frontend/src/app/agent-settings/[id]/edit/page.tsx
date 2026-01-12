@@ -23,23 +23,17 @@ import {
   ArrowBack,
   Save,
   SmartToy,
-  Psychology,
-  RecordVoiceOver,
-  Hearing,
-  Link,
-  Delete
+  Delete,
+  Add as AddIcon
 } from '@mui/icons-material';
 import { useRouter, useParams } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
 import { voiceAPI } from '@/lib/api';
 
 interface AgentData {
-  id: string;  // Changed from number to string
+  id: string;
   name: string;
   description: string;
-  llm_provider: string;
-  tts_provider: string;
-  stt_provider: string;
   personality: string;
   tone: string;
   response_style: string;
@@ -49,7 +43,7 @@ interface AgentData {
   system_prompt: string;
   website_urls: string[];
   trained_documents: string[];
-  phone_number_id?: string;  // Phone number assignment
+  phone_number_id?: string;
   created_at: string;
 }
 
@@ -58,25 +52,6 @@ interface PhoneNumber {
   phone_number: string;
   provider: string;
 }
-
-const llmProviders = [
-  { value: 'openai', label: 'OpenAI GPT' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'gemini', label: 'Gemini' }
-];
-
-const ttsProviders = [
-  { value: 'openai', label: 'OpenAI TTS' },
-  { value: 'aws_polly', label: 'AWS Polly' },
-  { value: 'gemini', label: 'Gemini TTS' }
-];
-
-const sttProviders = [
-  { value: 'deepgram', label: 'Deepgram' },
-  { value: 'openai', label: 'OpenAI Whisper' },
-  { value: 'aws', label: 'AWS Transcribe' },
-  { value: 'google', label: 'Google Speech-to-Text' }
-];
 
 const personalities = [
   { value: 'professional', label: 'Professional (Finance, Legal, Enterprise)' },
@@ -159,9 +134,6 @@ export default function EditAgentPage() {
       await voiceAPI.updateCustomAgent(agentData.id, {
         name: agentData.name,
         description: agentData.description,
-        llm_provider: agentData.llm_provider,
-        tts_provider: agentData.tts_provider,
-        stt_provider: agentData.stt_provider,
         personality: agentData.personality,
         tone: agentData.tone,
         response_style: agentData.response_style,
@@ -211,7 +183,7 @@ export default function EditAgentPage() {
             >
               <ArrowBack />
             </IconButton>
-            <Typography variant="h4">
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
               Edit Agent
             </Typography>
           </Box>
@@ -241,18 +213,42 @@ export default function EditAgentPage() {
 
   return (
     <NavigationLayout>
-      <Box sx={{ p: 3, bgcolor: '#ffffff', minHeight: '100vh', color: '#000000' }}>
+      <Box sx={{
+        p: 3,
+        bgcolor: '#f5f5f5',
+        minHeight: '100vh',
+        color: '#000000',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+          opacity: 0.3,
+          pointerEvents: 'none',
+          zIndex: 0
+        }
+      }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, position: 'relative', zIndex: 1 }}>
           <IconButton
             onClick={() => router.back()}
-            sx={{ color: '#000000', mr: 2 }}
+            sx={{ color: '#000000', mr: 2, bgcolor: '#ffffff', border: '1px solid #e0e0e0', '&:hover': { bgcolor: '#f5f5f5' } }}
           >
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4">
-            Edit Agent: {agentData.name}
-          </Typography>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: '#000000' }}>
+              {agentData.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Configure your agent's personality, knowledge, and capabilities
+            </Typography>
+          </Box>
         </Box>
 
         {error && (
@@ -263,11 +259,12 @@ export default function EditAgentPage() {
           </Box>
         )}
 
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
           <Grid item xs={12} md={8}>
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3 }}>
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, display: 'flex', alignItems: 'center' }}>
+                  <SmartToy sx={{ mr: 1, color: '#000000' }} />
                   Basic Information
                 </Typography>
 
@@ -277,7 +274,16 @@ export default function EditAgentPage() {
                   value={agentData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                   margin="normal"
-                  sx={{ mb: 2 }}
+                  sx={{
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: '#e0e0e0' },
+                      '&:hover fieldset': { borderColor: '#000000' },
+                      '&.Mui-focused fieldset': { borderColor: '#000000' }
+                    },
+                    '& .MuiInputLabel-root': { color: '#666666' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#000000' }
+                  }}
                 />
 
                 <TextField
@@ -288,7 +294,16 @@ export default function EditAgentPage() {
                   multiline
                   rows={3}
                   margin="normal"
-                  sx={{ mb: 2 }}
+                  sx={{
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: '#e0e0e0' },
+                      '&:hover fieldset': { borderColor: '#000000' },
+                      '&.Mui-focused fieldset': { borderColor: '#000000' }
+                    },
+                    '& .MuiInputLabel-root': { color: '#666666' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#000000' }
+                  }}
                 />
 
                 <TextField
@@ -297,16 +312,25 @@ export default function EditAgentPage() {
                   value={agentData.system_prompt}
                   onChange={(e) => handleChange('system_prompt', e.target.value)}
                   multiline
-                  rows={4}
+                  rows={6}
                   margin="normal"
-                  sx={{ mb: 2 }}
+                  sx={{
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: '#e0e0e0' },
+                      '&:hover fieldset': { borderColor: '#000000' },
+                      '&.Mui-focused fieldset': { borderColor: '#000000' }
+                    },
+                    '& .MuiInputLabel-root': { color: '#666666' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#000000' }
+                  }}
                 />
               </CardContent>
             </Card>
 
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3 }}>
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
                   📞 Phone Number Assignment
                 </Typography>
 
@@ -315,10 +339,18 @@ export default function EditAgentPage() {
                 </Typography>
 
                 <FormControl fullWidth margin="normal">
-                  <InputLabel>Phone Number</InputLabel>
+                  <InputLabel sx={{ color: '#666666', '&.Mui-focused': { color: '#000000' } }}>
+                    Phone Number
+                  </InputLabel>
                   <Select
                     value={agentData.phone_number_id || ''}
                     onChange={(e) => handleChange('phone_number_id', e.target.value)}
+                    label="Phone Number"
+                    sx={{
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#000000' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#000000' }
+                    }}
                   >
                     <MenuItem value="">
                       <em>No phone number assigned</em>
@@ -339,77 +371,25 @@ export default function EditAgentPage() {
               </CardContent>
             </Card>
 
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3 }}>
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-                  AI Provider Settings
-                </Typography>
-
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth margin="normal">
-                      <InputLabel>LLM Provider</InputLabel>
-                      <Select
-                        value={agentData.llm_provider}
-                        onChange={(e) => handleChange('llm_provider', e.target.value)}
-                      >
-                        {llmProviders.map(provider => (
-                          <MenuItem key={provider.value} value={provider.value}>
-                            {provider.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth margin="normal">
-                      <InputLabel>TTS Provider</InputLabel>
-                      <Select
-                        value={agentData.tts_provider}
-                        onChange={(e) => handleChange('tts_provider', e.target.value)}
-                      >
-                        {ttsProviders.map(provider => (
-                          <MenuItem key={provider.value} value={provider.value}>
-                            {provider.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth margin="normal">
-                      <InputLabel>STT Provider</InputLabel>
-                      <Select
-                        value={agentData.stt_provider}
-                        onChange={(e) => handleChange('stt_provider', e.target.value)}
-                      >
-                        {sttProviders.map(provider => (
-                          <MenuItem key={provider.value} value={provider.value}>
-                            {provider.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
                   Personality & Tone
                 </Typography>
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth margin="normal">
-                      <InputLabel>Personality</InputLabel>
+                      <InputLabel sx={{ color: '#666666', '&.Mui-focused': { color: '#000000' } }}>Personality</InputLabel>
                       <Select
                         value={agentData.personality}
                         onChange={(e) => handleChange('personality', e.target.value)}
+                        label="Personality"
+                        sx={{
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
+                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#000000' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#000000' }
+                        }}
                       >
                         {personalities.map(personality => (
                           <MenuItem key={personality.value} value={personality.value}>
@@ -422,10 +402,16 @@ export default function EditAgentPage() {
 
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth margin="normal">
-                      <InputLabel>Tone</InputLabel>
+                      <InputLabel sx={{ color: '#666666', '&.Mui-focused': { color: '#000000' } }}>Tone</InputLabel>
                       <Select
                         value={agentData.tone}
                         onChange={(e) => handleChange('tone', e.target.value)}
+                        label="Tone"
+                        sx={{
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
+                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#000000' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#000000' }
+                        }}
                       >
                         <MenuItem value="formal">Formal</MenuItem>
                         <MenuItem value="casual">Casual</MenuItem>
@@ -435,72 +421,58 @@ export default function EditAgentPage() {
                     </FormControl>
                   </Grid>
 
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Politeness Level: {agentData.politeness_level}
-                    </Typography>
-                    <Slider
-                      value={agentData.politeness_level}
-                      onChange={(_, value) => handleChange('politeness_level', value)}
-                      min={1}
-                      max={10}
-                      step={1}
-                      marks={[
-                        { value: 1, label: '1' },
-                        { value: 5, label: '5' },
-                        { value: 10, label: '10' }
-                      ]}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Sales Aggressiveness: {agentData.sales_aggressiveness}
-                    </Typography>
-                    <Slider
-                      value={agentData.sales_aggressiveness}
-                      onChange={(_, value) => handleChange('sales_aggressiveness', value)}
-                      min={1}
-                      max={10}
-                      step={1}
-                      marks={[
-                        { value: 1, label: '1' },
-                        { value: 5, label: '5' },
-                        { value: 10, label: '10' }
-                      ]}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Confidence Level: {agentData.confidence_level}
-                    </Typography>
-                    <Slider
-                      value={agentData.confidence_level}
-                      onChange={(_, value) => handleChange('confidence_level', value)}
-                      min={1}
-                      max={10}
-                      step={1}
-                      marks={[
-                        { value: 1, label: '1' },
-                        { value: 5, label: '5' },
-                        { value: 10, label: '10' }
-                      ]}
-                    />
-                  </Grid>
+                  {/* Sliders with Black styling */}
+                  {[
+                    { label: 'Politeness Level', field: 'politeness_level' },
+                    { label: 'Sales Aggressiveness', field: 'sales_aggressiveness' },
+                    { label: 'Confidence Level', field: 'confidence_level' }
+                  ].map((item) => (
+                    <Grid item xs={12} sm={4} key={item.field}>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                        {item.label}: {agentData[item.field as keyof AgentData]}
+                      </Typography>
+                      <Slider
+                        value={agentData[item.field as keyof AgentData] as number}
+                        onChange={(_, value) => handleChange(item.field as keyof AgentData, value)}
+                        min={1}
+                        max={10}
+                        step={1}
+                        marks={[
+                          { value: 1, label: '1' },
+                          { value: 5, label: '5' },
+                          { value: 10, label: '10' }
+                        ]}
+                        sx={{
+                          color: '#000000',
+                          '& .MuiSlider-thumb': {
+                            backgroundColor: '#000000',
+                          },
+                          '& .MuiSlider-track': {
+                            backgroundColor: '#000000',
+                          },
+                          '& .MuiSlider-rail': {
+                            backgroundColor: '#cccccc',
+                          }
+                        }}
+                      />
+                    </Grid>
+                  ))}
                 </Grid>
               </CardContent>
             </Card>
 
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0' }}>
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
                   Training Data Sources
                 </Typography>
 
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500 }}>
                     Website URLs
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Add URLs for the agent to learn from.
                   </Typography>
 
                   <Box sx={{ display: 'flex', mb: 2 }}>
@@ -509,21 +481,30 @@ export default function EditAgentPage() {
                       placeholder="https://example.com"
                       value={newUrl}
                       onChange={(e) => setNewUrl(e.target.value)}
-                      sx={{ mr: 1 }}
+                      sx={{
+                        mr: 1,
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': { borderColor: '#e0e0e0' },
+                          '&:hover fieldset': { borderColor: '#000000' },
+                          '&.Mui-focused fieldset': { borderColor: '#000000' }
+                        }
+                      }}
                     />
                     <Button
                       variant="outlined"
                       onClick={handleAddUrl}
+                      startIcon={<AddIcon />}
                       sx={{
                         color: '#000000',
                         borderColor: '#000000',
+                        whiteSpace: 'nowrap',
                         '&:hover': {
                           borderColor: '#333333',
                           bgcolor: '#f5f5f5'
                         }
                       }}
                     >
-                      Add
+                      Add URL
                     </Button>
                   </Box>
 
@@ -534,10 +515,11 @@ export default function EditAgentPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        p: 1,
+                        p: 1.5,
                         mb: 1,
-                        bgcolor: '#f5f5f5',
-                        borderRadius: 1
+                        bgcolor: '#fafafa',
+                        borderRadius: 1,
+                        border: '1px solid #f0f0f0'
                       }}
                     >
                       <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
@@ -558,47 +540,24 @@ export default function EditAgentPage() {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', position: 'sticky', top: 20 }}>
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', position: 'sticky', top: 20, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               <CardContent>
                 <Box sx={{ textAlign: 'center', mb: 3 }}>
-                  <SmartToy sx={{ fontSize: 60, color: '#2196f3', mb: 2 }} />
-                  <Typography variant="h6">
+                  <SmartToy sx={{ fontSize: 60, color: '#000000', mb: 2 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     {agentData.name}
                   </Typography>
                   <Chip
                     label={agentData.personality}
                     size="small"
                     sx={{
-                      bgcolor: '#f5f5f5',
-                      color: '#000000',
+                      bgcolor: '#000000',
+                      color: '#ffffff',
                       textTransform: 'capitalize',
-                      mt: 1
+                      mt: 1,
+                      fontWeight: 600
                     }}
                   />
-                </Box>
-
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
-                    AI Providers
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Psychology sx={{ fontSize: 20, color: '#2196f3', mr: 1 }} />
-                    <Typography variant="body2">
-                      {llmProviders.find(p => p.value === agentData.llm_provider)?.label || agentData.llm_provider}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <RecordVoiceOver sx={{ fontSize: 20, color: '#4caf50', mr: 1 }} />
-                    <Typography variant="body2">
-                      {ttsProviders.find(p => p.value === agentData.tts_provider)?.label || agentData.tts_provider}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Hearing sx={{ fontSize: 20, color: '#ff9800', mr: 1 }} />
-                    <Typography variant="body2">
-                      {sttProviders.find(p => p.value === agentData.stt_provider)?.label || agentData.stt_provider}
-                    </Typography>
-                  </Box>
                 </Box>
 
                 <Button
@@ -612,6 +571,7 @@ export default function EditAgentPage() {
                     color: '#ffffff',
                     fontWeight: 700,
                     py: 1.5,
+                    mb: 2,
                     '&:hover': {
                       bgcolor: '#333333'
                     },
@@ -629,7 +589,6 @@ export default function EditAgentPage() {
                   variant="outlined"
                   onClick={() => router.push(`/knowledge-base?agent_id=${agentData.id}`)}
                   sx={{
-                    mt: 2,
                     color: '#000000',
                     borderColor: '#000000',
                     fontWeight: 700,

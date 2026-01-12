@@ -67,11 +67,6 @@ class CustomAgent:
         self.sales_aggressiveness = sales_aggressiveness
         self.confidence_level = confidence_level
         
-        # Provider configurations
-        self.tts_provider = tts_provider or "cartesia"
-        self.llm_provider = llm_provider or "deepseek-v3"
-        self.stt_provider = stt_provider or "deepgram"
-        
         self.system_prompt = system_prompt
         self.trained_documents = trained_documents or []
         self.website_urls = website_urls or []
@@ -117,11 +112,6 @@ class CustomAgent:
             "sales_aggressiveness": self.sales_aggressiveness,
             "confidence_level": self.confidence_level,
             
-            # Provider configurations
-            "tts_provider": self.tts_provider,
-            "llm_provider": self.llm_provider,
-            "stt_provider": self.stt_provider,
-            
             "system_prompt": self.system_prompt,
             "trained_documents": self.trained_documents,
             "website_urls": self.website_urls,
@@ -166,11 +156,6 @@ class CustomAgent:
             politeness_level=source.get("politeness_level", 5),
             sales_aggressiveness=source.get("sales_aggressiveness", 5),
             confidence_level=source.get("confidence_level", 5),
-            
-            # Provider configurations
-            tts_provider=source.get("tts_provider"),
-            llm_provider=source.get("llm_provider"),
-            stt_provider=source.get("stt_provider"),
             
             system_prompt=source.get("system_prompt"),
             trained_documents=source.get("trained_documents"),

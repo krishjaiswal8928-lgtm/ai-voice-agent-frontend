@@ -72,10 +72,13 @@ interface Agent {
     description: string;
 }
 
-export default function KnowledgeBasePage() {
+import { Suspense } from 'react';
+
+function KnowledgeBaseContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const theme = useTheme();
+
     const [activeTab, setActiveTab] = useState(0);
     const [documents, setDocuments] = useState<Document[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -411,175 +414,346 @@ export default function KnowledgeBasePage() {
     };
 
     return (
-        <NavigationLayout>
-            <Box sx={{
-                p: 3,
-                background: '#f5f5f5',
-                minHeight: '100vh',
-                color: '#000000',
-                width: '100%',
-                position: 'relative',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
-                    backgroundSize: '20px 20px',
-                    opacity: 0.3,
-                    pointerEvents: 'none',
-                    zIndex: 0
-                }
-            }}>
-                {/* Header */}
-                <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <MenuBook sx={{ fontSize: 40, mr: 2, color: '#6366f1' }} />
-                        <Typography variant="h3" component="h1" sx={{ fontWeight: 700, color: '#111827' }}>
-                            Knowledge Base
-                        </Typography>
-                    </Box>
+        <Box sx={{
+            p: 3,
+            background: '#f5f5f5',
+            minHeight: '100vh',
+            color: '#000000',
+            width: '100%',
+            position: 'relative',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+                opacity: 0.3,
+                pointerEvents: 'none',
+                zIndex: 0
+            }
+        }}>
+            {/* Header */}
+            <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <MenuBook sx={{ fontSize: 40, mr: 2, color: '#6366f1' }} />
+                    <Typography variant="h3" component="h1" sx={{ fontWeight: 700, color: '#111827' }}>
+                        Knowledge Base
+                    </Typography>
                 </Box>
+            </Box>
 
-                {/* Agent Selection */}
-                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', mb: 3, boxShadow: '0 1px 3px rgba(99,102,241,0.1)', '&:hover': { boxShadow: '0 4px 12px rgba(99,102,241,0.15)' }, position: 'relative', zIndex: 1 }}>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom sx={{ color: '#111827', fontWeight: 700 }}>
-                            Select Agent for Training
-                        </Typography>
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel sx={{ color: '#000000' }}>Agent</InputLabel>
-                            <Select
-                                value={selectedAgent}
-                                onChange={(e) => setSelectedAgent(e.target.value as number | '')}
-                                label="Agent"
-                                sx={{
-                                    color: '#000000',
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: '#e0e0e0'
-                                    },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: '#6366f1'
-                                    }
-                                }}
-                            >
-                                <MenuItem value="">
-                                    <em>Select an agent</em>
-                                </MenuItem>
-                                {agents.map((agent) => (
-                                    <MenuItem key={agent.id} value={agent.id} sx={{ color: '#000000' }}>
-                                        {agent.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        {agents.length === 0 && (
-                            <Alert severity="warning" sx={{ mt: 2 }}>
-                                No agents found. Please create an agent first in Agent Settings.
-                            </Alert>
-                        )}
-                        {agents.length > 0 && (
-                            <Typography variant="body2" sx={{ mt: 2, color: '#6b7280' }}>
-                                {agents.length} agent(s) available
-                            </Typography>
-                        )}
-                        {!selectedAgent && agents.length > 0 && (
-                            <Alert severity="info" sx={{ mt: 2 }}>
-                                Please select an agent to upload documents or process URLs
-                            </Alert>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Action Buttons */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<CloudUpload />}
-                        component="label"
-                        disabled={!selectedAgent || loading}
-                        sx={{
-                            color: '#6366f1',
-                            borderColor: '#6366f1',
-                            '&:hover': {
-                                borderColor: '#4f46e5',
-                                backgroundColor: 'rgba(99,102,241,0.05)'
-                            }
-                        }}
-                    >
-                        Upload Files
-                        <input
-                            type="file"
-                            hidden
-                            multiple
-                            accept=".pdf,.docx,.txt"
-                            onChange={handleFileUpload}
-                        />
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<LinkIcon />}
-                        onClick={() => setUrlDialogOpen(true)}
-                        disabled={!selectedAgent || urlLoading}
-                        sx={{
-                            color: '#6366f1',
-                            borderColor: '#6366f1',
-                            '&:hover': {
-                                borderColor: '#4f46e5',
-                                backgroundColor: 'rgba(99,102,241,0.05)'
-                            }
-                        }}
-                    >
-                        Add URL
-                    </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<Language />}
-                        onClick={() => setCrawlDialogOpen(true)}
-                        disabled={!selectedAgent || crawlLoading}
-                        sx={{
-                            bgcolor: '#6366f1',
-                            color: '#ffffff',
-                            '&:hover': {
-                                bgcolor: '#4f46e5'
-                            }
-                        }}
-                    >
-                        Crawl Domain
-                    </Button>
-                    {selectedDocs.length > 0 && (
-                        <Button
-                            variant="outlined"
-                            color="error"
-                            startIcon={<Delete />}
-                            onClick={handleBulkDelete}
+            {/* Agent Selection */}
+            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', mb: 3, boxShadow: '0 1px 3px rgba(99,102,241,0.1)', '&:hover': { boxShadow: '0 4px 12px rgba(99,102,241,0.15)' }, position: 'relative', zIndex: 1 }}>
+                <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ color: '#111827', fontWeight: 700 }}>
+                        Select Agent for Training
+                    </Typography>
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                        <InputLabel sx={{ color: '#000000' }}>Agent</InputLabel>
+                        <Select
+                            value={selectedAgent}
+                            onChange={(e) => setSelectedAgent(e.target.value as number | '')}
+                            label="Agent"
                             sx={{
-                                color: '#f44336',
-                                borderColor: '#f44336',
-                                '&:hover': {
-                                    borderColor: '#f44336',
-                                    backgroundColor: 'rgba(244, 67, 54, 0.1)'
+                                color: '#000000',
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#e0e0e0'
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#6366f1'
                                 }
                             }}
                         >
-                            Delete Selected ({selectedDocs.length})
-                        </Button>
+                            <MenuItem value="">
+                                <em>Select an agent</em>
+                            </MenuItem>
+                            {agents.map((agent) => (
+                                <MenuItem key={agent.id} value={agent.id} sx={{ color: '#000000' }}>
+                                    {agent.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    {agents.length === 0 && (
+                        <Alert severity="warning" sx={{ mt: 2 }}>
+                            No agents found. Please create an agent first in Agent Settings.
+                        </Alert>
                     )}
-                </Box>
+                    {agents.length > 0 && (
+                        <Typography variant="body2" sx={{ mt: 2, color: '#6b7280' }}>
+                            {agents.length} agent(s) available
+                        </Typography>
+                    )}
+                    {!selectedAgent && agents.length > 0 && (
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                            Please select an agent to upload documents or process URLs
+                        </Alert>
+                    )}
+                </CardContent>
+            </Card>
 
-                {/* Search and Filter */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                    <TextField
-                        placeholder="Search documents..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        InputProps={{
-                            startAdornment: <Search sx={{ mr: 1, color: '#888888' }} />
-                        }}
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
+                <Button
+                    variant="outlined"
+                    startIcon={<CloudUpload />}
+                    component="label"
+                    disabled={!selectedAgent || loading}
+                    sx={{
+                        color: '#6366f1',
+                        borderColor: '#6366f1',
+                        '&:hover': {
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(99,102,241,0.05)'
+                        }
+                    }}
+                >
+                    Upload Files
+                    <input
+                        type="file"
+                        hidden
+                        multiple
+                        accept=".pdf,.docx,.txt"
+                        onChange={handleFileUpload}
+                    />
+                </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<LinkIcon />}
+                    onClick={() => setUrlDialogOpen(true)}
+                    disabled={!selectedAgent || urlLoading}
+                    sx={{
+                        color: '#6366f1',
+                        borderColor: '#6366f1',
+                        '&:hover': {
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(99,102,241,0.05)'
+                        }
+                    }}
+                >
+                    Add URL
+                </Button>
+                <Button
+                    variant="contained"
+                    startIcon={<Language />}
+                    onClick={() => setCrawlDialogOpen(true)}
+                    disabled={!selectedAgent || crawlLoading}
+                    sx={{
+                        bgcolor: '#6366f1',
+                        color: '#ffffff',
+                        '&:hover': {
+                            bgcolor: '#4f46e5'
+                        }
+                    }}
+                >
+                    Crawl Domain
+                </Button>
+                {selectedDocs.length > 0 && (
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<Delete />}
+                        onClick={handleBulkDelete}
                         sx={{
-                            flex: 1,
+                            color: '#f44336',
+                            borderColor: '#f44336',
+                            '&:hover': {
+                                borderColor: '#f44336',
+                                backgroundColor: 'rgba(244, 67, 54, 0.1)'
+                            }
+                        }}
+                    >
+                        Delete Selected ({selectedDocs.length})
+                    </Button>
+                )}
+            </Box>
+
+            {/* Search and Filter */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                <TextField
+                    placeholder="Search documents..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                        startAdornment: <Search sx={{ mr: 1, color: '#888888' }} />
+                    }}
+                    sx={{
+                        flex: 1,
+                        '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                                borderColor: '#e0e0e0',
+                            },
+                            '&:hover fieldset': {
+                                borderColor: '#000000',
+                            },
+                            '&.Mui-focused fieldset': {
+                                borderColor: '#000000',
+                            },
+                        },
+                        '& .MuiInputLabel-root': {
+                            color: '#000000',
+                        },
+                        '& .MuiInputBase-input': {
+                            color: '#000000',
+                        }
+                    }}
+                />
+                <FormControl sx={{ minWidth: 150 }}>
+                    <InputLabel sx={{ color: '#000000' }}>Filter Type</InputLabel>
+                    <Select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                        label="Filter Type"
+                        sx={{
+                            color: '#000000',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#e0e0e0'
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#000000'
+                            }
+                        }}
+                    >
+                        <MenuItem value="all">All Types</MenuItem>
+                        <MenuItem value="pdf">PDF</MenuItem>
+                        <MenuItem value="docx">DOCX</MenuItem>
+                        <MenuItem value="txt">TXT</MenuItem>
+                        <MenuItem value="url">URL</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+
+            {/* Tabs */}
+            <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
+                <Tab label="All Documents" />
+                <Tab label="Files" />
+                <Tab label="URLs" />
+            </Tabs>
+
+            {/* Documents Table */}
+            {loading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                    <CircularProgress sx={{ color: '#000000' }} />
+                </Box>
+            ) : (
+                <TableContainer component={Paper} sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)', position: 'relative', zIndex: 1 }}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell padding="checkbox">
+                                    <Checkbox
+                                        checked={selectedDocs.length === filteredDocuments.length && filteredDocuments.length > 0}
+                                        indeterminate={selectedDocs.length > 0 && selectedDocs.length < filteredDocuments.length}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedDocs(filteredDocuments.map(d => d.id));
+                                            } else {
+                                                setSelectedDocs([]);
+                                            }
+                                        }}
+                                        sx={{
+                                            color: '#6366f1',
+                                            '&.Mui-checked': {
+                                                color: '#6366f1',
+                                            },
+                                        }}
+                                    />
+                                </TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Status</TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Title</TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Type</TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Chunks</TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Agent</TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Date</TableCell>
+                                <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredDocuments.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                        <Typography sx={{ color: '#555555' }}>
+                                            No documents found. Upload files or add URLs to get started.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredDocuments.map((doc) => (
+                                    <TableRow
+                                        key={doc.id}
+                                        sx={{
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(0,0,0,0.03)'
+                                            }
+                                        }}
+                                    >
+                                        <TableCell padding="checkbox">
+                                            <Checkbox
+                                                checked={selectedDocs.includes(doc.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedDocs([...selectedDocs, doc.id]);
+                                                    } else {
+                                                        setSelectedDocs(selectedDocs.filter(id => id !== doc.id));
+                                                    }
+                                                }}
+                                                sx={{
+                                                    color: '#000000',
+                                                    '&.Mui-checked': {
+                                                        color: '#000000',
+                                                    },
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Tooltip title={doc.status || 'indexed'}>
+                                                {getStatusIcon(doc.status || 'indexed')}
+                                            </Tooltip>
+                                        </TableCell>
+                                        <TableCell sx={{ color: '#000000' }}>{doc.title || doc.filename}</TableCell>
+                                        <TableCell>
+                                            <Chip label={doc.file_type.toUpperCase()} size="small" sx={{ bgcolor: '#f5f5f5', color: '#000000' }} />
+                                        </TableCell>
+                                        <TableCell sx={{ color: '#000000' }}>{doc.chunks_extracted || 0}</TableCell>
+                                        <TableCell>
+                                            {doc.agent_name ? (
+                                                <Chip label={doc.agent_name} size="small" sx={{ bgcolor: '#6366f1', color: '#ffffff' }} />
+                                            ) : (
+                                                <Chip label="Unassigned" size="small" variant="outlined" sx={{ borderColor: '#000000', color: '#000000' }} />
+                                            )}
+                                        </TableCell>
+                                        <TableCell sx={{ color: '#000000' }}>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <IconButton onClick={() => handleViewContext(doc.id)} size="small" sx={{ color: '#6366f1', '&:hover': { bgcolor: 'rgba(99,102,241,0.1)' } }}>
+                                                <Visibility />
+                                            </IconButton>
+                                            <IconButton onClick={() => handleDelete(doc.id)} size="small" sx={{ color: '#f44336' }}>
+                                                <Delete />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+
+            {/* URL Upload Dialog */}
+            <Dialog open={urlDialogOpen} onClose={() => setUrlDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ color: '#000000', fontWeight: 700 }}>Add URL</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        label="URL"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        margin="normal"
+                        placeholder="https://example.com/page"
+                        sx={{
                             '& .MuiOutlinedInput-root': {
                                 '& fieldset': {
                                     borderColor: '#e0e0e0',
@@ -599,300 +773,136 @@ export default function KnowledgeBasePage() {
                             }
                         }}
                     />
-                    <FormControl sx={{ minWidth: 150 }}>
-                        <InputLabel sx={{ color: '#000000' }}>Filter Type</InputLabel>
-                        <Select
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                            label="Filter Type"
-                            sx={{
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setUrlDialogOpen(false)} sx={{ color: '#000000' }}>Cancel</Button>
+                    <Button
+                        onClick={handleUrlUpload}
+                        variant="contained"
+                        disabled={urlLoading || !url}
+                        sx={{
+                            bgcolor: '#000000',
+                            color: '#ffffff',
+                            '&:hover': {
+                                bgcolor: '#333333'
+                            }
+                        }}
+                    >
+                        {urlLoading ? <CircularProgress size={24} sx={{ color: '#ffffff' }} /> : 'Process URL'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Domain Crawl Dialog */}
+            <Dialog open={crawlDialogOpen} onClose={() => !crawlLoading && setCrawlDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ color: '#000000', fontWeight: 700 }}>Crawl Domain</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        label="Domain URL"
+                        value={domainUrl}
+                        onChange={(e) => setDomainUrl(e.target.value)}
+                        margin="normal"
+                        placeholder="https://example.com"
+                        disabled={crawlLoading}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                    borderColor: '#e0e0e0',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: '#000000',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#000000',
+                                },
+                            },
+                            '& .MuiInputLabel-root': {
                                 color: '#000000',
-                                '& .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#e0e0e0'
-                                },
-                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#000000'
-                                }
-                            }}
-                        >
-                            <MenuItem value="all">All Types</MenuItem>
-                            <MenuItem value="pdf">PDF</MenuItem>
-                            <MenuItem value="docx">DOCX</MenuItem>
-                            <MenuItem value="txt">TXT</MenuItem>
-                            <MenuItem value="url">URL</MenuItem>
-                        </Select>
-                    </FormControl>
+                            },
+                            '& .MuiInputBase-input': {
+                                color: '#000000',
+                            }
+                        }}
+                    />
+                    {crawlLoading && (
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="body2" gutterBottom sx={{ color: '#000000' }}>
+                                Crawling domain... {crawlProgress}%
+                            </Typography>
+                            <LinearProgress variant="determinate" value={crawlProgress} sx={{ bgcolor: '#e0e0e0', '& .MuiLinearProgress-bar': { bgcolor: '#000000' } }} />
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCrawlDialogOpen(false)} disabled={crawlLoading} sx={{ color: '#000000' }}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleDomainCrawl}
+                        variant="contained"
+                        disabled={crawlLoading || !domainUrl}
+                        sx={{
+                            bgcolor: '#000000',
+                            color: '#ffffff',
+                            '&:hover': {
+                                bgcolor: '#333333'
+                            }
+                        }}
+                    >
+                        {crawlLoading ? <CircularProgress size={24} sx={{ color: '#ffffff' }} /> : 'Start Crawling'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Context Review Dialog */}
+            <Dialog open={contextDialogOpen} onClose={() => setContextDialogOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle sx={{ color: '#000000', fontWeight: 700 }}>
+                    {selectedDocument?.title || 'Document Content'}
+                </DialogTitle>
+                <DialogContent>
+                    {contextLoading ? (
+                        <Box display="flex" justifyContent="center" p={4}>
+                            <CircularProgress sx={{ color: '#000000' }} />
+                        </Box>
+                    ) : (
+                        <Box>
+                            <Typography variant="body2" sx={{ color: '#555555', mb: 2 }}>
+                                Chunks Extracted: {selectedDocument?.chunks_extracted}
+                            </Typography>
+                            <Paper variant="outlined" sx={{ p: 2, mt: 2, maxHeight: 400, overflow: 'auto', bgcolor: '#ffffff', borderColor: '#e0e0e0' }}>
+                                <Typography variant="body2" whiteSpace="pre-wrap" sx={{ color: '#000000' }}>
+                                    {selectedDocument?.content}
+                                </Typography>
+                            </Paper>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setContextDialogOpen(false)} sx={{ color: '#000000' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for notifications */}
+            <Snackbar open={!!success} autoHideDuration={6000} onClose={() => setSuccess('')}>
+                <Alert severity="success" onClose={() => setSuccess('')}>
+                    {success}
+                </Alert>
+            </Snackbar>
+        </Box>
+    );
+}
+
+export default function KnowledgeBasePage() {
+    return (
+        <NavigationLayout>
+            <Suspense fallback={
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                    <CircularProgress sx={{ color: '#000000' }} />
                 </Box>
-
-                {/* Tabs */}
-                <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
-                    <Tab label="All Documents" />
-                    <Tab label="Files" />
-                    <Tab label="URLs" />
-                </Tabs>
-
-                {/* Documents Table */}
-                {loading ? (
-                    <Box display="flex" justifyContent="center" p={4}>
-                        <CircularProgress sx={{ color: '#000000' }} />
-                    </Box>
-                ) : (
-                    <TableContainer component={Paper} sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)', position: 'relative', zIndex: 1 }}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell padding="checkbox">
-                                        <Checkbox
-                                            checked={selectedDocs.length === filteredDocuments.length && filteredDocuments.length > 0}
-                                            indeterminate={selectedDocs.length > 0 && selectedDocs.length < filteredDocuments.length}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    setSelectedDocs(filteredDocuments.map(d => d.id));
-                                                } else {
-                                                    setSelectedDocs([]);
-                                                }
-                                            }}
-                                            sx={{
-                                                color: '#6366f1',
-                                                '&.Mui-checked': {
-                                                    color: '#6366f1',
-                                                },
-                                            }}
-                                        />
-                                    </TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Status</TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Title</TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Type</TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Chunks</TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Agent</TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Date</TableCell>
-                                    <TableCell sx={{ color: '#000000', fontWeight: 700 }}>Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredDocuments.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                                            <Typography sx={{ color: '#555555' }}>
-                                                No documents found. Upload files or add URLs to get started.
-                                            </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredDocuments.map((doc) => (
-                                        <TableRow
-                                            key={doc.id}
-                                            sx={{
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(0,0,0,0.03)'
-                                                }
-                                            }}
-                                        >
-                                            <TableCell padding="checkbox">
-                                                <Checkbox
-                                                    checked={selectedDocs.includes(doc.id)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setSelectedDocs([...selectedDocs, doc.id]);
-                                                        } else {
-                                                            setSelectedDocs(selectedDocs.filter(id => id !== doc.id));
-                                                        }
-                                                    }}
-                                                    sx={{
-                                                        color: '#000000',
-                                                        '&.Mui-checked': {
-                                                            color: '#000000',
-                                                        },
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Tooltip title={doc.status || 'indexed'}>
-                                                    {getStatusIcon(doc.status || 'indexed')}
-                                                </Tooltip>
-                                            </TableCell>
-                                            <TableCell sx={{ color: '#000000' }}>{doc.title || doc.filename}</TableCell>
-                                            <TableCell>
-                                                <Chip label={doc.file_type.toUpperCase()} size="small" sx={{ bgcolor: '#f5f5f5', color: '#000000' }} />
-                                            </TableCell>
-                                            <TableCell sx={{ color: '#000000' }}>{doc.chunks_extracted || 0}</TableCell>
-                                            <TableCell>
-                                                {doc.agent_name ? (
-                                                    <Chip label={doc.agent_name} size="small" sx={{ bgcolor: '#6366f1', color: '#ffffff' }} />
-                                                ) : (
-                                                    <Chip label="Unassigned" size="small" variant="outlined" sx={{ borderColor: '#000000', color: '#000000' }} />
-                                                )}
-                                            </TableCell>
-                                            <TableCell sx={{ color: '#000000' }}>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
-                                            <TableCell>
-                                                <IconButton onClick={() => handleViewContext(doc.id)} size="small" sx={{ color: '#6366f1', '&:hover': { bgcolor: 'rgba(99,102,241,0.1)' } }}>
-                                                    <Visibility />
-                                                </IconButton>
-                                                <IconButton onClick={() => handleDelete(doc.id)} size="small" sx={{ color: '#f44336' }}>
-                                                    <Delete />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                )}
-
-                {/* URL Upload Dialog */}
-                <Dialog open={urlDialogOpen} onClose={() => setUrlDialogOpen(false)} maxWidth="sm" fullWidth>
-                    <DialogTitle sx={{ color: '#000000', fontWeight: 700 }}>Add URL</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            fullWidth
-                            label="URL"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            margin="normal"
-                            placeholder="https://example.com/page"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: '#e0e0e0',
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: '#000000',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: '#000000',
-                                    },
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: '#000000',
-                                },
-                                '& .MuiInputBase-input': {
-                                    color: '#000000',
-                                }
-                            }}
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setUrlDialogOpen(false)} sx={{ color: '#000000' }}>Cancel</Button>
-                        <Button
-                            onClick={handleUrlUpload}
-                            variant="contained"
-                            disabled={urlLoading || !url}
-                            sx={{
-                                bgcolor: '#000000',
-                                color: '#ffffff',
-                                '&:hover': {
-                                    bgcolor: '#333333'
-                                }
-                            }}
-                        >
-                            {urlLoading ? <CircularProgress size={24} sx={{ color: '#ffffff' }} /> : 'Process URL'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Domain Crawl Dialog */}
-                <Dialog open={crawlDialogOpen} onClose={() => !crawlLoading && setCrawlDialogOpen(false)} maxWidth="sm" fullWidth>
-                    <DialogTitle sx={{ color: '#000000', fontWeight: 700 }}>Crawl Domain</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            fullWidth
-                            label="Domain URL"
-                            value={domainUrl}
-                            onChange={(e) => setDomainUrl(e.target.value)}
-                            margin="normal"
-                            placeholder="https://example.com"
-                            disabled={crawlLoading}
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                        borderColor: '#e0e0e0',
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: '#000000',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: '#000000',
-                                    },
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: '#000000',
-                                },
-                                '& .MuiInputBase-input': {
-                                    color: '#000000',
-                                }
-                            }}
-                        />
-                        {crawlLoading && (
-                            <Box sx={{ mt: 2 }}>
-                                <Typography variant="body2" gutterBottom sx={{ color: '#000000' }}>
-                                    Crawling domain... {crawlProgress}%
-                                </Typography>
-                                <LinearProgress variant="determinate" value={crawlProgress} sx={{ bgcolor: '#e0e0e0', '& .MuiLinearProgress-bar': { bgcolor: '#000000' } }} />
-                            </Box>
-                        )}
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setCrawlDialogOpen(false)} disabled={crawlLoading} sx={{ color: '#000000' }}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleDomainCrawl}
-                            variant="contained"
-                            disabled={crawlLoading || !domainUrl}
-                            sx={{
-                                bgcolor: '#000000',
-                                color: '#ffffff',
-                                '&:hover': {
-                                    bgcolor: '#333333'
-                                }
-                            }}
-                        >
-                            {crawlLoading ? <CircularProgress size={24} sx={{ color: '#ffffff' }} /> : 'Start Crawling'}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Context Review Dialog */}
-                <Dialog open={contextDialogOpen} onClose={() => setContextDialogOpen(false)} maxWidth="md" fullWidth>
-                    <DialogTitle sx={{ color: '#000000', fontWeight: 700 }}>
-                        {selectedDocument?.title || 'Document Content'}
-                    </DialogTitle>
-                    <DialogContent>
-                        {contextLoading ? (
-                            <Box display="flex" justifyContent="center" p={4}>
-                                <CircularProgress sx={{ color: '#000000' }} />
-                            </Box>
-                        ) : (
-                            <Box>
-                                <Typography variant="body2" sx={{ color: '#555555', mb: 2 }}>
-                                    Chunks Extracted: {selectedDocument?.chunks_extracted}
-                                </Typography>
-                                <Paper variant="outlined" sx={{ p: 2, mt: 2, maxHeight: 400, overflow: 'auto', bgcolor: '#ffffff', borderColor: '#e0e0e0' }}>
-                                    <Typography variant="body2" whiteSpace="pre-wrap" sx={{ color: '#000000' }}>
-                                        {selectedDocument?.content}
-                                    </Typography>
-                                </Paper>
-                            </Box>
-                        )}
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setContextDialogOpen(false)} sx={{ color: '#000000' }}>Close</Button>
-                    </DialogActions>
-                </Dialog>
-
-                {/* Snackbar for notifications */}
-                <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError('')}>
-                    <Alert severity="error" onClose={() => setError('')}>
-                        {error}
-                    </Alert>
-                </Snackbar>
-                <Snackbar open={!!success} autoHideDuration={6000} onClose={() => setSuccess('')}>
-                    <Alert severity="success" onClose={() => setSuccess('')}>
-                        {success}
-                    </Alert>
-                </Snackbar>
-            </Box>
+            }>
+                <KnowledgeBaseContent />
+            </Suspense>
         </NavigationLayout>
     );
 }
