@@ -6,11 +6,15 @@ Auto-dial next lead when current call completes
 import asyncio
 from typing import Optional, List
 import os
+import logging
 from google.cloud import firestore
 from app.models.lead import Lead
 from app.models.campaign import CallSession
+from app.models.custom_agent import CustomAgent
 from app.services.unified_outbound_service import unified_outbound_service
 from app.database.firestore import db as global_db # Import the global db instance
+
+logger = logging.getLogger(__name__)
 
 class LeadCallerService:
     """Service for auto-dialing leads in a campaign"""
