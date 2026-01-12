@@ -1,19 +1,11 @@
 import os
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
-from dotenv import load_dotenv
+import sys
 
-load_dotenv()
+# Add current directory to path so we can import app modules
+sys.path.append(os.getcwd())
 
-# Initialize Firebase
-if not firebase_admin._apps:
-    cred = credentials.ApplicationDefault()
-    firebase_admin.initialize_app(cred, {
-        'projectId': os.getenv('GOOGLE_CLOUD_PROJECT'),
-    })
-
-db = firestore.client()
+from app.database.firestore import db
+from google.cloud import firestore
 
 def reset_leads(campaign_id):
     print(f"Resetting failed leads for campaign {campaign_id}...")
