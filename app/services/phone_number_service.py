@@ -66,9 +66,12 @@ class PhoneNumberService:
             webhook_domain = None
             
             # Helper to clean domain
+            from urllib.parse import urlparse
             def clean_domain(d):
                 if not d: return None
-                return d.replace("https://", "").replace("http://", "").strip("/")
+                if not d.startswith(('http://', 'https://')):
+                    d = f"https://{d}"
+                return urlparse(d).netloc
 
             if webhook_base_url:
                 webhook_domain = clean_domain(webhook_base_url)
