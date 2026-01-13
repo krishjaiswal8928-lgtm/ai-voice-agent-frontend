@@ -23,7 +23,12 @@ import {
   Grid,
   Paper,
   Fade,
-  Grow
+  Grow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Backdrop
 } from '@mui/material';
 import {
   SmartToy,
@@ -947,6 +952,59 @@ export default function CampaignCreationWizard() {
     );
   }
 
+  // Error Categories and Parsing
+  const analyzeError = (errorMsg: string) => {
+    const msg = errorMsg.toLowerCase();
+
+    if (msg.includes('active in call session')) {
+      return {
+        type: 'AGENT_BUSY',
+        title: 'Agent Already Active',
+        description: 'This agent is currently assigned to another active Call Session. An agent can only handle one active session at a time.',
+        cta: {
+          label: 'Create New Agent',
+          action: () => router.push('/agent-settings/create'),
+          icon: <SmartToy />
+        }
+      };
+    }
+
+    if (msg.includes('phone number assigned')) {
+      return {
+        type: 'MISSING_PHONE',
+        title: 'Missing Phone Number',
+        description: 'This agent doesn\'t have a phone number assigned. A phone number is required for outbound calls.',
+        cta: {
+          label: 'Assign Number',
+          action: () => router.push(`/agent-settings/${customAgentId}/edit`),
+          icon: <CallMade />
+        }
+      };
+    }
+
+    if (msg.includes('knowledge base training')) {
+      return {
+        type: 'MISSING_TRAINING',
+        title: 'Training Required',
+        description: 'This agent hasn\'t been trained on any documents. Please upload knowledge base resources first.',
+        cta: {
+          label: 'Train Agent',
+          action: () => router.push(`/knowledge-base?agent_id=${customAgentId}`),
+          icon: <Psychology />
+        }
+      };
+    }
+
+    return {
+      type: 'generic',
+      title: 'Configuration Error',
+      description: errorMsg,
+      cta: null
+    };
+  };
+
+  const errorDetails = error ? analyzeError(error) : null;
+
   return (
     <NavigationLayout>
       <Box sx={{
@@ -1005,63 +1063,6 @@ export default function CampaignCreationWizard() {
             </Box>
           </Box>
 
-          {error && (
-            <Fade in>
-              <Box sx={{ mb: 3 }}>
-                <AnimatedCard
-                  glassEffect
-                  sx={{
-                    p: 2,
-                    borderLeft: '4px solid #ef4444',
-                    background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 0.5) 100%)'
-                  }}
-                >
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                    <Box sx={{
-                      p: 1,
-                      borderRadius: '50%',
-                      bgcolor: 'rgba(239, 68, 68, 0.1)',
-                      color: '#ef4444',
-                      display: 'flex'
-                    }}>
-                      <Typography variant="h5" component="span">⚠️</Typography>
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#ef4444', mb: 0.5 }}>
-                        Configuration Error
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1.5 }}>
-                        {error}
-                      </Typography>
-
-                      {(error.toLowerCase().includes('agent') || error.toLowerCase().includes('phone')) && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => router.push('/agent-settings/create')}
-                          sx={{
-                            color: '#ef4444',
-                            borderColor: '#ef4444',
-                            fontWeight: 600,
-                            textTransform: 'none',
-                            '&:hover': {
-                              borderColor: '#dc2626',
-                              bgcolor: 'rgba(239, 68, 68, 0.05)'
-                            }
-                          }}
-                        >
-                          Create or Fix Agent
-                        </Button>
-                      )}
-                    </Box>
-                    <IconButton size="small" onClick={() => setError('')} sx={{ color: '#ef4444' }}>
-                      <Typography variant="h6">×</Typography>
-                    </IconButton>
-                  </Box>
-                </AnimatedCard>
-              </Box>
-            </Fade>
-          )}
 
           {/* Stepper */}
           <AnimatedCard glassEffect sx={{ p: 4, mb: 4 }}>
@@ -1151,6 +1152,109 @@ export default function CampaignCreationWizard() {
             )}
           </Box>
         </Box>
+
+        {/* Start: New Error Modal Implementation */}
+        <Dialog
+          open={!!error}
+          onClose={() => setError('')}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              boxShadow: '0 24px 48px rgba(0,0,0,0.2)',
+              overflow: 'hidden'
+            }
+          }}
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+            sx: {
+              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.4)'
+            }
+          }}
+          TransitionComponent={Grow}
+        >
+          <Box sx={{
+            p: 3,
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 1) 100%)',
+            borderBottom: '1px solid rgba(239, 68, 68, 0.1)'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '12px',
+                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Typography variant="h4">⚠️</Typography>
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ef4444' }}>
+                  {errorDetails?.title || 'Error'}
+                </Typography>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Action Required
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          <DialogContent sx={{ p: 4 }}>
+            <Typography variant="body1" sx={{ color: '#374151', lineHeight: 1.6, mb: 1 }}>
+              {errorDetails?.description}
+            </Typography>
+            {/* Fallback to show raw error if generic */}
+            {errorDetails?.type === 'generic' && (
+              <Typography variant="body2" sx={{ mt: 2, p: 2, bgcolor: '#f3f4f6', borderRadius: 2, fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                {error}
+              </Typography>
+            )}
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3, bgcolor: '#f9fafb', justifyContent: 'flex-end', gap: 1 }}>
+            <Button
+              onClick={() => setError('')}
+              variant="text"
+              sx={{
+                color: '#6b7280',
+                fontWeight: 600,
+                textTransform: 'none'
+              }}
+            >
+              Close
+            </Button>
+            {errorDetails?.cta && (
+              <Button
+                onClick={errorDetails.cta.action}
+                variant="contained"
+                startIcon={errorDetails.cta.icon}
+                sx={{
+                  bgcolor: '#3b82f6', // Warm blue
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 6px rgba(59, 130, 246, 0.25)',
+                  textTransform: 'none',
+                  px: 3,
+                  '&:hover': {
+                    bgcolor: '#2563eb',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 12px rgba(59, 130, 246, 0.3)'
+                  }
+                }}
+              >
+                {errorDetails.cta.label}
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
+        {/* End: New Error Modal Implementation */}
+
       </Box>
     </NavigationLayout>
   );
