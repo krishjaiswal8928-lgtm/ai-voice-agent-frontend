@@ -196,6 +196,9 @@ export const ragAPI = {
 
   getAgentDocuments: (agentId: number) =>
     api.get(`/rag/documents/agent/${agentId}`),
+
+  getTaskStatus: (taskId: string) =>
+    api.get(`/rag/task/${taskId}`),
 };
 
 // Lead endpoints

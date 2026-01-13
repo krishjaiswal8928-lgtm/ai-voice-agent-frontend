@@ -369,35 +369,22 @@ async def crawl_domain_agent(
             detail="Agent not found"
         )
     
-    # Process domain with timeout
     try:
-        result = await asyncio.wait_for(
-            get_rag_service().process_domain(url, None, db, agent_id, max_pages),
-            timeout=600.0  # Increased timeout to 10 minutes for domain crawling with more pages
+        # Start background task
+        task_id = await get_rag_service().start_crawl_task(
+            url, None, db, agent_id, max_pages
         )
+        
         return {
-            "message": f"Successfully crawled {result['total_pages']} pages",
-            "total_pages": result['total_pages'],
-            "failed_urls": result['failed_urls'],
-            "documents": [{"id": doc.id, "title": doc.title, "url": doc.filename} for doc in result['documents']]
+            "message": "Crawl task started",
+            "task_id": task_id,
+            "status": "pending"
         }
-    except asyncio.TimeoutError:
-        raise HTTPException(
-            status_code=status.HTTP_408_REQUEST_TIMEOUT,
-            detail="Domain crawling is taking longer than expected. The process is still running in the background."
-        )
     except Exception as e:
-        error_message = str(e)
-        if "quota exceeded" in error_message.lower() or "429" in error_message:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="API quota exceeded. Please try again later."
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error crawling domain: {str(e)}"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error starting crawl task: {str(e)}"
+        )
 
 @router.get("/documents/{campaign_id}", response_model=List[RAGDocument])
 async def get_rag_documents(
@@ -573,4 +560,16 @@ async def delete_document(
     
     doc_ref.delete()
     
-    return {"message": "Document deleted successfully"}
+@router.get("/task/{task_id}")
+async def get_task_status(
+    task_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get status of a background task."""
+    status = get_rag_service().get_task_status(task_id)
+    if status["status"] == "not_found":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+    return status

@@ -33,10 +33,41 @@ class RAGService:
         )
         google_api_key = os.getenv("GEMINI_API_KEY")
         self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
             google_api_key=google_api_key
         )
+        self._bg_tasks = {}  # Store background task status
     
+    def get_task_status(self, task_id: str) -> dict:
+        """Get status of a background task"""
+        return self._bg_tasks.get(task_id, {"status": "not_found"})
+
+    async def start_crawl_task(
+        self,
+        domain_url: str,
+        campaign_id: str,
+        db: firestore.Client,
+        agent_id: str = None,
+        max_pages: int = 50
+    ) -> str:
+        """Start a background crawl task and return task_id"""
+        import uuid
+        task_id = str(uuid.uuid4())
+        
+        # Initialize task status
+        self._bg_tasks[task_id] = {
+            "status": "pending",
+            "progress": 0,
+            "message": "Initializing crawler...",
+            "details": {}
+        }
+        
+        # Start background task
+        asyncio.create_task(self.process_domain(
+            domain_url, campaign_id, db, agent_id, max_pages, task_id
+        ))
+        
+        return task_id
+
     async def process_document(
         self, 
         file_path: str, 
@@ -141,7 +172,8 @@ class RAGService:
         campaign_id: str,
         db: firestore.Client,
         agent_id: str = None,
-        max_pages: int = 50
+        max_pages: int = 50,
+        task_id: str = None
     ) -> dict:
         """
         Process an entire domain by crawling all pages
@@ -149,15 +181,44 @@ class RAGService:
         from app.services.web_scraper import WebScraper
         
         try:
+            if task_id:
+                self._bg_tasks[task_id].update({
+                    "status": "crawling",
+                    "progress": 0,
+                    "message": f"Crawling {domain_url}..."
+                })
+
             scraper = WebScraper(max_pages=max_pages, delay=0.5, concurrency=10)
-            result = await scraper.scrape_website(domain_url)
+            
+            # Callback for scraper progress
+            async def scraper_progress(scraped, total):
+                if task_id:
+                    # Crawling is first 50% of progress
+                    progress = min(45, int((scraped / max_pages) * 45))
+                    self._bg_tasks[task_id].update({
+                        "progress": progress,
+                        "message": f"Crawling: {scraped} pages found found so far..."
+                    })
+            
+            result = await scraper.scrape_website(domain_url, progress_callback=scraper_progress)
+            
+            if task_id:
+                 self._bg_tasks[task_id].update({
+                    "status": "processing",
+                    "progress": 50,
+                    "message": f"Processing {len(result['content'])} pages..."
+                })
             
             documents = []
             failed_urls = result['failed_urls']
             
             semaphore = asyncio.Semaphore(5)
             
+            total_pages = len(result['content'])
+            processed_count = 0
+            
             async def process_page(page_data):
+                nonlocal processed_count
                 async with semaphore:
                     try:
                         text_chunks = self.text_splitter.split_text(page_data['content'])
@@ -176,6 +237,15 @@ class RAGService:
                         rag_doc.id = doc_ref.id
                         
                         await self._embed_and_store_chunks(text_chunks, rag_doc.id, campaign_id, agent_id)
+                        
+                        processed_count += 1
+                        if task_id and total_pages > 0:
+                            # Processing is 50-95%
+                            progress = 50 + int((processed_count / total_pages) * 45)
+                            self._bg_tasks[task_id].update({
+                                "progress": progress,
+                                "message": f"Processed {processed_count}/{total_pages} pages"
+                            })
                         
                         return rag_doc
                     except Exception as e:
@@ -197,8 +267,25 @@ class RAGService:
             }
             
         except Exception as e:
+            if task_id:
+                self._bg_tasks[task_id].update({
+                    "status": "failed",
+                    "error": str(e)
+                })
             print(f"Error in process_domain: {e}")
             raise e
+        
+        if task_id:
+            self._bg_tasks[task_id].update({
+                "status": "completed",
+                "progress": 100,
+                "message": "Crawling and processing completed successfully!",
+                "result": {
+                    'total_pages': result['total_pages'],
+                    'documents_count': len(documents),
+                    'failed_count': len(failed_urls)
+                }
+            })
     
     async def _extract_text(self, file_path: str, file_type: str) -> str:
         """Extract text from file based on type"""

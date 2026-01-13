@@ -32,9 +32,13 @@ class WebScraper:
         self.failed_urls: List[Dict] = []
         self.base_domain = ""
         
-    async def scrape_website(self, base_url: str) -> Dict[str, any]:
+    async def scrape_website(self, base_url: str, progress_callback=None) -> Dict[str, any]:
         """Scrape all pages from a base URL asynchronously
         
+        Args:
+            base_url: The URL to start scraping from
+            progress_callback: Optional async function(scraped_count, total_found) to report progress
+            
         Returns:
             Dict with 'content' (list of scraped pages), 'total_pages', 'failed_urls'
         """
@@ -52,7 +56,7 @@ class WebScraper:
             # Create workers
             workers = []
             for _ in range(self.concurrency):
-                worker = asyncio.create_task(self._worker(queue))
+                worker = asyncio.create_task(self._worker(queue, progress_callback))
                 workers.append(worker)
             
             # Wait for the queue to be processed
@@ -74,7 +78,7 @@ class WebScraper:
             'failed_urls': self.failed_urls
         }
     
-    async def _worker(self, queue: asyncio.Queue):
+    async def _worker(self, queue: asyncio.Queue, progress_callback=None):
         """Worker to process URLs from the queue"""
         async with aiohttp.ClientSession() as session:
             while True:
@@ -105,6 +109,17 @@ class WebScraper:
                             'reason': 'Failed to scrape after retries'
                         })
                     
+                    if progress_callback:
+                        try:
+                            total_found = len(self.visited_urls)
+                            scraped_count = len(self.scraped_content) + len(self.failed_urls)
+                            if asyncio.iscoroutinefunction(progress_callback):
+                                await progress_callback(scraped_count, total_found)
+                            else:
+                                progress_callback(scraped_count, total_found)
+                        except Exception as e:
+                            logger.error(f"Error in progress callback: {e}")
+
                     # Be respectful to the server with a small delay
                     if self.delay > 0:
                         await asyncio.sleep(self.delay)
