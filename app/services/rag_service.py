@@ -18,6 +18,10 @@ from app.models.rag_document import RAGDocument
 from app.database.vector_store import get_vector_store
 from app.services.retriever_service import store_memory, get_embedding
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -32,9 +36,17 @@ class RAGService:
             length_function=len,
         )
         google_api_key = os.getenv("GEMINI_API_KEY")
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            google_api_key=google_api_key
-        )
+        
+        try:
+            self.embeddings = GoogleGenerativeAIEmbeddings(
+                model="models/embedding-001",
+                google_api_key=google_api_key
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize embeddings: {e}")
+            print(f"Failed to initialize embeddings: {e}")
+            self.embeddings = None
+            
         self._bg_tasks = {}  # Store background task status
     
     def get_task_status(self, task_id: str) -> dict:
@@ -50,23 +62,33 @@ class RAGService:
         max_pages: int = 50
     ) -> str:
         """Start a background crawl task and return task_id"""
+        print(f"DEBUG: Starting crawl task for {domain_url}")
         import uuid
-        task_id = str(uuid.uuid4())
-        
-        # Initialize task status
-        self._bg_tasks[task_id] = {
-            "status": "pending",
-            "progress": 0,
-            "message": "Initializing crawler...",
-            "details": {}
-        }
-        
-        # Start background task
-        asyncio.create_task(self.process_domain(
-            domain_url, campaign_id, db, agent_id, max_pages, task_id
-        ))
-        
-        return task_id
+        try:
+            task_id = str(uuid.uuid4())
+            print(f"DEBUG: Generated task_id: {task_id}")
+            
+            # Initialize task status
+            self._bg_tasks[task_id] = {
+                "status": "pending",
+                "progress": 0,
+                "message": "Initializing crawler...",
+                "details": {}
+            }
+            print(f"DEBUG: Task status initialized")
+            
+            # Start background task
+            asyncio.create_task(self.process_domain(
+                domain_url, campaign_id, db, agent_id, max_pages, task_id
+            ))
+            print(f"DEBUG: Background task created")
+            
+            return task_id
+        except Exception as e:
+            print(f"DEBUG: Error in start_crawl_task: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e
 
     async def process_document(
         self, 

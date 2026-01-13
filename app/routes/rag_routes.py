@@ -371,9 +371,11 @@ async def crawl_domain_agent(
     
     try:
         # Start background task
+        print(f"DEBUG: Calling start_crawl_task with url={url}, agent_id={agent_id}, max_pages={max_pages}")
         task_id = await get_rag_service().start_crawl_task(
             url, None, db, agent_id, max_pages
         )
+        print(f"DEBUG: start_crawl_task returned {task_id}")
         
         return {
             "message": "Crawl task started",
@@ -381,6 +383,9 @@ async def crawl_domain_agent(
             "status": "pending"
         }
     except Exception as e:
+        print(f"DEBUG: Exception in crawl_domain_agent: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error starting crawl task: {str(e)}"
