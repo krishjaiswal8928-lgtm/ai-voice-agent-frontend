@@ -37,8 +37,26 @@ class OutboundCallService:
             logger.error(f"❌ Twilio client init error: {e}")
             self.client = None
 
-    async def make_call(self, to_number: str, call_context: Optional[Dict] = None, greeting: Optional[str] = None, from_number: Optional[str] = None) -> Dict:
-        if not self.client:
+    async def make_call(self, to_number: str, call_context: Optional[Dict] = None, greeting: Optional[str] = None, from_number: Optional[str] = None, credentials: Optional[Dict] = None) -> Dict:
+        
+        # Determine client and from_number to use
+        active_client = self.client
+        active_webhook_base = self.webhook_base
+        
+        # Override with specific credentials if provided
+        if credentials and credentials.get('account_sid') and credentials.get('auth_token'):
+            try:
+                active_client = Client(credentials['account_sid'], credentials['auth_token'])
+                # Need to determine webhook base for this new client? 
+                # For now, reuse global webhook base or env var
+                if not active_webhook_base:
+                     active_webhook_base = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
+                     if active_webhook_base and not active_webhook_base.startswith('http'):
+                         active_webhook_base = f"https://{active_webhook_base}"
+            except Exception as e:
+                return {"success": False, "error": f"Invalid custom credentials: {e}"}
+
+        if not active_client:
             return {"success": False, "error": "Twilio client not initialized"}
 
         # Use provided from_number or fallback to configured default
@@ -92,19 +110,19 @@ class OutboundCallService:
                 
                 # No status_callback for TwiML Bin calls unless we explicitly want to route it back to our server
                 # If we want status updates, we point status_callback to our server's /status endpoint
-                call = self.client.calls.create(
+                call = active_client.calls.create(
                     to=to_number,
                     from_=active_from_number,
                     url=webhook_url,
                     method='POST', # TwiML Bins support GET/POST
-                    status_callback=f"{self.webhook_base}/twilio/status",
+                    status_callback=f"{active_webhook_base}/twilio/status",
                     status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
                     status_callback_method='POST',
                     timeout=60
                 )
             else:
                 # Fallback to local webhook (original logic)
-                webhook_url = f"{self.webhook_base}/twilio/voice/webhook"
+                webhook_url = f"{active_webhook_base}/twilio/voice/webhook"
     
                 if call_context:
                     encoded_params = []
@@ -115,12 +133,12 @@ class OutboundCallService:
                     params = "&".join(encoded_params)
                     webhook_url = f"{webhook_url}?{params}"
     
-                call = self.client.calls.create(
+                call = active_client.calls.create(
                     to=to_number,
                     from_=active_from_number,
                     url=webhook_url,
                     method='POST',
-                    status_callback=f"{self.webhook_base}/twilio/status",
+                    status_callback=f"{active_webhook_base}/twilio/status",
                     status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
                     status_callback_method='POST',
                     timeout=60
