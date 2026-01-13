@@ -25,6 +25,8 @@ if not WEBHOOK_DOMAIN:
 else:
     # Clean the domain - remove protocol and trailing slashes
     WEBHOOK_DOMAIN = WEBHOOK_DOMAIN.replace("https://", "").replace("http://", "").replace("wss://", "").replace("ws://", "").strip("/")
+    # Remove any path segments if present (e.g. if user pasted full webhook URL)
+    WEBHOOK_DOMAIN = WEBHOOK_DOMAIN.split('/')[0]
 WEBSOCKET_URL = f"wss://{WEBHOOK_DOMAIN}/twilio/ws" if WEBHOOK_DOMAIN else ""
 logger.info(f"WEBSOCKET_URL = {WEBSOCKET_URL}")
 
