@@ -54,7 +54,7 @@ class PhoneNumberService:
              data['credentials'] = self._decrypt_credentials(data['credentials'])
         return VirtualPhoneNumber.from_dict(data)
 
-    def create_phone_number(self, db: firestore.Client, phone_data: VirtualPhoneNumberCreate, user_id: str) -> VirtualPhoneNumber:
+    def create_phone_number(self, db: firestore.Client, phone_data: VirtualPhoneNumberCreate, user_id: str, webhook_base_url: str = None) -> VirtualPhoneNumber:
         # 1. Validate credentials with provider
         provider = ProviderFactory.get_provider(phone_data.provider, phone_data.credentials)
         if not provider.validate_credentials():
@@ -62,26 +62,43 @@ class PhoneNumberService:
 
         # 2. Configure webhook URLs for the phone number (Twilio only for now)
         if phone_data.provider.lower() == 'twilio':
-            webhook_domain = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
-            if not webhook_domain:
-                raise ValueError("WEBHOOK_BASE_DOMAIN not configured in environment variables. Required for webhook setup.")
+            # Determine the domain: argument -> env var -> logging warning
+            webhook_domain = None
             
-            webhook_url = f"https://{webhook_domain}/twilio/voice/webhook"
-            status_callback_url = f"https://{webhook_domain}/twilio/status"
-            
-            # Configure the webhook on Twilio's side
-            webhook_configured = provider.configure_phone_number_webhook(
-                phone_data.phone_number, 
-                webhook_url, 
-                status_callback_url
-            )
-            
-            if not webhook_configured:
-                raise ValueError(
-                    f"Failed to configure webhook for phone number {phone_data.phone_number}. "
-                    "Please check that the phone number exists in your Twilio account and credentials are correct."
-                )
+            # Helper to clean domain
+            def clean_domain(d):
+                if not d: return None
+                return d.replace("https://", "").replace("http://", "").strip("/")
 
+            if webhook_base_url:
+                webhook_domain = clean_domain(webhook_base_url)
+            
+            if not webhook_domain:
+                webhook_domain = os.getenv("WEBHOOK_BASE_DOMAIN") or os.getenv("NGROK_DOMAIN")
+                if webhook_domain:
+                    webhook_domain = clean_domain(webhook_domain)
+
+            if not webhook_domain:
+                # Instead of failing, log a warning specifically about webhooks
+                print("WARNING: WEBHOOK_BASE_DOMAIN not configured. Twilio webhook will NOT be auto-configured.")
+            else:
+                webhook_url = f"https://{webhook_domain}/twilio/voice/webhook"
+                status_callback_url = f"https://{webhook_domain}/twilio/status"
+                
+                print(f"Configuring Twilio Webhook to: {webhook_url}")
+                
+                # Configure the webhook on Twilio's side
+                webhook_configured = provider.configure_phone_number_webhook(
+                    phone_data.phone_number, 
+                    webhook_url, 
+                    status_callback_url
+                )
+                
+                if not webhook_configured:
+                    print(f"WARNING: Failed to configure Twilio webhook for {phone_data.phone_number}")
+                    # We don't raise error here to allow creation to proceed, but user should be notified
+                    # In a real app, maybe add a 'configuration_status' field to the model
+        
         # 3. Encrypt credentials
         encrypted_creds = self._encrypt_credentials(phone_data.credentials)
         

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from google.cloud import firestore
 from typing import List
 
@@ -121,6 +121,7 @@ async def get_phone_numbers(
 async def import_phone_number(
     integration_id: str,
     import_request: PhoneNumberImportRequest,
+    request: Request,  # Added Request object
     db: firestore.Client = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -157,9 +158,13 @@ async def import_phone_number(
             is_active=True
         )
         
+        # Determine base URL for webhook
+        # Use existing env var logic in service, but pass request.base_url as fallback/context
+        webhook_base_url = str(request.base_url)
+        
         # This will validate credentials and configure webhooks
         phone_number = phone_number_service.create_phone_number(
-            db, phone_number_create, current_user["user_id"]
+            db, phone_number_create, current_user["user_id"], webhook_base_url=webhook_base_url
         )
         
         # Update the phone number to link to integration
