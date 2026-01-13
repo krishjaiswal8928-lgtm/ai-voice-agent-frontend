@@ -37,11 +37,13 @@ class OutboundCallService:
             logger.error(f"❌ Twilio client init error: {e}")
             self.client = None
 
-    async def make_call(self, to_number: str, call_context: Optional[Dict] = None, greeting: Optional[str] = None) -> Dict:
+    async def make_call(self, to_number: str, call_context: Optional[Dict] = None, greeting: Optional[str] = None, from_number: Optional[str] = None) -> Dict:
         if not self.client:
             return {"success": False, "error": "Twilio client not initialized"}
 
-        if not self.from_number:
+        # Use provided from_number or fallback to configured default
+        active_from_number = from_number or self.from_number
+        if not active_from_number:
             return {"success": False, "error": "Twilio phone number not configured"}
 
         if not to_number:
@@ -92,7 +94,7 @@ class OutboundCallService:
                 # If we want status updates, we point status_callback to our server's /status endpoint
                 call = self.client.calls.create(
                     to=to_number,
-                    from_=self.from_number,
+                    from_=active_from_number,
                     url=webhook_url,
                     method='POST', # TwiML Bins support GET/POST
                     status_callback=f"{self.webhook_base}/twilio/status",
@@ -115,7 +117,7 @@ class OutboundCallService:
     
                 call = self.client.calls.create(
                     to=to_number,
-                    from_=self.from_number,
+                    from_=active_from_number,
                     url=webhook_url,
                     method='POST',
                     status_callback=f"{self.webhook_base}/twilio/status",

@@ -91,7 +91,11 @@ class UnifiedOutboundService:
                 return {"success": False, "error": "Twilio credentials not configured"}
         
         # Make the call
-        result = await outbound_manager.make_call(to_number, call_context)
+        result = await outbound_manager.make_call(
+            to_number=to_number, 
+            call_context=call_context,
+            from_number=phone_source.phone_number
+        )
         
         if result.get("success"):
             result["provider"] = "twilio"

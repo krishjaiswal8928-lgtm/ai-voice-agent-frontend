@@ -313,6 +313,13 @@ async def handle_twilio_ws(ws: WebSocket):
                     from app.agent.orchestrator import get_conversation_state_with_params
                     get_conversation_state_with_params(call_sid, stream_params)
 
+                    # NEW: Trigger greeting immediately for outbound calls
+                    if is_outbound_flag:
+                        logger.info(f"📢 Outbound call detected: {call_sid} - Triggering initial greeting")
+                        from app.agent.orchestrator import trigger_outbound_greeting
+                        # Run as background task to avoid blocking the WS loop
+                        asyncio.create_task(trigger_outbound_greeting(call_sid))
+
             # ------------------- MEDIA ------------------- #
             elif event == "media":
                 # Ensure we have a call_sid
