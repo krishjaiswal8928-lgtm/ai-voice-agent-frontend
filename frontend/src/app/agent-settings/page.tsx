@@ -29,8 +29,12 @@ import {
   RecordVoiceOver,
   Hearing,
   AutoAwesome,
-  Campaign as CampaignIcon,  // Rename to avoid conflict
-  Error
+  Campaign as CampaignIcon,
+  Error,
+  CheckCircle,
+  Cancel,
+  School,
+  Phone
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { NavigationLayout } from '@/components/NavigationLayout';
@@ -45,6 +49,9 @@ interface CustomAgent {
   stt_provider: string;
   personality: string;
   created_at: string;
+  trained_documents?: any[];
+  phone_number_id?: string;
+  is_active?: boolean;
 }
 
 export default function AgentSettingsScreen() {
@@ -265,99 +272,135 @@ export default function AgentSettingsScreen() {
                 </Button>
               </Box>
             ) : (
-              <List>
-                {agents.map((agent, index) => (
-                  <React.Fragment key={agent.id}>
-                    <ListItem
-                      sx={{
-                        bgcolor: '#ffffff',
-                        mb: 1,
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0',
-                        '&:hover': {
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                        }
-                      }}
-                    >
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: '#6366f1' }}>
-                          <SmartToy />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="h6" sx={{ color: '#111827', fontWeight: 600 }}>{agent.name}</Typography>
+              <Grid container spacing={3}>
+                {agents.map((agent) => {
+                  const isTrained = agent.trained_documents && agent.trained_documents.length > 0;
+                  const hasPhone = !!agent.phone_number_id;
+                  const isActive = isTrained && hasPhone; // visual active state based on prerequisites
+
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={agent.id}>
+                      <Card
+                        sx={{
+                          bgcolor: '#ffffff',
+                          border: '1px solid #e0e0e0',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 12px 24px rgba(0,0,0,0.1)'
+                          }
+                        }}
+                      >
+                        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                            <Avatar
+                              sx={{
+                                bgcolor: isActive ? '#10b981' : '#f59e0b',
+                                width: 56,
+                                height: 56,
+                                mb: 2
+                              }}
+                            >
+                              <SmartToy sx={{ fontSize: 32 }} />
+                            </Avatar>
                             <Chip
-                              label={agent.personality}
+                              label={isActive ? 'Active' : 'Incomplete'}
                               size="small"
                               sx={{
-                                bgcolor: '#f5f5f5',
-                                color: '#000000',
-                                textTransform: 'capitalize'
+                                bgcolor: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                color: isActive ? '#059669' : '#d97706',
+                                fontWeight: 700,
+                                border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
                               }}
                             />
                           </Box>
-                        }
-                        secondary={
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="body2" component="div" sx={{ color: '#6b7280', mb: 1, display: 'block' }}>
-                              {agent.description || 'No description'}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                              <Chip
-                                icon={<Psychology />}
-                                label={agent.llm_provider}
-                                size="small"
-                                sx={{
-                                  bgcolor: '#f5f5f5',
-                                  color: '#000000',
-                                  textTransform: 'capitalize'
-                                }}
-                              />
-                              <Chip
-                                icon={<RecordVoiceOver />}
-                                label={agent.tts_provider}
-                                size="small"
-                                sx={{
-                                  bgcolor: '#f5f5f5',
-                                  color: '#000000',
-                                  textTransform: 'capitalize'
-                                }}
-                              />
-                              <Chip
-                                icon={<Hearing />}
-                                label={agent.stt_provider}
-                                size="small"
-                                sx={{
-                                  bgcolor: '#f5f5f5',
-                                  color: '#000000',
-                                  textTransform: 'capitalize'
-                                }}
-                              />
+
+                          <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827', mb: 1 }}>
+                            {agent.name}
+                          </Typography>
+
+                          <Typography variant="body2" sx={{ color: '#6b7280', mb: 3, flexGrow: 1 }}>
+                            {agent.description || 'No description provided'}
+                          </Typography>
+
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+                            {/* Training Status */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <School sx={{ fontSize: 20, color: '#6b7280' }} />
+                                <Typography variant="body2" sx={{ color: '#374151' }}>Training</Typography>
+                              </Box>
+                              {isTrained ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10b981' }}>
+                                  <CheckCircle sx={{ fontSize: 20 }} />
+                                  <Typography variant="caption" fontWeight={600}>Trained</Typography>
+                                </Box>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="warning"
+                                  onClick={() => router.push(`/knowledge-base?agent_id=${agent.id}`)}
+                                  sx={{ textTransform: 'none', py: 0.2, fontSize: '0.75rem' }}
+                                >
+                                  Train Agent
+                                </Button>
+                              )}
+                            </Box>
+
+                            {/* Phone Status */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Phone sx={{ fontSize: 20, color: '#6b7280' }} />
+                                <Typography variant="body2" sx={{ color: '#374151' }}>Phone</Typography>
+                              </Box>
+                              {hasPhone ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10b981' }}>
+                                  <CheckCircle sx={{ fontSize: 20 }} />
+                                  <Typography variant="caption" fontWeight={600}>Assigned</Typography>
+                                </Box>
+                              ) : (
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  color="warning"
+                                  onClick={() => handleEditAgent(agent.id)}
+                                  sx={{ textTransform: 'none', py: 0.2, fontSize: '0.75rem' }}
+                                >
+                                  Assign Phone
+                                </Button>
+                              )}
                             </Box>
                           </Box>
-                        }
-                      />
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton
-                          onClick={() => handleEditAgent(agent.id)}
-                          sx={{ color: '#6366f1', '&:hover': { bgcolor: 'rgba(99,102,241,0.1)' } }}
-                        >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handleDeleteAgent(agent.id)}
-                          sx={{ color: '#f44336' }}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </Box>
-                    </ListItem>
-                    {index < agents.length - 1 && <Divider sx={{ bgcolor: '#e0e0e0', my: 1 }} />}
-                  </React.Fragment>
-                ))}
-              </List>
+
+                          <Divider sx={{ mb: 2 }} />
+
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                            <Button
+                              startIcon={<Edit />}
+                              size="small"
+                              onClick={() => handleEditAgent(agent.id)}
+                              sx={{ color: '#6366f1' }}
+                            >
+                              Edit
+                            </Button>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteAgent(agent.id)}
+                              sx={{ color: '#ef4444' }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
             )}
           </CardContent>
         </Card>

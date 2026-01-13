@@ -277,8 +277,8 @@ export default function CampaignCreationWizard() {
 
       router.push('/campaigns');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to finalize campaign';
-      setError(`Failed to finalize campaign: ${errorMessage}`);
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to finalize Call Session';
+      setError(`Failed to finalize Call Session: ${errorMessage}`);
       console.error('Error finalizing campaign:', err);
     } finally {
       setLoading(false);
@@ -1007,17 +1007,59 @@ export default function CampaignCreationWizard() {
 
           {error && (
             <Fade in>
-              <Alert
-                severity="error"
-                sx={{
-                  mb: 3,
-                  borderRadius: 2,
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
-                }}
-                onClose={() => setError('')}
-              >
-                {error}
-              </Alert>
+              <Box sx={{ mb: 3 }}>
+                <AnimatedCard
+                  glassEffect
+                  sx={{
+                    p: 2,
+                    borderLeft: '4px solid #ef4444',
+                    background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 0.5) 100%)'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                    <Box sx={{
+                      p: 1,
+                      borderRadius: '50%',
+                      bgcolor: 'rgba(239, 68, 68, 0.1)',
+                      color: '#ef4444',
+                      display: 'flex'
+                    }}>
+                      <Typography variant="h5" component="span">⚠️</Typography>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#ef4444', mb: 0.5 }}>
+                        Configuration Error
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 1.5 }}>
+                        {error}
+                      </Typography>
+
+                      {(error.toLowerCase().includes('agent') || error.toLowerCase().includes('phone')) && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => router.push('/agent-settings/create')}
+                          sx={{
+                            color: '#ef4444',
+                            borderColor: '#ef4444',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            '&:hover': {
+                              borderColor: '#dc2626',
+                              bgcolor: 'rgba(239, 68, 68, 0.05)'
+                            }
+                          }}
+                        >
+                          Create or Fix Agent
+                        </Button>
+                      )}
+                    </Box>
+                    <IconButton size="small" onClick={() => setError('')} sx={{ color: '#ef4444' }}>
+                      <Typography variant="h6">×</Typography>
+                    </IconButton>
+                  </Box>
+                </AnimatedCard>
+              </Box>
             </Fade>
           )}
 
