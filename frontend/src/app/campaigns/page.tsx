@@ -15,7 +15,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField
+  TextField,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import {
   Add,
@@ -37,6 +39,8 @@ export default function CallSessionsPage() {
   const { callSessions, loading, error, fetchCallSessions } = useCallSessions(campaignTypeFilter === 'all' ? null : campaignTypeFilter);
   const [processing, setProcessing] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarError, setSnackbarError] = useState('');
 
   const handleCreateCallSession = () => {
     router.push('/campaigns/create');
@@ -51,8 +55,11 @@ export default function CallSessionsPage() {
       setProcessing(id);
       await callSessionAPI.start(id);
       fetchCallSessions();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error starting call session:', err);
+      const errorMessage = err.response?.data?.detail || 'Failed to start call session';
+      setSnackbarError(errorMessage);
+      setSnackbarOpen(true);
     } finally {
       setProcessing(null);
     }
@@ -383,6 +390,22 @@ export default function CallSessionsPage() {
         >
           <Add />
         </Fab>
+
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity="error"
+            sx={{ width: '100%', boxShadow: 3 }}
+            variant="filled"
+          >
+            {snackbarError}
+          </Alert>
+        </Snackbar>
       </Box>
     </NavigationLayout>
   );

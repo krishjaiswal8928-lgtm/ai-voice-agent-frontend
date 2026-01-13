@@ -10,8 +10,11 @@ from dotenv import load_dotenv
 from app import schemas
 from app.dependencies import get_db
 from app.core.security import get_current_user
+from app.core.security import get_current_user
 from app.models.campaign import CallSession as CallSessionModel
 from app.models.lead import Lead as LeadModel
+from app.models.custom_agent import CustomAgent # Import CustomAgent
+from google.cloud.firestore import FieldFilter # Import FieldFilter
 from app.schemas.campaign_schema import CallSession, CallSessionCreate, CallSessionUpdate, CallSessionType
 from app.schemas.lead import Lead as LeadSchema
 from app.services import campaign_service
@@ -66,6 +69,10 @@ def create_call_session(
 ):
     """Create a new call session."""
     try:
+        # VALIDATE
+        if call_session.custom_agent_id:
+             validate_agent_constraints(db, call_session.custom_agent_id)
+
         result = campaign_service.create_campaign(db, call_session, current_user["user_id"])
         return result
     except Exception as e:
@@ -90,6 +97,13 @@ def update_call_session(
             detail="Call session not found"
         )
     
+    # VALIDATE if agent is changing or just verify current assignment if sticking with same?
+    # Ideally should verify current too, in case prerequisites were removed since creation.
+    # If the user updates the campaign (even name), we re-validate the agent just in case.
+    new_agent_id = call_session.custom_agent_id or db_call_session.custom_agent_id
+    if new_agent_id:
+         validate_agent_constraints(db, new_agent_id, exclude_campaign_id=campaign_id)
+
     updated_call_session = campaign_service.update_campaign(db, campaign_id, call_session)
     if not updated_call_session:
         raise HTTPException(
@@ -112,6 +126,7 @@ def delete_call_session(
             detail="Call session not found"
         )
     
+    
     if campaign_service.delete_campaign(db, campaign_id):
         return {"message": "Call session deleted successfully"}
     else:
@@ -119,6 +134,65 @@ def delete_call_session(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Call session not found"
         )
+
+
+def validate_agent_constraints(db: firestore.Client, agent_id: str, exclude_campaign_id: Optional[str] = None):
+    """
+    Validate agent assignment:
+    1. Agent must exist
+    2. Agent must have phone number
+    3. Agent must have knowledge base (trained_documents)
+    4. Agent must not be active in another campaign
+    """
+    if not agent_id:
+        return
+
+    # 1. Fetch Agent
+    agent_ref = db.collection('custom_agents').document(agent_id)
+    agent_doc = agent_ref.get()
+    
+    if not agent_doc.exists:
+        raise HTTPException(status_code=400, detail=f"Agent configured for this campaign not found.")
+    
+    agent = CustomAgent.from_dict(agent_doc.to_dict(), agent_doc.id)
+    
+    # 2. Check Phone Number
+    if not agent.phone_number_id:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Agent '{agent.name}' has no phone number assigned. Please assign a phone number in Agent Settings before using in a campaign."
+        )
+        
+    # 3. Check Knowledge Base (Trained Documents)
+    # Using 'trained_documents' as proxy for KB. User said "Train".
+    if not agent.trained_documents or len(agent.trained_documents) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Agent '{agent.name}' has no Knowledge Base training. Please train the agent with documents/URLs before using in a campaign."
+        )
+
+    # 4. Check Uniqueness in ACTIVE campaigns
+    # Query for ANY campaign that is 'active' AND uses this agent
+    campaigns_ref = db.collection('campaigns')
+    query = campaigns_ref.where(filter=FieldFilter('status', '==', 'active')).where(filter=FieldFilter('custom_agent_id', '==', agent_id))
+    
+    active_campaigns = list(query.stream())
+    
+    for camp_doc in active_campaigns:
+        # If updating/starting a campaign, ignore self
+        if exclude_campaign_id and camp_doc.id == exclude_campaign_id:
+            continue
+            
+        # If we found another active campaign with this agent -> ERROR
+        camp_data = camp_doc.to_dict()
+        camp_name = camp_data.get('name', 'Unknown')
+        camp_type = camp_data.get('type', 'Unknown')
+        
+        raise HTTPException(
+            status_code=400,
+            detail=f"This agent is active in Call Session '{camp_name}' for {camp_type}. Select another agent or create a new one."
+        )
+
 
 @router.post("/{campaign_id}/start", response_model=CallSession)
 async def start_call_session(
@@ -134,6 +208,10 @@ async def start_call_session(
             detail="Call session not found"
         )
     
+    # VALIDATE: Check constraints before starting (Agent Uniqueness is critical here)
+    if db_call_session.custom_agent_id:
+        validate_agent_constraints(db, db_call_session.custom_agent_id, exclude_campaign_id=campaign_id)
+
     started_call_session = campaign_service.start_campaign(db, campaign_id)
     if not started_call_session:
         raise HTTPException(
