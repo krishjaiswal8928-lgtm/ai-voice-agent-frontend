@@ -189,94 +189,100 @@ async def handle_twilio_ws(ws: WebSocket):
                     goal = stream_params.get('goal')
                     logger.info(f"Parsed parameters - Campaign: {campaign_id}, Agent: {custom_agent_id}, Phone: {phone_number}, Goal: {goal}")
 
+                    is_outbound_flag = str(stream_params.get('is_outbound', '')).lower() == 'true'
+
                     # Re-resolve authoritative mapping from Firestore using the business 'To' number
                     # This is critical because Twilio may not have called the webhook first
-                    try:
-                        from app.database.firestore import db
-                        from app.models.campaign import CallSession
-                        from app.models.phone_number import VirtualPhoneNumber
-                        from google.cloud.firestore_v1.base_query import FieldFilter
+                    # SKIP IF OUTBOUND - Trust the params passed from outbound service
+                    if not is_outbound_flag:
+                        try:
+                            from app.database.firestore import db
+                            from app.models.campaign import CallSession
+                            from app.models.phone_number import VirtualPhoneNumber
+                            from google.cloud.firestore_v1.base_query import FieldFilter
 
-                        resolved = {
-                            "campaign_id": None,
-                            "custom_agent_id": None,
-                            "goal": None,
-                            "phone_number": phone_number,
-                        }
-
-                        logger.info(f"WS: Attempting to resolve mapping using phone_number: {phone_number}")
-
-                        if phone_number:
-                            phone_ref = db.collection('virtual_phone_numbers')  # CRITICAL FIX: was 'phone_numbers'
-                            # Try exact match
-                            phone_docs = list(phone_ref.where(filter=FieldFilter('phone_number', '==', phone_number)).stream())
-                            
-                            if not phone_docs:
-                                logger.info(f"WS: No exact phone match for '{phone_number}'; listing all phone numbers for debugging")
-                                all_phones = list(phone_ref.limit(10).stream())
-                                for p in all_phones:
-                                    pdata = p.to_dict()
-                                    logger.info(f"  Available phone: {pdata.get('phone_number')} -> agents: {pdata.get('assigned_agents', [])}")
-                            else:
-                                logger.info(f"WS: Found {len(phone_docs)} phone record(s) for {phone_number}")
-
-                        target_agent_id = None
-                        if phone_docs:
-                            for d in phone_docs:
-                                pn = VirtualPhoneNumber.from_dict(d.to_dict())
-                                if pn.is_active and pn.assigned_agents:
-                                    target_agent_id = pn.assigned_agents[0]
-                                    logger.info(f"WS: Resolved agent from phone: {target_agent_id}")
-                                    break
-
-                        if target_agent_id:
-                            call_sessions_ref = db.collection('campaigns')
-                            q = call_sessions_ref.where(filter=FieldFilter('type', '==', 'inbound')) \
-                                              .where(filter=FieldFilter('status', '==', 'active')) \
-                                              .where(filter=FieldFilter('custom_agent_id', '==', target_agent_id))
-                            found_call_sessions = [CallSession.from_dict(doc.to_dict(), doc.id) for doc in q.stream()]
-                            if found_call_sessions:
-                                found_call_sessions.sort(key=lambda c: c.updated_at or c.created_at, reverse=True)
-                                chosen = found_call_sessions[0]
-                                resolved["campaign_id"] = chosen.id
-                                resolved["custom_agent_id"] = chosen.custom_agent_id
-                                resolved["goal"] = chosen.goal or ""
-                                logger.info(f"WS: ✅ Resolved call session {resolved['campaign_id']} for agent {target_agent_id}")
-                                logger.info(f"WS: Goal: {resolved['goal']}")
-                            else:
-                                logger.warning(f"WS: ❌ No active inbound call session for agent {target_agent_id}")
-                        else:
-                            logger.warning(f"WS: ❌ Could not resolve agent from phone number {phone_number}")
-                            # Fallback: try to find ANY active inbound call session
-                            logger.info("WS: Attempting fallback to any active inbound call session...")
-                            call_sessions_ref = db.collection('campaigns')
-                            q = call_sessions_ref.where(filter=FieldFilter('type', '==', 'inbound')) \
-                                              .where(filter=FieldFilter('status', '==', 'active'))
-                            fallback_call_sessions = [CallSession.from_dict(doc.to_dict(), doc.id) for doc in q.stream()]
-                            if fallback_call_sessions:
-                                fallback_call_sessions.sort(key=lambda c: bool(c.custom_agent_id), reverse=True)
-                                chosen = fallback_call_sessions[0]
-                                resolved["campaign_id"] = chosen.id
-                                resolved["custom_agent_id"] = chosen.custom_agent_id
-                                resolved["goal"] = chosen.goal or ""
-                                logger.info(f"WS: Using fallback call session {resolved['campaign_id']}")
-
-                        # If authoritative resolution succeeded, override
-                        if resolved["campaign_id"] and resolved["custom_agent_id"]:
-                            stream_params.update({
-                                "campaign_id": resolved["campaign_id"],
-                                "custom_agent_id": resolved["custom_agent_id"],
-                                "goal": resolved["goal"],
+                            resolved = {
+                                "campaign_id": None,
+                                "custom_agent_id": None,
+                                "goal": None,
                                 "phone_number": phone_number,
-                            })
-                            logger.info("✅ WS parameters OVERRIDDEN using Firestore mapping")
-                        else:
-                            logger.warning("⚠️ WS: Could not resolve campaign/agent; using provided params (may be incorrect)")
+                            }
 
-                    except Exception as e:
-                        logger.error(f"WS mapping override failed: {e}")
-                        import traceback
-                        traceback.print_exc()
+                            logger.info(f"WS: Attempting to resolve mapping using phone_number: {phone_number}")
+
+                            if phone_number:
+                                phone_ref = db.collection('virtual_phone_numbers')  # CRITICAL FIX: was 'phone_numbers'
+                                # Try exact match
+                                phone_docs = list(phone_ref.where(filter=FieldFilter('phone_number', '==', phone_number)).stream())
+                                
+                                if not phone_docs:
+                                    logger.info(f"WS: No exact phone match for '{phone_number}'; listing all phone numbers for debugging")
+                                    all_phones = list(phone_ref.limit(10).stream())
+                                    for p in all_phones:
+                                        pdata = p.to_dict()
+                                        logger.info(f"  Available phone: {pdata.get('phone_number')} -> agents: {pdata.get('assigned_agents', [])}")
+                                else:
+                                    logger.info(f"WS: Found {len(phone_docs)} phone record(s) for {phone_number}")
+
+                            target_agent_id = None
+                            if phone_docs:
+                                for d in phone_docs:
+                                    pn = VirtualPhoneNumber.from_dict(d.to_dict())
+                                    if pn.is_active and pn.assigned_agents:
+                                        target_agent_id = pn.assigned_agents[0]
+                                        logger.info(f"WS: Resolved agent from phone: {target_agent_id}")
+                                        break
+
+                            if target_agent_id:
+                                call_sessions_ref = db.collection('campaigns')
+                                q = call_sessions_ref.where(filter=FieldFilter('type', '==', 'inbound')) \
+                                                  .where(filter=FieldFilter('status', '==', 'active')) \
+                                                  .where(filter=FieldFilter('custom_agent_id', '==', target_agent_id))
+                                found_call_sessions = [CallSession.from_dict(doc.to_dict(), doc.id) for doc in q.stream()]
+                                if found_call_sessions:
+                                    found_call_sessions.sort(key=lambda c: c.updated_at or c.created_at, reverse=True)
+                                    chosen = found_call_sessions[0]
+                                    resolved["campaign_id"] = chosen.id
+                                    resolved["custom_agent_id"] = chosen.custom_agent_id
+                                    resolved["goal"] = chosen.goal or ""
+                                    logger.info(f"WS: ✅ Resolved call session {resolved['campaign_id']} for agent {target_agent_id}")
+                                    logger.info(f"WS: Goal: {resolved['goal']}")
+                                else:
+                                    logger.warning(f"WS: ❌ No active inbound call session for agent {target_agent_id}")
+                            else:
+                                logger.warning(f"WS: ❌ Could not resolve agent from phone number {phone_number}")
+                                # Fallback: try to find ANY active inbound call session
+                                logger.info("WS: Attempting fallback to any active inbound call session...")
+                                call_sessions_ref = db.collection('campaigns')
+                                q = call_sessions_ref.where(filter=FieldFilter('type', '==', 'inbound')) \
+                                                  .where(filter=FieldFilter('status', '==', 'active'))
+                                fallback_call_sessions = [CallSession.from_dict(doc.to_dict(), doc.id) for doc in q.stream()]
+                                if fallback_call_sessions:
+                                    fallback_call_sessions.sort(key=lambda c: bool(c.custom_agent_id), reverse=True)
+                                    chosen = fallback_call_sessions[0]
+                                    resolved["campaign_id"] = chosen.id
+                                    resolved["custom_agent_id"] = chosen.custom_agent_id
+                                    resolved["goal"] = chosen.goal or ""
+                                    logger.info(f"WS: Using fallback call session {resolved['campaign_id']}")
+
+                            # If authoritative resolution succeeded, override
+                            if resolved["campaign_id"] and resolved["custom_agent_id"]:
+                                stream_params.update({
+                                    "campaign_id": resolved["campaign_id"],
+                                    "custom_agent_id": resolved["custom_agent_id"],
+                                    "goal": resolved["goal"],
+                                    "phone_number": phone_number,
+                                })
+                                logger.info("✅ WS parameters OVERRIDDEN using Firestore mapping")
+                            else:
+                                logger.warning("⚠️ WS: Could not resolve campaign/agent; using provided params (may be incorrect)")
+
+                        except Exception as e:
+                            logger.error(f"WS mapping override failed: {e}")
+                            import traceback
+                            traceback.print_exc()
+                    else:
+                        logger.info("WS: Outbound call detected - skipping inbound re-resolution and trusting params.")
 
                     # Log custom agent existence for visibility
                     if stream_params.get('custom_agent_id'):

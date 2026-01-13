@@ -63,7 +63,10 @@ async def voice_webhook(request: Request):
         from_num_norm = normalize_phone(from_num)
         to_num_norm = normalize_phone(to_num)
 
-        # Check if this is an outbound call by looking at call context
+        direction = form_data.get("Direction") or form_data.get("CallDirection") or "inbound"
+        logger.info(f"Call Direction: {direction}")
+
+        # Check if this is an outbound call by looking at call context or explicit direction
         # Params might be in query string (from outbound_service) or body (Twilio standard)
         campaign_id = form_data.get("campaign_id") or request.query_params.get("campaign_id")
         lead_id = form_data.get("lead_id") or request.query_params.get("lead_id")
@@ -75,33 +78,22 @@ async def voice_webhook(request: Request):
             logger.error("❌ Firestore DB client is not initialized")
             raise Exception("Database connection failed")
 
-        print(f"Form data: CallSid={call_sid}, From={from_num_norm}, To={to_num_norm}")
+        print(f"Form data: CallSid={call_sid}, From={from_num_norm}, To={to_num_norm}, Direction={direction}")
         print(f"Context: campaign_id={campaign_id}, lead_id={lead_id}, goal={goal}")
 
         response = VoiceResponse()
         
-        # Determine inbound vs outbound strictly from the dialed 'To' number.
-        # If the 'To' number matches a configured business line, TREAT AS INBOUND and ignore any client-supplied campaign_id.
-        from google.cloud.firestore_v1.base_query import FieldFilter
+        # Determine inbound vs outbound using explicit Direction from Twilio
+        is_outbound_api = direction == 'outbound-api'
+        
+        # Legacy fallback if Direction is missing but context is present
+        if not is_outbound_api and campaign_id and lead_id:
+             logger.info("Assuming Outbound based on campaign_id/lead_id context")
+             is_outbound_api = True
 
-        def find_phone_record(num_raw: str, num_norm: str):
-            phone_ref = db.collection('virtual_phone_numbers')  # Changed from 'phone_numbers' to match integrations
-            docs = list(phone_ref.where(filter=FieldFilter('phone_number', '==', num_raw)).stream())
-            if not docs and num_norm != num_raw:
-                docs = list(phone_ref.where(filter=FieldFilter('phone_number', '==', num_norm)).stream())
-            return docs
-
-        phone_docs = []
-        try:
-            phone_docs = find_phone_record(to_num, to_num_norm)
-        except Exception as e:
-            logger.warning(f"Phone lookup failed: {e}")
-
-        is_inbound_to_business = len(phone_docs) > 0
-
-        if not is_inbound_to_business and campaign_id and lead_id:
-            # Treat as outbound only if not a recognized business line AND explicit outbound context present
-            logger.info("Handling Outbound Call Context (validated)")
+        if is_outbound_api:
+            # Treat as outbound
+            logger.info("Handling Outbound Call Context (validated via Direction or Context)")
             connect = Connect()
             stream = Stream(url=WEBSOCKET_URL)
             stream.parameter(name="campaign_id", value=str(campaign_id))
@@ -109,10 +101,15 @@ async def voice_webhook(request: Request):
             stream.parameter(name="goal", value=goal)
             stream.parameter(name="rag_document_id", value=rag_document_id or "")
             stream.parameter(name="call_sid", value=call_sid)
-            # For outbound, phone_number can be the callee (to_num)
             stream.parameter(name="phone_number", value=to_num_norm)
+            # Explicitly flag as outbound to prevent WS from re-resolving as Inbound
+            stream.parameter(name="is_outbound", value="true")
+            
             connect.append(stream)
             response.append(connect)
+        else:
+            # Strict inbound routing based on dialed business number
+            # ... existing inbound logic ...
         else:
             # Strict inbound routing based on dialed business number
             from app.models.campaign import CallSession
