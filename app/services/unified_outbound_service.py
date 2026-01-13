@@ -47,13 +47,16 @@ class UnifiedOutboundService:
         
         try:
             # 1. Get phone source
-            phone_doc = db.collection('virtual_phone_numbers').document(phone_source_id).get()
-            if not phone_doc.exists:
+            try:
+                from app.services.phone_number_service import phone_number_service
+                phone_source = phone_number_service.get_phone_number(db, phone_source_id)
+            except Exception as e:
+                logger.error(f"Error fetching phone source via service: {e}")
+                phone_source = None
+
+            if not phone_source:
                 logger.error(f"Phone source {phone_source_id} not found")
                 return {"success": False, "error": "Phone source not found"}
-            
-            from app.models.phone_number import VirtualPhoneNumber
-            phone_source = VirtualPhoneNumber.from_dict(phone_doc.to_dict(), phone_doc.id)
             
             # 2. Route based on provider
             if phone_source.provider == 'sip':
