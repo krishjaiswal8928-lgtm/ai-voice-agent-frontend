@@ -109,9 +109,6 @@ async def voice_webhook(request: Request):
             response.append(connect)
         else:
             # Strict inbound routing based on dialed business number
-            # ... existing inbound logic ...
-        else:
-            # Strict inbound routing based on dialed business number
             from app.models.campaign import CallSession
             from app.models.phone_number import VirtualPhoneNumber
 
