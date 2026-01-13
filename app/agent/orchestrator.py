@@ -83,7 +83,7 @@ async def _fetch_custom_agent(agent_id: Optional[str]) -> Optional[CustomAgent]:
         return None
 
 
-def _generate_natural_greeting(agent_name: str, company_name: str, goal: str) -> str:
+def _generate_natural_greeting(agent_name: str, company_name: str, goal: str, lead_name: Optional[str] = None) -> str:
     """
     Generate a natural, human-like greeting based on the goal type.
     
@@ -91,16 +91,22 @@ def _generate_natural_greeting(agent_name: str, company_name: str, goal: str) ->
         agent_name: Name of the agent
         company_name: Name of the company
         goal: The goal or purpose of the call
+        lead_name: Name of the lead (optional)
         
     Returns:
         A natural greeting string
     """
+    # 1. Personalized greeting if lead name is known (Highest Priority)
+    if lead_name and len(lead_name.strip()) > 0:
+        return f"Hi, am I speaking with {lead_name}?"
+
     goal_lower = goal.lower().strip()
     
     # Detect goal type and create appropriate greeting
     # Sanitize inputs first
     agent_name = _sanitize_name_for_speech(agent_name, "Aditi")
     company_name = _sanitize_name_for_speech(company_name, "Digitale")
+    
     
     if any(keyword in goal_lower for keyword in ['sell', 'sale', 'marketing', 'product', 'service', 'offer']):
         # Sales-oriented greeting
@@ -600,10 +606,8 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
         
         # Determine TTS provider with validation
         provider = "cartesia"
-        if state.autonomous_agent and state.autonomous_agent.config and state.autonomous_agent.config.tts_provider:
-            # Import the validation function
-            from app.services.tts_service import validate_tts_provider
-            provider = validate_tts_provider(state.autonomous_agent.config.tts_provider)
+        # Removed dynamic provider check as it was removed from CustomAgent model
+
         
         if state.autonomous_agent:
             # Stream tokens
@@ -798,7 +802,7 @@ async def process_audio_chunk(audio_bytes: bytes, call_sid: str) -> Optional[byt
                     agent_goal = state.autonomous_agent.config.primary_goal or "assist you"
             
             # Generate natural greeting based on goal type
-            greeting = _generate_natural_greeting(agent_name, company_name, agent_goal)
+            greeting = _generate_natural_greeting(agent_name, company_name, agent_goal, state.lead_name)
             
             logger.info(f"Sending personalized greeting: {greeting}")
             try:
