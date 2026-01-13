@@ -120,9 +120,10 @@ class WebScraper:
                         except Exception as e:
                             logger.error(f"Error in progress callback: {e}")
 
-                    # Be respectful to the server with a small delay
+                    # Be respectful to the server with a small delay plus jitter
                     if self.delay > 0:
-                        await asyncio.sleep(self.delay)
+                        jitter = random.uniform(0.5, 2.0)
+                        await asyncio.sleep(self.delay + jitter)
                         
                     queue.task_done()
                     
@@ -137,10 +138,27 @@ class WebScraper:
         for attempt in range(self.max_retries):
             try:
                 headers = {
-                    'User-Agent': random.choice(self.USER_AGENTS)
+                    'User-Agent': random.choice(self.USER_AGENTS),
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                    'Cache-Control': 'max-age=0',
                 }
                 
-                async with session.get(url, headers=headers, timeout=15, ssl=False) as response:
+                async with session.get(url, headers=headers, timeout=20, ssl=False) as response:
+                    # Handle Rate Limiting (429) specifically
+                    if response.status == 429:
+                        wait_time = (2 ** attempt) * 5 + random.uniform(1, 3) # Aggressive backoff for 429
+                        logger.warning(f"Rate limited (429) for {url}. Retrying in {wait_time:.2f}s...")
+                        await asyncio.sleep(wait_time)
+                        continue
+                        
                     if response.status != 200:
                         logger.warning(f"Failed to fetch {url}, status: {response.status}")
                         if attempt < self.max_retries - 1:
@@ -150,6 +168,7 @@ class WebScraper:
                         
                     html_content = await response.text()
                     
+                    # Success
                     soup = BeautifulSoup(html_content, 'html.parser')
                     
                     # Remove script and style elements
@@ -177,7 +196,7 @@ class WebScraper:
             except Exception as e:
                 logger.warning(f"Error scraping page {url} on attempt {attempt + 1}: {e}")
                 if attempt < self.max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep((2 ** attempt) + random.uniform(0.5, 2.0))
                 else:
                     return {}
         return {}

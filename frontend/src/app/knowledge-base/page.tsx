@@ -355,16 +355,31 @@ function KnowledgeBaseContent() {
 
             // Use the new agent-specific endpoint through the ragAPI service
             const response = await ragAPI.crawlDomainAgent(selectedAgent as number, formattedUrl, 1000);
-
             if (response.status !== 200) {
                 throw new Error(`HTTP Error: ${response.status}`);
             }
 
-            const result = response.data;
-            setSuccess(`Successfully crawled domain: ${domainUrl}. Processed ${result.total_pages} pages.`);
-            setDomainUrl('');
-            setCrawlDialogOpen(false);
-            fetchDocuments(); // Refresh the documents table
+            const taskResult = response.data;
+            if (taskResult) {
+                if (taskResult.total_pages === 0) {
+                    let msg = `Crawl completed but no pages were found.`;
+                    if (taskResult.failed_count > 0) {
+                        msg += ` Failed to access ${taskResult.failed_count} URLs.`;
+                    }
+                    msg += ` The website might be using JavaScript rendering (SPA) or blocking bots.`;
+                    setError(msg);
+                } else {
+                    let msg = `Successfully crawled domain: ${domainUrl}. Processed ${taskResult.total_pages} pages.`;
+                    if (taskResult.failed_count > 0) {
+                        msg += ` (${taskResult.failed_count} URLs failed)`;
+                    }
+                    setSuccess(msg);
+                }
+
+                setDomainUrl('');
+                setCrawlDialogOpen(false);
+                fetchDocuments(); // Refresh the documents table
+            }
         } catch (err: any) {
             console.error('Crawl error:', err);
             // Improved error handling to show more details

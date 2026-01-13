@@ -210,7 +210,7 @@ class RAGService:
                     "message": f"Crawling {domain_url}..."
                 })
 
-            scraper = WebScraper(max_pages=max_pages, delay=0.5, concurrency=10)
+            scraper = WebScraper(max_pages=max_pages, delay=3.0, concurrency=3)
             
             # Callback for scraper progress
             async def scraper_progress(scraped, total):
