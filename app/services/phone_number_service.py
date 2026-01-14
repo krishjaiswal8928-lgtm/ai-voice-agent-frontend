@@ -12,12 +12,22 @@ class PhoneNumberService:
     def __init__(self):
         self.collection_name = "virtual_phone_numbers"
         # Ensure we have an encryption key
+        # Ensure we have an encryption key
         key = os.getenv("ENCRYPTION_KEY")
         if not key:
-            # Generate a key if not present (for dev/testing)
-            # In production, this should be strictly enforced from env
+            # Generate a key if not present
             key = Fernet.generate_key().decode()
             os.environ["ENCRYPTION_KEY"] = key
+            
+            # PERSIST the key to .env so we don't lose access to data on restart
+            try:
+                env_path = os.path.join(os.getcwd(), ".env")
+                with open(env_path, "a") as f:
+                    f.write(f"\nENCRYPTION_KEY={key}\n")
+                print(f"🔐 Generated and saved new ENCRYPTION_KEY to .env")
+            except Exception as e:
+                print(f"❌ Failed to save ENCRYPTION_KEY to .env: {e}")
+                
         self.cipher = Fernet(key.encode())
 
     def _encrypt_credentials(self, credentials: Dict[str, Any]) -> str:
