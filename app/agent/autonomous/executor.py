@@ -469,6 +469,7 @@ class AgentExecutor:
                     "ai_decision": True
                 })
                 logger.info(f"✅ Updated lead {lead_id} with classification: {classification}")
+            except Exception as e:
                 logger.error(f"Failed to update lead: {e}")
         
         # Trigger actual hangup if call_sid is present
