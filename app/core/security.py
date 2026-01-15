@@ -57,3 +57,50 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     if payload is None:
         raise credentials_exception
     return payload
+
+from cryptography.fernet import Fernet
+from google.cloud import firestore
+
+class EncryptionManager:
+    _cipher = None
+    
+    @classmethod
+    def get_cipher(cls, db: firestore.Client) -> Fernet:
+        if cls._cipher:
+            return cls._cipher
+            
+        # 1. Try Environment Variable (Priority)
+        key = os.getenv("ENCRYPTION_KEY")
+        
+        # 2. Try Firestore System Config (Persistence)
+        if not key:
+            try:
+                doc = db.collection('system').document('config').get()
+                if doc.exists:
+                    key = doc.to_dict().get('encryption_key')
+            except Exception as e:
+                print(f"⚠️ Failed to fetch encryption key from Firestore: {e}")
+        
+        # 3. Generate New Key & Persist (Fallback)
+        if not key:
+            print("🔐 valid ENCRYPTION_KEY not found. Generating new one...")
+            key = Fernet.generate_key().decode()
+            try:
+                # Save to Firestore (Robust Persistence)
+                db.collection('system').document('config').set({'encryption_key': key}, merge=True)
+                print("✅ Generated and saved new ENCRYPTION_KEY to Firestore.")
+            except Exception as e:
+                print(f"❌ Failed to save ENCRYPTION_KEY to Firestore: {e}")
+                # Try to print it clearly for logs
+                print(f"⚠️ SYSTEM ENCRYPTION KEY (SAVE THIS): {key}")
+        
+        # Initialize Cipher
+        try:
+            cls._cipher = Fernet(key.encode())
+        except Exception as e:
+             # Fallback if key is garbage
+             print(f"❌ Invalid Key format: {e}. Generating temp key.")
+             temp_key = Fernet.generate_key()
+             cls._cipher = Fernet(temp_key)
+             
+        return cls._cipher

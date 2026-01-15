@@ -8,39 +8,26 @@ import os
 import json
 import uuid
 
+from app.core.security import EncryptionManager
+
 class PhoneNumberService:
     def __init__(self):
         self.collection_name = "virtual_phone_numbers"
-        # Ensure we have an encryption key
-        # Ensure we have an encryption key
-        key = os.getenv("ENCRYPTION_KEY")
-        if not key:
-            # Generate a key if not present
-            key = Fernet.generate_key().decode()
-            os.environ["ENCRYPTION_KEY"] = key
-            
-            # PERSIST the key to .env so we don't lose access to data on restart
-            try:
-                env_path = os.path.join(os.getcwd(), ".env")
-                with open(env_path, "a") as f:
-                    f.write(f"\nENCRYPTION_KEY={key}\n")
-                print(f"🔐 Generated and saved new ENCRYPTION_KEY to .env")
-            except Exception as e:
-                print(f"❌ Failed to save ENCRYPTION_KEY to .env: {e}")
-                
-        self.cipher = Fernet(key.encode())
 
-    def _encrypt_credentials(self, credentials: Dict[str, Any]) -> str:
+    def _encrypt_credentials(self, credentials: Dict[str, Any], db: firestore.Client) -> str:
         json_str = json.dumps(credentials)
-        return self.cipher.encrypt(json_str.encode()).decode()
+        cipher = EncryptionManager.get_cipher(db)
+        return cipher.encrypt(json_str.encode()).decode()
 
-    def _decrypt_credentials(self, encrypted_data: str) -> Dict[str, Any]:
+    def _decrypt_credentials(self, encrypted_data: str, db: firestore.Client) -> Dict[str, Any]:
         if isinstance(encrypted_data, dict):
             return encrypted_data # Already decrypted or not encrypted
         try:
-            json_str = self.cipher.decrypt(encrypted_data.encode()).decode()
+            cipher = EncryptionManager.get_cipher(db)
+            json_str = cipher.decrypt(encrypted_data.encode()).decode()
             return json.loads(json_str)
-        except:
+        except Exception as e:
+            # print(f"Decryption failed: {e}")
             return {}
 
     def get_phone_numbers(self, db: firestore.Client, user_id: str) -> List[VirtualPhoneNumber]:
@@ -61,7 +48,7 @@ class PhoneNumberService:
         data = doc.to_dict()
         # Decrypt credentials for internal use, but be careful when returning to API
         if 'credentials' in data and isinstance(data['credentials'], str):
-             data['credentials'] = self._decrypt_credentials(data['credentials'])
+             data['credentials'] = self._decrypt_credentials(data['credentials'], db)
         return VirtualPhoneNumber.from_dict(data)
 
     def create_phone_number(self, db: firestore.Client, phone_data: VirtualPhoneNumberCreate, user_id: str, webhook_base_url: str = None) -> VirtualPhoneNumber:
@@ -113,7 +100,7 @@ class PhoneNumberService:
                     # In a real app, maybe add a 'configuration_status' field to the model
         
         # 3. Encrypt credentials
-        encrypted_creds = self._encrypt_credentials(phone_data.credentials)
+        encrypted_creds = self._encrypt_credentials(phone_data.credentials, db)
         
         # 4. Create model
         phone_id = str(uuid.uuid4())
@@ -149,7 +136,7 @@ class PhoneNumberService:
             provider = ProviderFactory.get_provider(provider_type, updates['credentials'])
             if not provider.validate_credentials():
                 raise ValueError("Invalid provider credentials")
-            updates['credentials'] = self._encrypt_credentials(updates['credentials'])
+            updates['credentials'] = self._encrypt_credentials(updates['credentials'], db)
             
         updates['updated_at'] = datetime.utcnow()
         

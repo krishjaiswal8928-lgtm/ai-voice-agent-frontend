@@ -3,33 +3,25 @@ from google.cloud import firestore
 from app.models.integration import Integration
 from app.schemas.integration import IntegrationCreate, IntegrationUpdate
 from app.services.phone_providers.factory import ProviderFactory
-from cryptography.fernet import Fernet
-import os
-import json
-import uuid
-from datetime import datetime
+from app.core.security import EncryptionManager
 
 class IntegrationService:
     def __init__(self):
         self.collection_name = "integrations"
-        # Use same encryption as phone_number_service
-        key = os.getenv("ENCRYPTION_KEY")
-        if not key:
-            key = Fernet.generate_key().decode()
-            os.environ["ENCRYPTION_KEY"] = key
-        self.cipher = Fernet(key.encode())
     
-    def _encrypt_credentials(self, credentials: Dict[str, Any]) -> str:
+    def _encrypt_credentials(self, credentials: Dict[str, Any], db: firestore.Client) -> str:
         """Encrypt provider credentials"""
         json_str = json.dumps(credentials)
-        return self.cipher.encrypt(json_str.encode()).decode()
+        cipher = EncryptionManager.get_cipher(db)
+        return cipher.encrypt(json_str.encode()).decode()
     
-    def _decrypt_credentials(self, encrypted_data: str) -> Dict[str, Any]:
+    def _decrypt_credentials(self, encrypted_data: str, db: firestore.Client) -> Dict[str, Any]:
         """Decrypt provider credentials"""
         if isinstance(encrypted_data, dict):
             return encrypted_data
         try:
-            json_str = self.cipher.decrypt(encrypted_data.encode()).decode()
+            cipher = EncryptionManager.get_cipher(db)
+            json_str = cipher.decrypt(encrypted_data.encode()).decode()
             return json.loads(json_str)
         except:
             return {}
@@ -53,7 +45,7 @@ class IntegrationService:
         data = doc.to_dict()
         # Decrypt credentials
         if 'credentials' in data and isinstance(data['credentials'], str):
-            data['credentials'] = self._decrypt_credentials(data['credentials'])
+            data['credentials'] = self._decrypt_credentials(data['credentials'], db)
         return Integration.from_dict(data)
     
     def create_integration(
@@ -72,7 +64,7 @@ class IntegrationService:
             raise ValueError("Invalid provider credentials")
         
         # 2. Encrypt credentials
-        encrypted_creds = self._encrypt_credentials(integration_data.credentials)
+        encrypted_creds = self._encrypt_credentials(integration_data.credentials, db)
         
         # 3. Create integration model
         integration_id = str(uuid.uuid4())
@@ -117,7 +109,7 @@ class IntegrationService:
             provider = ProviderFactory.get_provider(provider_type, updates['credentials'])
             if not provider.validate_credentials():
                 raise ValueError("Invalid provider credentials")
-            updates['credentials'] = self._encrypt_credentials(updates['credentials'])
+            updates['credentials'] = self._encrypt_credentials(updates['credentials'], db)
         
         updates['updated_at'] = datetime.utcnow()
         doc_ref.update(updates)

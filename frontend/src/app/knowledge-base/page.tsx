@@ -337,75 +337,88 @@ function KnowledgeBaseContent() {
             formattedUrl = 'https://' + formattedUrl;
         }
 
-        console.log('Crawling domain with agent ID:', selectedAgent);
-        console.log('Agent type:', typeof selectedAgent);
-
         setCrawlLoading(true);
         setCrawlProgress(0);
 
         try {
-            // Use the ragAPI service with agentId parameter
-            // Create form data
-            const formData = new FormData();
-            formData.append('url', formattedUrl);
-            // Set max_pages to a high value to crawl all pages
-            formData.append('max_pages', '1000');
+            console.log('Starting crawl task for:', formattedUrl);
 
-            console.log('Sending request to:', `/rag/crawl-domain-agent/${selectedAgent}`);
-
-            // Use the new agent-specific endpoint through the ragAPI service
+            // Start the crawl task
             const response = await ragAPI.crawlDomainAgent(selectedAgent as number, formattedUrl, 1000);
+
             if (response.status !== 200) {
                 throw new Error(`HTTP Error: ${response.status}`);
             }
 
-            const taskResult = response.data;
-            if (taskResult) {
-                if (taskResult.total_pages === 0) {
-                    let msg = `Crawl completed but no pages were found.`;
-                    if (taskResult.failed_count > 0) {
-                        msg += ` Failed to access ${taskResult.failed_count} URLs.`;
-                    }
-                    msg += ` The website might be using JavaScript rendering (SPA) or blocking bots.`;
-                    setError(msg);
-                } else {
-                    let msg = `Successfully crawled domain: ${domainUrl}. Processed ${taskResult.total_pages} pages.`;
-                    if (taskResult.failed_count > 0) {
-                        msg += ` (${taskResult.failed_count} URLs failed)`;
-                    }
-                    setSuccess(msg);
-                }
+            const { task_id } = response.data;
 
-                setDomainUrl('');
-                setCrawlDialogOpen(false);
-                fetchDocuments(); // Refresh the documents table
+            if (!task_id) {
+                // Fallback for immediate response (legacy) or error
+                throw new Error('No task ID received from server');
             }
-        } catch (err: any) {
-            console.error('Crawl error:', err);
-            // Improved error handling to show more details
-            if (err.response) {
-                // Server responded with error status
-                let errorMessage = `Request failed with status ${err.response.status}`;
-                if (err.response.data) {
-                    if (typeof err.response.data === 'string') {
-                        errorMessage += `: ${err.response.data}`;
-                    } else if (err.response.data.detail) {
-                        errorMessage += `: ${err.response.data.detail}`;
-                    } else {
-                        errorMessage += `: ${JSON.stringify(err.response.data)}`;
+
+            // Poll for status
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusRes = await ragAPI.getTaskStatus(task_id);
+                    const status = statusRes.data;
+
+                    if (status.status === 'not_found') {
+                        clearInterval(pollInterval);
+                        setCrawlLoading(false);
+                        setError('Crawl task lost');
+                        return;
                     }
+
+                    // Update progress
+                    setCrawlProgress(status.progress || 0);
+
+                    if (status.status === 'completed') {
+                        clearInterval(pollInterval);
+                        setCrawlLoading(false);
+                        setCrawlProgress(100);
+
+                        const result = status.result || {};
+                        const totalPages = result.total_pages || 0;
+                        const failedCount = result.failed_count || 0;
+
+                        if (totalPages === 0) {
+                            let msg = `Crawl completed but no pages were found.`;
+                            if (failedCount > 0) {
+                                msg += ` Failed to access ${failedCount} URLs.`;
+                            }
+                            msg += ` The website might be using JavaScript rendering (SPA) or blocking bots.`;
+                            setError(msg);
+                        } else {
+                            let msg = `Successfully crawled domain: ${domainUrl}. Processed ${totalPages} pages.`;
+                            if (failedCount > 0) {
+                                msg += ` (${failedCount} URLs failed)`;
+                            }
+                            setSuccess(msg);
+                        }
+
+                        setDomainUrl('');
+                        setCrawlDialogOpen(false);
+                        fetchDocuments(); // Refresh documents
+                    } else if (status.status === 'failed') {
+                        clearInterval(pollInterval);
+                        setCrawlLoading(false);
+                        setError(`Crawl failed: ${status.error || 'Unknown error'}`);
+                    }
+                } catch (err) {
+                    // Ignore transient polling errors
+                    console.error('Polling error:', err);
                 }
-                setError(errorMessage);
-            } else if (err.request) {
-                // Request was made but no response received
-                setError('No response received from server. Please check your connection.');
-            } else {
-                // Something else happened
-                setError(err.message || 'Failed to crawl domain');
-            }
-        } finally {
+            }, 2000); // Check every 2 seconds
+
+        } catch (err: any) {
+            console.error('Crawl start error:', err);
             setCrawlLoading(false);
-            setCrawlProgress(0);
+            if (err.response) {
+                setError(`Request failed with status ${err.response.status}: ${JSON.stringify(err.response.data)}`);
+            } else {
+                setError(err.message || 'Failed to start crawl');
+            }
         }
     };
 
