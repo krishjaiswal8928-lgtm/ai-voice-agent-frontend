@@ -91,7 +91,12 @@ export default function TwilioDashboardPage() {
             setError('');
         } catch (err: any) {
             console.error('Error fetching data:', err);
-            setError('Failed to load Twilio integration');
+            // Check for specific error details from the backend
+            if (err.response?.data?.detail) {
+                setError(`Failed to load Twilio integration: ${err.response.data.detail}`);
+            } else {
+                setError(`Failed to load Twilio integration: ${err.message || 'Unknown error'}`);
+            }
         } finally {
             setLoading(false);
         }
