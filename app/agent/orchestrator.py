@@ -97,54 +97,36 @@ def _generate_natural_greeting(agent_name: str, company_name: str, goal: str, le
         A natural greeting string
     """
     # 1. Personalized greeting if lead name is known (Highest Priority)
+    # 1. Personalized greeting if lead name is known (Highest Priority)
     if lead_name and len(lead_name.strip()) > 0:
-        return f"Hi, am I speaking with {lead_name}?"
+        return f"Hi, am I talking with {lead_name}?"
 
-    goal_lower = goal.lower().strip()
+    # 2. Generic Greeting (No Name) - Intro + Goal
     
-    # Detect goal type and create appropriate greeting
-    # Sanitize inputs first
+    # Sanitize inputs
     agent_name = _sanitize_name_for_speech(agent_name, "Aditi")
     company_name = _sanitize_name_for_speech(company_name, "Digitale")
+    goal = goal.strip()
     
+    # Clean up goal text to remove common prefixes for natural flow
+    cleaned_goal = goal
+    for prefix in ['try to ', 'please ', 'you should ', 'goal is to ', 'objective is to ']:
+        if cleaned_goal.lower().startswith(prefix):
+            cleaned_goal = cleaned_goal[len(prefix):]
     
-    if any(keyword in goal_lower for keyword in ['sell', 'sale', 'marketing', 'product', 'service', 'offer']):
-        # Sales-oriented greeting
-        if 'marketing' in goal_lower:
-            return f"Hello! This is {agent_name} calling from {company_name}. I'm reaching out to discuss how our marketing services can help grow your business. Do you have a moment to chat?"
-        else:
-            # Extract the product/service being sold
-            return f"Hi! This is {agent_name} from {company_name}. I'm calling to share some information about our services that might benefit you. Is now a good time?"
+    # Capitalize first letter
+    if cleaned_goal and cleaned_goal[0].islower():
+        cleaned_goal = cleaned_goal[0].upper() + cleaned_goal[1:]
+
+    # Construct the intro
+    intro = f"Hello! This is {agent_name} calling from {company_name}."
     
-    elif any(keyword in goal_lower for keyword in ['support', 'help', 'assist', 'question', 'issue', 'problem']):
-        # Support-oriented greeting
-        return f"Hello! I'm {agent_name} from {company_name} support. I'm here to help you today. What can I assist you with?"
+    # Combine intro with goal/opener
+    # If goal is short/simple, use it directly. If it's complex, use a generic opener.
+    if len(cleaned_goal) > 100 or any(word in cleaned_goal.lower() for word in ['try to', 'attempt to']):
+        return f"{intro} How can I help you today?"
     
-    elif any(keyword in goal_lower for keyword in ['follow up', 'followup', 'check in', 'update']):
-        # Follow-up greeting
-        return f"Hi! This is {agent_name} from {company_name}. I'm calling to follow up with you. How are you doing today?"
-    
-    elif any(keyword in goal_lower for keyword in ['schedule', 'appointment', 'meeting', 'book']):
-        # Scheduling greeting
-        return f"Hello! I'm {agent_name} calling from {company_name}. I'd like to help you schedule an appointment. Is this a convenient time?"
-    
-    else:
-        # Generic/general greeting - clean up the goal text
-        # Remove common awkward prefixes like "Try to", "Please", etc.
-        cleaned_goal = goal
-        for prefix in ['try to ', 'please ', 'you should ', 'goal is to ', 'objective is to ']:
-            if cleaned_goal.lower().startswith(prefix):
-                cleaned_goal = cleaned_goal[len(prefix):]
-        
-        # Capitalize first letter if needed
-        if cleaned_goal and cleaned_goal[0].islower():
-            cleaned_goal = cleaned_goal[0].upper() + cleaned_goal[1:]
-        
-        # If goal is still awkward or too long, use a simple greeting
-        if len(cleaned_goal) > 100 or any(word in cleaned_goal.lower() for word in ['try to', 'attempt to']):
-            return f"Hello! I'm {agent_name} from {company_name}. How can I help you today?"
-        
-        return f"Hello! I'm {agent_name} from {company_name}. I'm calling regarding {cleaned_goal}. How are you today?"
+    return f"{intro} I'm calling regarding {cleaned_goal}. How are you today?"
 
 
 def _sanitize_name_for_speech(name: str, fallback: str) -> str:
@@ -1254,10 +1236,13 @@ async def trigger_outbound_greeting(call_sid: str):
     agent_name = "there" 
     company_name = "our company"
     agent_goal = state.goal or "assist you"
+    voice_id = None  # Default to auto-select
 
     if state.autonomous_agent and state.autonomous_agent.config:
         agent_name = state.autonomous_agent.config.name or "there"
         company_name = state.autonomous_agent.config.company_name or "our company"
+        voice_id = state.autonomous_agent.config.voice_id # Fetch configured voice ID
+        
         # If no specific campaign goal, use agent's primary goal
         if not state.goal:
              agent_goal = state.autonomous_agent.config.primary_goal or "assist you"
@@ -1281,8 +1266,8 @@ async def trigger_outbound_greeting(call_sid: str):
     
     try:
         # 4. Synthesize & Queue
-        # Using cartesia by default or fallback
-        tts_audio = await synthesize_speech_with_provider("cartesia", greeting)
+        # Pass voice_id to ensure consistent voice
+        tts_audio = await synthesize_speech_with_provider("cartesia", greeting, voice_id=voice_id)
         if tts_audio:
             logger.info(f"✅ Queued greeting audio ({len(tts_audio)} bytes)")
             state.outbound_audio_queue.put_nowait(tts_audio)
