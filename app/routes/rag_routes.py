@@ -571,10 +571,10 @@ async def get_task_status(
     current_user: dict = Depends(get_current_user)
 ):
     """Get status of a background task."""
-    status = get_rag_service().get_task_status(task_id)
-    if status["status"] == "not_found":
+    task_status = get_rag_service().get_task_status(task_id)
+    if task_status["status"] == "not_found":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
         )
-    return status
+    return task_status
