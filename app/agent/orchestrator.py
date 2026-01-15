@@ -1226,3 +1226,65 @@ def cleanup_conversation(call_sid: str):
         print(f"Cleaned up conversation: {call_sid}")
     else:
         print(f"No conversation found for: {call_sid}")
+
+
+async def trigger_outbound_greeting(call_sid: str):
+    """
+    Manually trigger the initial greeting for an outbound call.
+    This ensures the AI speaks first, even before the user speaks.
+    """
+    state = active_conversations.get(call_sid)
+    if not state:
+        logger.warning(f"Cannot trigger greeting: No conversation state for {call_sid}")
+        return
+
+    if not state.needs_greeting:
+        logger.info(f"Greeting already handling/sent for {call_sid}")
+        return
+
+    logger.info(f"📢 Triggering outbound greeting for {call_sid}")
+    
+    # 1. Determine Agent & Goal context
+    agent_name = "there" 
+    company_name = "our company"
+    agent_goal = state.goal or "assist you"
+
+    if state.autonomous_agent and state.autonomous_agent.config:
+        agent_name = state.autonomous_agent.config.name or "there"
+        company_name = state.autonomous_agent.config.company_name or "our company"
+        # If no specific campaign goal, use agent's primary goal
+        if not state.goal:
+             agent_goal = state.autonomous_agent.config.primary_goal or "assist you"
+    
+    # 2. Generate Greeting
+    greeting = _generate_natural_greeting(
+        agent_name, 
+        company_name, 
+        agent_goal, 
+        state.lead_name
+    )
+    
+    # 3. Update State
+    state.needs_greeting = False 
+    state.first_interaction = False
+    state.is_speaking = True
+    
+    # Add to history so AI knows it said this
+    state.add_message("assistant", greeting)
+    logger.info(f"🤖 Generated Outbound Greeting: {greeting}")
+    
+    try:
+        # 4. Synthesize & Queue
+        # Using cartesia by default or fallback
+        tts_audio = await synthesize_speech_with_provider("cartesia", greeting)
+        if tts_audio:
+            logger.info(f"✅ Queued greeting audio ({len(tts_audio)} bytes)")
+            state.outbound_audio_queue.put_nowait(tts_audio)
+            asyncio.create_task(reset_speaking_state(state))
+        else:
+            logger.error("❌ TTS returned no audio for greeting")
+            state.is_speaking = False
+            
+    except Exception as e:
+        logger.error(f"Failed to synthesize outbound greeting: {e}", exc_info=True)
+        state.is_speaking = False
