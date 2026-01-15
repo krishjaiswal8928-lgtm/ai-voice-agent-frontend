@@ -3,41 +3,36 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
-from cryptography.fernet import Fernet
 import json
+import sys
 
+# Add current directory to path so we can import app modules
+sys.path.append(os.getcwd())
+
+# Mock imports/env if needed or just load dotenv
 load_dotenv()
 
-def decrypt_creds(encrypted_data):
-    if isinstance(encrypted_data, dict):
-        return encrypted_data
-    
-    key = os.getenv("ENCRYPTION_KEY")
-    if not key:
-        print("   [!] NO ENCRYPTION_KEY found in env!")
-        return {}
-        
-    try:
-        cipher = Fernet(key.encode())
-        json_str = cipher.decrypt(encrypted_data.encode()).decode()
-        return json.loads(json_str)
-    except Exception as e:
-        print(f"   [!] Decryption Invalid: {e}")
-        return {}
-
 def inspect_credentials():
-    # Initialize Firestore (if not already)
+    # Initialize Firestore
     if not firebase_admin._apps:
         cred = credentials.Certificate("serviceAccountKey.json")
         firebase_admin.initialize_app(cred)
     
     db = firestore.client()
     
-    target_number = "+18578474565" # The failing number
-    print(f"\n[?] Inspecting Phone Number: {target_number}")
-    print("-" * 50)
+    # Import EncryptionManager AFTER firebase init in case it needs it? 
+    # Actually EncryptionManager doesn't autodepend on init, just needs db pass
+    try:
+        from app.core.security import EncryptionManager
+        print("[OK] Imported EncryptionManager")
+    except ImportError as e:
+        print(f"[X] Failed to import EncryptionManager: {e}")
+        return
+
+    print(f"\n[?] Listing ALL Phone Numbers in DB:")
+    print("-" * 60)
     
-    docs = db.collection('virtual_phone_numbers').where('phone_number', '==', target_number).stream()
+    docs = db.collection('virtual_phone_numbers').stream()
     found = False
     
     env_sid = os.getenv("TWILIO_ACCOUNT_SID")
@@ -46,37 +41,44 @@ def inspect_credentials():
     for doc in docs:
         found = True
         data = doc.to_dict()
-        print(f"[OK] Found Document ID: {doc.id}")
+        p_num = data.get('phone_number')
+        print(f"[OK] Found Doc ID: {doc.id} | Phone: {p_num}")
         print(f"   Provider: {data.get('provider')}")
         
         raw_creds = data.get('credentials')
+        creds = {}
         
         if raw_creds:
             print(f"   [+] Raw Credentials Found (Type: {type(raw_creds).__name__})")
+            if isinstance(raw_creds, str):
+                try:
+                    cipher = EncryptionManager.get_cipher(db)
+                    json_str = cipher.decrypt(raw_creds.encode()).decode()
+                    creds = json.loads(json_str)
+                    print("   [+] Decryption Success!")
+                except Exception as e:
+                    print(f"   [X] Decryption Failed: {e}")
+            elif isinstance(raw_creds, dict):
+                creds = raw_creds
+                print("   [+] Credentials already dict (Not Encrypted?)")
+        
+        if creds:
+            stored_sid = creds.get('account_sid')
+            print(f"   [ID] Stored Account SID: {stored_sid}")
             
-            # Decrypt if string
-            creds = decrypt_creds(raw_creds) if isinstance(raw_creds, str) else raw_creds
-            
-            if creds:
-                stored_sid = creds.get('account_sid')
-                print(f"   [ID] Stored Account SID: {stored_sid}")
-                
-                if stored_sid == env_sid:
-                    print("   [!]  WARNING: Stored SID matches Default ENV SID.") 
-                    print("        This means imports used the Default Account credentials.")
-                    print("        Twilio will reject the call because Default Account doesn't own this number.")
-                else:
-                    print("   [OK] Stored SID is DIFFERENT from Default.")
-                    print("        (Multi-account setup looks correct data-wise)")
+            if stored_sid == env_sid:
+                print("   [!]  WARNING: Stored SID MATCHES Default ENV SID.")
+                print("        CONCLUSION: The number was imported using the 'Default' integration/credentials.")
             else:
-                print("   [X] Failed to decrypt or parse credentials.")
+                print("   [OK] Stored SID is DIFFERENT from Default.")
+                print("        CONCLUSION: Data is correct. Check logic flow.")
         else:
-            print("   [X] Credentials Found: NO (Empty or None)")
+            print("   [X] No usable credentials found after processing.")
             
     if not found:
         print("[X] Phone number not found in database.")
         
-    print("-" * 50 + "\n")
+    print("-" * 60 + "\n")
 
 if __name__ == "__main__":
     inspect_credentials()

@@ -4,6 +4,9 @@ from app.models.integration import Integration
 from app.schemas.integration import IntegrationCreate, IntegrationUpdate
 from app.services.phone_providers.factory import ProviderFactory
 from app.core.security import EncryptionManager
+import json
+import uuid
+from datetime import datetime
 
 class IntegrationService:
     def __init__(self):
