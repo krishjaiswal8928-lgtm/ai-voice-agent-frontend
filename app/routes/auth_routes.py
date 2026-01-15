@@ -398,10 +398,9 @@ async def google_auth(credentials: dict):
         )
     except Exception as e:
         print(f"Google auth error: {e}")
-        # DEBUG: Return specific error to frontend
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to authenticate with Google: {str(e)}"
+            detail="Failed to authenticate with Google"
         )
 
 @router.post("/refresh", response_model=dict)

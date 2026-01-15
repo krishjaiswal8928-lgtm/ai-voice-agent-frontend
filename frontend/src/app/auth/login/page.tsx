@@ -57,10 +57,7 @@ export default function LoginPage() {
       localStorage.setItem('token', response.data.access_token);
       router.push('/');
     } catch (err: any) {
-      console.error('Google Auth Error:', err);
-      // Try to get specific error message from backend
-      const backendError = err.response?.data?.detail;
-      setError(backendError || 'Google authentication failed. Please check your configuration.');
+      setError('Google authentication failed');
     } finally {
       setLoading(false);
     }
