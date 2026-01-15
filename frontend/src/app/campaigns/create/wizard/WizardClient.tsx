@@ -874,9 +874,33 @@ export default function CampaignCreationWizard() {
                     <Typography variant="caption" sx={{ color: theme.palette.text.secondary, textTransform: 'uppercase', fontWeight: 600 }}>
                       Leads
                     </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
                       {leads.length > 0 ? `${leads.length} leads uploaded` : 'No leads uploaded'}
                     </Typography>
+                    {leads.length > 0 && (
+                      <Paper variant="outlined" sx={{ mt: 1, maxHeight: 200, overflow: 'auto' }}>
+                        <List dense>
+                          {leads.slice(0, 5).map((lead, index) => (
+                            <ListItem key={index} divider={index !== leads.length - 1 && index !== 4}>
+                              <ListItemText
+                                primary={lead.name || 'Unknown Name'}
+                                secondary={lead.phone}
+                                primaryTypographyProps={{ fontWeight: 500, fontSize: '0.875rem' }}
+                                secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                              />
+                            </ListItem>
+                          ))}
+                          {leads.length > 5 && (
+                            <ListItem>
+                              <ListItemText
+                                secondary={`...and ${leads.length - 5} more`}
+                                secondaryTypographyProps={{ align: 'center', fontStyle: 'italic' }}
+                              />
+                            </ListItem>
+                          )}
+                        </List>
+                      </Paper>
+                    )}
                   </Box>
                 )}
               </Box>

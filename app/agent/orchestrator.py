@@ -581,6 +581,13 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                     from app.models.lead import Lead
                     lead = Lead.from_dict(lead_doc.to_dict(), lead_doc.id)
                     lead_purpose = lead.purpose
+                    
+                    # Update lead name in state and context
+                    if lead.name:
+                        state.lead_name = lead.name
+                        logger.info(f"📋 Lead Name: {lead.name}")
+                        rag_context = f"LEAD NAME: {lead.name}\n{rag_context}"
+
                     if lead_purpose:
                         logger.info(f"📋 Lead Purpose: {lead_purpose}")
                         # Add purpose to RAG context
