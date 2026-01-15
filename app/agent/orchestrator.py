@@ -561,6 +561,12 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                     state.autonomous_agent.config.primary_goal = state.goal
                     logger.info(f"🎯 Overrode agent goal with campaign goal: {state.goal}")
                 
+                # INJECT CALL SID into context for tools like end_call
+                state.autonomous_agent.current_context["call_sid"] = state.call_sid
+                state.autonomous_agent.current_context["campaign_id"] = state.campaign_id
+                state.autonomous_agent.current_context["lead_id"] = state.lead_id
+                state.autonomous_agent.current_context["phone_number"] = state.phone_number
+                
                 logger.info(f"✅ Agent '{custom_agent.name}' initialized ({len(state.conversation_history)} history items)")
         
         # --- 2. RAG Context Retrieval ---

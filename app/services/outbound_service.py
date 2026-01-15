@@ -175,6 +175,32 @@ async def get_call_status(call_sid: str):
     # This would need to be implemented to check call status
     return {"status": "not_implemented"}
 
-async def end_call(call_sid: str):
-    # This would need to be implemented to hang up calls
-    return {"status": "not_implemented"}
+async def end_call(call_sid: str, credentials: Optional[Dict] = None):
+    """
+    Terminates a call using the Twilio API.
+    Supports multi-account credentials if provided.
+    """
+    try:
+        active_client = outbound_manager.client
+        
+        # Handle custom credentials for multi-account support
+        if credentials and credentials.get('account_sid') and credentials.get('auth_token'):
+            try:
+                active_client = Client(credentials['account_sid'], credentials['auth_token'])
+            except Exception as e:
+                logger.error(f"Failed to init custom client for hanging up {call_sid}: {e}")
+                return {"success": False, "error": str(e)}
+
+        if not active_client:
+            logger.error("Twilio client not initialized, cannot hang up")
+            return {"success": False, "error": "Client not initialized"}
+            
+        logger.info(f"📵 Attempting to hang up call: {call_sid}")
+        # Build strict update params
+        call = active_client.calls(call_sid).update(status='completed')
+        logger.info(f"✅ Call {call_sid} terminated successfully. Status: {call.status}")
+        return {"success": True, "status": call.status}
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to hang up call {call_sid}: {e}")
+        return {"success": False, "error": str(e)}

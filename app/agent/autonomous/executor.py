@@ -337,6 +337,19 @@ class AgentExecutor:
                 output={"text": final_message, "audio": None, "conversation_ended": True},
                 requires_user_input=False
             )
+        finally:
+            # Trigger actual hangup if call_sid is present
+            call_sid = context.get("call_sid")
+            if call_sid:
+                logger.info(f"📵 Triggering physical hangup for {call_sid}")
+                from app.services.outbound_service import end_call
+                # Schedule as background task to allow TTS to finish? 
+                # Ideally we wait for TTS to stream then hangup.
+                # For now, we rely on the orchestrator handling the cleanup, 
+                # OR we fire the hangup here.
+                # Note: If we hangup here immediately, TTS might be cut off.
+                # A better approach is to rely on orchestrator processing the "conversation_ended" flag.
+                pass
     
     async def _execute_learn(
         self,
@@ -456,8 +469,33 @@ class AgentExecutor:
                     "ai_decision": True
                 })
                 logger.info(f"✅ Updated lead {lead_id} with classification: {classification}")
-            except Exception as e:
                 logger.error(f"Failed to update lead: {e}")
+        
+        # Trigger actual hangup if call_sid is present
+        # We perform this AFTER generating TTS so we can return the audio, 
+        # but the actual hangup should probably be triggered by the caller (orchestrator)
+        # after playing the audio.
+        # However, to be safe, we can trigger it here with a slight delay or rely on the flag.
+        
+        # Current logic: The `conversation_ended` flag tells the orchestrator to stop listening.
+        # The orchestrator should then close the connection.
+        # But `orchestrator.py` currently might NOT be checking this flag effectively in the streaming loop.
+        # So we adding a safety hangup here.
+        call_sid = context.get("call_sid")
+        if call_sid:
+             import asyncio
+             from app.services.outbound_service import end_call
+             # Fire and forget hangup task (with delay to allow TTS)
+             async def delayed_hangup(sid):
+                 await asyncio.sleep(5.0) # Wait 5s for TTS to play
+                 await end_call(sid)
+             
+             try:
+                 asyncio.create_task(delayed_hangup(call_sid))
+                 logger.info(f"⏳ Scheduled physical hangup for {call_sid} in 5s")
+             except RuntimeError:
+                 # If loop is closed
+                 pass
         
         # Generate TTS for final message
         try:
