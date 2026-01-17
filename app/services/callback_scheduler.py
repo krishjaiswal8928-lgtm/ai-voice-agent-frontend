@@ -513,10 +513,45 @@ Good luck!
 
 
 # Factory function
-def get_callback_scheduler(db: firestore.Client) -> CallbackScheduler:
+def get_callback_scheduler(db: firestore.Client = None) -> CallbackScheduler:
     """Get callback scheduler instance."""
+    if db is None:
+        db = firestore.Client()
     return CallbackScheduler(db)
 
 
-# Create singleton instance for backward compatibility
-callback_scheduler = get_callback_scheduler(firestore.Client())
+# Lazy singleton instance for backward compatibility
+_callback_scheduler_instance = None
+
+def _get_callback_scheduler_singleton():
+    """Get or create singleton callback scheduler instance."""
+    global _callback_scheduler_instance
+    if _callback_scheduler_instance is None:
+        try:
+            from app.database.firestore import db
+            _callback_scheduler_instance = CallbackScheduler(db)
+        except Exception as e:
+            logger.warning(f"Failed to initialize callback_scheduler: {e}")
+            # Return a dummy instance that will be initialized later
+            _callback_scheduler_instance = None
+    return _callback_scheduler_instance
+
+
+# Create a property-like accessor for backward compatibility
+class CallbackSchedulerProxy:
+    """Proxy to lazily initialize callback_scheduler."""
+    
+    def __getattr__(self, name):
+        scheduler = _get_callback_scheduler_singleton()
+        if scheduler is None:
+            raise RuntimeError("CallbackScheduler not initialized. Firestore credentials may be missing.")
+        return getattr(scheduler, name)
+    
+    def __call__(self, *args, **kwargs):
+        scheduler = _get_callback_scheduler_singleton()
+        if scheduler is None:
+            raise RuntimeError("CallbackScheduler not initialized. Firestore credentials may be missing.")
+        return scheduler(*args, **kwargs)
+
+
+callback_scheduler = CallbackSchedulerProxy()
