@@ -3,7 +3,7 @@ from .base import BasePhoneProvider
 from .exotel import ExotelProvider
 from .twilio import TwilioProvider
 
-class ProviderFactory:
+class PhoneProviderFactory:
     @staticmethod
     def get_provider(provider_type: str, config: Dict[str, Any]) -> BasePhoneProvider:
         """
