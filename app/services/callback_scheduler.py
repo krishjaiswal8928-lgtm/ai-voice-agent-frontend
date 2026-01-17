@@ -104,7 +104,7 @@ class CallbackScheduler:
             return callback
             
         except Exception as e:
-            logger.error(f"Failed to schedule callback: {str(e)}")
+            logger.error(f"Error sending callback reminder: {e}")
             raise
     
     def schedule_callback_from_transfer_failure(
@@ -516,3 +516,7 @@ Good luck!
 def get_callback_scheduler(db: firestore.Client) -> CallbackScheduler:
     """Get callback scheduler instance."""
     return CallbackScheduler(db)
+
+
+# Create singleton instance for backward compatibility
+callback_scheduler = get_callback_scheduler(firestore.Client())
