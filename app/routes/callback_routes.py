@@ -11,7 +11,7 @@ from google.cloud import firestore
 
 from app.services.callback_scheduler import get_callback_scheduler
 from app.dependencies import get_db
-from app.middleware.auth import get_current_user
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/api/callbacks", tags=["Callbacks"])
 

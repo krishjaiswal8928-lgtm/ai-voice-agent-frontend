@@ -11,7 +11,7 @@ from google.cloud import firestore
 
 from app.services.analytics_service import get_analytics_service
 from app.dependencies import get_db
-from app.middleware.auth import get_current_user
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
