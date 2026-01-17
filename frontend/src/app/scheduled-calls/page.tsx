@@ -35,7 +35,7 @@ import {
     Edit,
     Delete,
 } from '@mui/icons-material';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 import { format } from 'date-fns';
 
 interface ScheduledCall {

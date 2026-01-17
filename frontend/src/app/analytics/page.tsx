@@ -17,7 +17,7 @@ import {
     CheckCircle,
     Schedule,
 } from '@mui/icons-material';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 interface DashboardMetrics {
     total_campaigns: number;

@@ -36,7 +36,7 @@ import {
     Schedule,
     Warning,
 } from '@mui/icons-material';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 interface TransferAction {
     id: string;
@@ -60,7 +60,17 @@ export default function TransfersPage() {
     const [transfers, setTransfers] = useState<TransferAction[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [editingTransfer, setEditingTransfer] = useState<TransferAction | null>(null);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        name: string;
+        phone_number: string;
+        sip_uri: string;
+        transfer_mode: 'blind' | 'warm';
+        trying_message: string;
+        failed_message: string;
+        availability: { [key: string]: { enabled: boolean; start: string; end: string } };
+        timezone: string;
+        unavailable_message: string;
+    }>({
         name: '',
         phone_number: '',
         sip_uri: '',
@@ -70,7 +80,7 @@ export default function TransfersPage() {
         availability: DAYS.reduce((acc, day) => ({
             ...acc,
             [day]: { enabled: day !== 'Saturday' && day !== 'Sunday', start: '09:00', end: '18:00' }
-        }), {}),
+        }), {} as { [key: string]: { enabled: boolean; start: string; end: string } }),
         timezone: 'UTC',
         unavailable_message: 'There is no-one available to take your call at the moment. Please try again later.',
     });

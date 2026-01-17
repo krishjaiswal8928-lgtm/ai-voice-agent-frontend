@@ -30,7 +30,7 @@ import {
     Email,
     Schedule,
 } from '@mui/icons-material';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 interface HumanAgent {
     id: string;
