@@ -35,7 +35,10 @@ import {
   ExpandMore,
   ExpandLess,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FlashOn,
+  CallSplit,
+  Schedule
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@mui/material/styles';
@@ -58,6 +61,7 @@ export function NavigationLayout({
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [sidebarWidth, setSidebarWidth] = React.useState(drawerWidth);
   const [isResizing, setIsResizing] = React.useState(false);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -692,6 +696,137 @@ export function NavigationLayout({
               }} />
               {sidebarOpen && <Typography sx={{ fontWeight: 700, fontSize: '1.05rem', position: 'relative', zIndex: 1, color: '#000000' }}>Reports</Typography>}
             </MenuItem>
+
+            {/* Actions Section with Collapsible Sub-menu */}
+            <MenuItem
+              onClick={() => setActionsOpen(!actionsOpen)}
+              sx={{
+                py: 2,
+                px: sidebarOpen ? 3 : 2,
+                mx: sidebarOpen ? 1.5 : 1,
+                mb: 1,
+                borderRadius: '12px',
+                color: '#ffffff',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
+                justifyContent: sidebarOpen ? 'space-between' : 'center',
+                display: 'flex',
+                alignItems: 'center',
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%)',
+                  opacity: 0,
+                  transition: 'opacity 0.3s ease'
+                },
+                '&:hover': {
+                  bgcolor: 'rgba(139, 92, 246, 0.2)',
+                  transform: 'translateX(4px)',
+                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
+                  '&::before': {
+                    opacity: 1
+                  },
+                  '& .MuiSvgIcon-root': {
+                    transform: 'scale(1.1)',
+                    filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.6))'
+                  }
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <FlashOn sx={{
+                  mr: sidebarOpen ? 2 : 0,
+                  color: '#8b5cf6',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  filter: 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))'
+                }} />
+                {sidebarOpen && <Typography sx={{ fontWeight: 700, fontSize: '1.05rem', position: 'relative', zIndex: 1, color: '#000000' }}>Actions</Typography>}
+              </Box>
+              {sidebarOpen && (actionsOpen ? <ExpandLess sx={{ color: '#8b5cf6' }} /> : <ExpandMore sx={{ color: '#8b5cf6' }} />)}
+            </MenuItem>
+
+            {/* Actions Sub-menu */}
+            {actionsOpen && sidebarOpen && (
+              <Box sx={{ pl: 2 }}>
+                <MenuItem
+                  onClick={() => handleNavigation('/transfers')}
+                  className={pathname === '/transfers' ? 'active' : ''}
+                  sx={{
+                    py: 1.5,
+                    px: 3,
+                    mx: 1.5,
+                    mb: 0.5,
+                    borderRadius: '10px',
+                    color: '#ffffff',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    justifyContent: 'flex-start',
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(pathname === '/transfers' && {
+                      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(124, 58, 237, 0.3) 100%)',
+                      boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+                    }),
+                    '&:hover': {
+                      bgcolor: 'rgba(139, 92, 246, 0.1)',
+                      transform: 'translateX(4px)',
+                    }
+                  }}
+                >
+                  <CallSplit sx={{
+                    mr: 2,
+                    fontSize: '1.25rem',
+                    color: '#8b5cf6',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }} />
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#000000' }}>Call Transfers</Typography>
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => handleNavigation('/scheduled-calls')}
+                  className={pathname === '/scheduled-calls' ? 'active' : ''}
+                  sx={{
+                    py: 1.5,
+                    px: 3,
+                    mx: 1.5,
+                    mb: 1,
+                    borderRadius: '10px',
+                    color: '#ffffff',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    justifyContent: 'flex-start',
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(pathname === '/scheduled-calls' && {
+                      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(124, 58, 237, 0.3) 100%)',
+                      boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+                    }),
+                    '&:hover': {
+                      bgcolor: 'rgba(139, 92, 246, 0.1)',
+                      transform: 'translateX(4px)',
+                    }
+                  }}
+                >
+                  <Schedule sx={{
+                    mr: 2,
+                    fontSize: '1.25rem',
+                    color: '#8b5cf6',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }} />
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#000000' }}>Scheduled Calls</Typography>
+                </MenuItem>
+              </Box>
+            )}
+
             <Divider sx={{
               bgcolor: 'rgba(255,255,255,0.1)',
               my: 2,
