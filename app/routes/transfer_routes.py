@@ -10,7 +10,7 @@ from datetime import datetime
 from google.cloud import firestore
 
 from app.services.call_transfer_service import get_call_transfer_service
-from app.config.firebase_config import get_firestore_client
+from app.dependencies import get_db
 from app.middleware.auth import get_current_user
 
 router = APIRouter(prefix="/api/transfers", tags=["Transfers"])
@@ -71,7 +71,7 @@ class TransferHistoryItem(BaseModel):
 async def initiate_transfer(
     request: InitiateTransferRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Initiate call transfer to human agent.
@@ -137,7 +137,7 @@ async def initiate_transfer(
 async def retry_transfer(
     request: RetryTransferRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Retry transfer with a different agent after failure.
@@ -197,7 +197,7 @@ async def get_transfer_status(
     call_sid: str,
     provider_type: str = "twilio",
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Monitor transfer status.
@@ -231,7 +231,7 @@ async def get_transfer_status(
 async def get_transfer_history(
     campaign_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get transfer history for a campaign.
@@ -282,7 +282,7 @@ async def get_transfer_history(
 async def get_transfer_stats(
     campaign_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get transfer statistics for a campaign.

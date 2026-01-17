@@ -10,7 +10,7 @@ from datetime import datetime
 from google.cloud import firestore
 
 from app.services.human_agent_service import get_human_agent_service
-from app.config.firebase_config import get_firestore_client
+from app.dependencies import get_db
 from app.middleware.auth import get_current_user
 
 router = APIRouter(prefix="/api/human-agents", tags=["Human Agents"])
@@ -99,7 +99,7 @@ class AgentResponse(BaseModel):
 async def create_agent(
     request: CreateAgentRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Create a new human agent.
@@ -144,7 +144,7 @@ async def list_agents(
     accepts_transfers: Optional[bool] = None,
     accepts_callbacks: Optional[bool] = None,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     List all human agents for the organization.
@@ -197,7 +197,7 @@ async def list_agents(
 async def get_available_agents(
     campaign_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get all currently available agents.
@@ -241,7 +241,7 @@ async def get_available_agents(
 async def get_agent(
     agent_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get specific agent by ID.
@@ -298,7 +298,7 @@ async def update_agent(
     agent_id: str,
     request: UpdateAgentRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Update agent information.
@@ -365,7 +365,7 @@ async def update_agent_status(
     agent_id: str,
     request: UpdateStatusRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Update agent status (available, busy, offline, etc.).
@@ -423,7 +423,7 @@ async def update_agent_status(
 async def delete_agent(
     agent_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Delete agent.
@@ -468,7 +468,7 @@ async def delete_agent(
 async def get_agent_metrics(
     agent_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get agent performance metrics.
@@ -507,7 +507,7 @@ async def get_agent_metrics(
 async def get_agent_capacity(
     agent_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Check agent's current capacity.

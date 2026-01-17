@@ -10,7 +10,7 @@ from datetime import datetime
 from google.cloud import firestore
 
 from app.services.analytics_service import get_analytics_service
-from app.config.firebase_config import get_firestore_client
+from app.dependencies import get_db
 from app.middleware.auth import get_current_user
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 async def get_campaign_analytics(
     campaign_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get comprehensive analytics for a campaign.
@@ -68,7 +68,7 @@ async def get_campaign_analytics(
 async def get_disposition_breakdown(
     campaign_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get detailed disposition breakdown with reasons.
@@ -107,7 +107,7 @@ async def get_disposition_breakdown(
 async def get_transfer_analytics(
     campaign_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get detailed transfer analytics.
@@ -153,7 +153,7 @@ async def get_transfer_analytics(
 async def get_callback_analytics(
     campaign_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get detailed callback analytics.
@@ -199,7 +199,7 @@ async def get_callback_analytics(
 @router.get("/agents/performance")
 async def get_agent_performance(
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get performance metrics for all agents.
@@ -229,7 +229,7 @@ async def get_agent_performance(
 @router.get("/dashboard")
 async def get_dashboard_metrics(
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get real-time dashboard metrics.
@@ -257,7 +257,7 @@ async def get_dashboard_metrics(
 @router.get("/summary")
 async def get_analytics_summary(
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get high-level analytics summary across all campaigns.

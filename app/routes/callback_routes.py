@@ -10,7 +10,7 @@ from datetime import datetime
 from google.cloud import firestore
 
 from app.services.callback_scheduler import get_callback_scheduler
-from app.config.firebase_config import get_firestore_client
+from app.dependencies import get_db
 from app.middleware.auth import get_current_user
 
 router = APIRouter(prefix="/api/callbacks", tags=["Callbacks"])
@@ -71,7 +71,7 @@ class CallbackResponse(BaseModel):
 async def schedule_callback(
     request: ScheduleCallbackRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Schedule a qualified callback.
@@ -142,7 +142,7 @@ async def get_campaign_callbacks(
     campaign_id: str,
     status_filter: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get all callbacks for a campaign.
@@ -201,7 +201,7 @@ async def get_agent_callbacks(
     agent_id: str,
     status_filter: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get callbacks assigned to specific agent.
@@ -256,7 +256,7 @@ async def get_agent_callbacks(
 async def get_upcoming_callbacks(
     hours_ahead: int = 24,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get callbacks scheduled in the next N hours.
@@ -306,7 +306,7 @@ async def get_upcoming_callbacks(
 async def get_callback(
     callback_id: str,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Get specific callback by ID.
@@ -363,7 +363,7 @@ async def assign_callback(
     callback_id: str,
     request: AssignCallbackRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Assign callback to specific agent.
@@ -417,7 +417,7 @@ async def reschedule_callback(
     callback_id: str,
     request: RescheduleCallbackRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Reschedule callback to new time.
@@ -471,7 +471,7 @@ async def complete_callback(
     callback_id: str,
     request: CompleteCallbackRequest,
     current_user: dict = Depends(get_current_user),
-    db: firestore.Client = Depends(get_firestore_client)
+    db: firestore.Client = Depends(get_db)
 ):
     """
     Mark callback as completed.
