@@ -28,6 +28,58 @@ class BasePhoneProvider(ABC):
         """Hang up an active call."""
         pass
 
+    # ===== CALL TRANSFER METHODS =====
+    
+    @abstractmethod
+    def cold_transfer(self, call_id: str, target_phone_number: str) -> Dict[str, Any]:
+        """
+        Perform cold transfer (direct transfer without introduction).
+        Returns: {'success': bool, 'message': str, 'transfer_call_sid': str}
+        """
+        pass
+
+    @abstractmethod
+    def warm_transfer_with_introduction(self, lead_call_sid: str, agent_phone: str, 
+                                       from_number: str, introduction_message: str, 
+                                       conference_name: str = None) -> Dict[str, Any]:
+        """
+        Perform warm transfer with AI introduction.
+        Returns: {'success': bool, 'conference_name': str, 'agent_call_sid': str, 'message': str}
+        """
+        pass
+
+    # ===== CALL HOLD & RESUME =====
+    
+    @abstractmethod
+    def hold_call(self, call_id: str, hold_music_url: str = None) -> bool:
+        """Put call on hold with music."""
+        pass
+
+    @abstractmethod
+    def resume_call(self, call_id: str, resume_webhook_url: str) -> bool:
+        """Resume call from hold."""
+        pass
+
+    # ===== CALL INFORMATION =====
+    
+    @abstractmethod
+    def get_call_status(self, call_id: str) -> Dict[str, Any]:
+        """
+        Get current call status and information.
+        Returns: dict with status, duration, from, to, etc.
+        """
+        pass
+
+    @abstractmethod
+    def get_call_duration(self, call_id: str) -> int:
+        """Get call duration in seconds."""
+        pass
+
+    @abstractmethod
+    def get_call_recording_url(self, call_id: str) -> str:
+        """Get call recording URL if available."""
+        pass
+
     @abstractmethod
     def normalize_webhook_data(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """

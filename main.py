@@ -41,6 +41,14 @@ print("DEBUG: Importing sip_webhook_routes...", flush=True)
 import app.routes.sip_webhook_routes as sip_webhook_routes
 print("DEBUG: Importing sip_call_routes...", flush=True)
 import app.routes.sip_call_routes as sip_call_routes
+print("DEBUG: Importing human_agent_routes...", flush=True)
+import app.routes.human_agent_routes as human_agent_routes
+print("DEBUG: Importing transfer_routes...", flush=True)
+import app.routes.transfer_routes as transfer_routes
+print("DEBUG: Importing callback_routes...", flush=True)
+import app.routes.callback_routes as callback_routes
+print("DEBUG: Importing analytics_routes...", flush=True)
+import app.routes.analytics_routes as analytics_routes
 
 
 
@@ -114,6 +122,10 @@ app.include_router(user_routes.router)  # Register user router
 app.include_router(sip_trunk_routes.router)  # Register SIP trunk router
 app.include_router(sip_webhook_routes.router)  # Register SIP webhook router
 app.include_router(sip_call_routes.router)  # Register SIP call router
+app.include_router(human_agent_routes.router)  # Register human agents router
+app.include_router(transfer_routes.router)  # Register transfers router
+app.include_router(callback_routes.router)  # Register callbacks router
+app.include_router(analytics_routes.router)  # Register analytics router
 
 
 

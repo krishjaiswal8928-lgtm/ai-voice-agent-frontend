@@ -1,66 +1,90 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
+  Grid,
   Card,
   CardContent,
-  Button,
   CircularProgress,
-  Chip,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
+  FormControl,
+  InputLabel,
   Select,
   MenuItem,
-  FormControl,
-  InputLabel
+  LinearProgress,
+  Chip
 } from '@mui/material';
 import {
-  Analytics,
-  Download,
-  BarChart,
-  PieChart,
-  Timeline,
+  TrendingUp,
   Phone,
-  CheckCircle
+  CheckCircle,
+  SwapHoriz,
+  Schedule
 } from '@mui/icons-material';
 import { NavigationLayout } from '@/components/NavigationLayout';
+import axios from 'axios';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 
 export default function ReportsPage() {
-  const [loading, setLoading] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState('all');
-  const [reportType, setReportType] = useState('summary');
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [selectedCampaign, setSelectedCampaign] = useState<string>('');
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [dispositionData, setDispositionData] = useState<any>(null);
+  const [transferAnalytics, setTransferAnalytics] = useState<any>(null);
+  const [callbackAnalytics, setCallbackAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for campaigns
-  const campaigns = [
-    { id: 1, name: 'Product Demo Campaign' },
-    { id: 2, name: 'Lead Qualification' },
-    { id: 3, name: 'Appointment Booking' }
-  ];
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
-  // Mock data for reports
-  const reportData = [
-    { id: 1, campaign: 'Product Demo Campaign', calls: 120, completed: 95, successRate: '79%', duration: '2:34' },
-    { id: 2, campaign: 'Lead Qualification', calls: 85, completed: 68, successRate: '80%', duration: '1:45' },
-    { id: 3, campaign: 'Appointment Booking', calls: 210, completed: 167, successRate: '79%', duration: '3:12' }
-  ];
+  useEffect(() => {
+    if (selectedCampaign) {
+      fetchAnalytics();
+    }
+  }, [selectedCampaign]);
 
-  const handleDownloadReport = () => {
-    setLoading(true);
-    // Simulate download
-    setTimeout(() => {
-      setLoading(false);
-      // In a real app, this would trigger a file download
-      alert('Report downloaded successfully!');
-    }, 1500);
+  const fetchCampaigns = async () => {
+    try {
+      const response = await axios.get('/api/campaigns/');
+      setCampaigns(response.data);
+      if (response.data.length > 0) {
+        setSelectedCampaign(response.data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+    }
   };
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const [analyticsRes, dispositionRes, transferRes, callbackRes] = await Promise.all([
+        axios.get(`/api/analytics/campaign/${selectedCampaign}`),
+        axios.get(`/api/analytics/campaign/${selectedCampaign}/disposition`),
+        axios.get(`/api/analytics/campaign/${selectedCampaign}/transfers`),
+        axios.get(`/api/analytics/campaign/${selectedCampaign}/callbacks`)
+      ]);
+
+      setAnalytics(analyticsRes.data);
+      setDispositionData(dispositionRes.data);
+      setTransferAnalytics(transferRes.data);
+      setCallbackAnalytics(callbackRes.data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+  const dispositionChartData = dispositionData ?
+    Object.entries(dispositionData).map(([name, data]: [string, any]) => ({
+      name,
+      value: data.count
+    })) : [];
 
   return (
     <NavigationLayout>
@@ -88,260 +112,284 @@ export default function ReportsPage() {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 1 }}>
           <Box>
-            <Typography variant="h3" component="h1" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
-              Reports & Analytics
+            <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827' }}>
+              Analytics & Reports
             </Typography>
-            <Typography variant="h6" sx={{ color: '#6b7280' }}>
-              Analyze campaign performance and download reports
+            <Typography variant="body1" sx={{ color: '#6b7280', mt: 1 }}>
+              Comprehensive campaign performance analytics
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={loading ? <CircularProgress size={20} sx={{ color: '#ffffff' }} /> : <Download />}
-            onClick={handleDownloadReport}
-            disabled={loading}
-            sx={{
-              bgcolor: '#6366f1',
-              color: '#ffffff',
-              fontWeight: 700,
-              px: 3,
-              '&:hover': {
-                bgcolor: '#4f46e5'
-              }
-            }}
-          >
-            Download Report
-          </Button>
+          <FormControl sx={{ minWidth: 250, bgcolor: '#ffffff' }}>
+            <InputLabel>Select Campaign</InputLabel>
+            <Select
+              value={selectedCampaign}
+              label="Select Campaign"
+              onChange={(e) => setSelectedCampaign(e.target.value)}
+            >
+              {campaigns.map((campaign) => (
+                <MenuItem key={campaign.id} value={campaign.id}>
+                  {campaign.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Box>
 
-        {/* Filters */}
-        <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', mb: 4, boxShadow: '0 1px 3px rgba(99,102,241,0.1)', position: 'relative', zIndex: 1 }}>
-          <CardContent>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel sx={{ color: '#000000' }}>Campaign</InputLabel>
-                  <Select
-                    value={selectedCampaign}
-                    label="Campaign"
-                    onChange={(e) => setSelectedCampaign(e.target.value)}
-                    sx={{
-                      color: '#000000',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#e0e0e0'
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#000000'
-                      }
-                    }}
-                  >
-                    <MenuItem value="all" sx={{ color: '#000000' }}>All Campaigns</MenuItem>
-                    {campaigns.map(campaign => (
-                      <MenuItem key={campaign.id} value={campaign.id} sx={{ color: '#000000' }}>{campaign.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress sx={{ color: '#6366f1' }} />
+          </Box>
+        ) : analytics ? (
+          <>
+            {/* Key Metrics */}
+            <Grid container spacing={3} sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#6b7280', mb: 1, fontWeight: 600, fontSize: '0.9rem' }}>
+                          Total Leads
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: '#111827' }}>
+                          {analytics.total_leads}
+                        </Typography>
+                      </Box>
+                      <Phone sx={{ fontSize: 48, color: '#6366f1' }} />
+                    </Box>
+                  </CardContent>
+                </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel sx={{ color: '#000000' }}>Report Type</InputLabel>
-                  <Select
-                    value={reportType}
-                    label="Report Type"
-                    onChange={(e) => setReportType(e.target.value)}
-                    sx={{
-                      color: '#000000',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#e0e0e0'
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#000000'
-                      }
-                    }}
-                  >
-                    <MenuItem value="summary" sx={{ color: '#000000' }}>Summary Report</MenuItem>
-                    <MenuItem value="detailed" sx={{ color: '#000000' }}>Detailed Report</MenuItem>
-                    <MenuItem value="calls" sx={{ color: '#000000' }}>Call Details</MenuItem>
-                  </Select>
-                </FormControl>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#6b7280', mb: 1, fontWeight: 600, fontSize: '0.9rem' }}>
+                          Connection Rate
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                          {analytics.connection_rate}%
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={analytics.connection_rate}
+                          sx={{ mt: 1, bgcolor: '#e5e7eb', '& .MuiLinearProgress-bar': { bgcolor: '#22c55e' } }}
+                        />
+                      </Box>
+                      <CheckCircle sx={{ fontSize: 48, color: '#22c55e' }} />
+                    </Box>
+                  </CardContent>
+                </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  sx={{
-                    height: '100%',
-                    color: '#6366f1',
-                    borderColor: '#6366f1',
-                    '&:hover': {
-                      borderColor: '#4f46e5',
-                      backgroundColor: 'rgba(99,102,241,0.05)'
-                    }
-                  }}
-                >
-                  Apply Filters
-                </Button>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#6b7280', mb: 1, fontWeight: 600, fontSize: '0.9rem' }}>
+                          Qualification Rate
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: '#6366f1' }}>
+                          {analytics.qualification_rate}%
+                        </Typography>
+                        <LinearProgress
+                          variant="determinate"
+                          value={analytics.qualification_rate}
+                          sx={{ mt: 1, bgcolor: '#e5e7eb', '& .MuiLinearProgress-bar': { bgcolor: '#6366f1' } }}
+                        />
+                      </Box>
+                      <TrendingUp sx={{ fontSize: 48, color: '#6366f1' }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#6b7280', mb: 1, fontWeight: 600, fontSize: '0.9rem' }}>
+                          Avg Lead Score
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: '#111827' }}>
+                          {analytics.average_lead_score}/10
+                        </Typography>
+                      </Box>
+                      <TrendingUp sx={{ fontSize: 48, color: '#f59e0b' }} />
+                    </Box>
+                  </CardContent>
+                </Card>
               </Grid>
             </Grid>
-          </CardContent>
-        </Card>
 
-        {/* Stats Overview */}
-        <Grid container spacing={3} sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', height: '100%', boxShadow: '0 1px 3px rgba(99,102,241,0.1)', '&:hover': { boxShadow: '0 4px 12px rgba(99,102,241,0.15)' } }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ color: '#555555', mb: 1 }}>
-                      Total Calls
+            {/* Detailed Stats */}
+            <Grid container spacing={3} sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                      Qualified Leads
                     </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#000000' }}>
-                      415
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                      {analytics.leads_qualified}
                     </Typography>
-                  </Box>
-                  <Phone sx={{ fontSize: 40, color: '#2196f3' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                      Warm Leads
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                      {analytics.leads_warm}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                      Transfers
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366f1' }}>
+                      {analytics.total_transfers}
+                    </Typography>
+                    <Chip label={`${analytics.transfer_rate}%`} size="small" sx={{ mt: 0.5, bgcolor: '#6366f1', color: '#ffffff' }} />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                      Callbacks
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b5cf6' }}>
+                      {analytics.total_callbacks_scheduled}
+                    </Typography>
+                    <Chip label={`${analytics.callback_rate}%`} size="small" sx={{ mt: 0.5, bgcolor: '#8b5cf6', color: '#ffffff' }} />
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                      Avg Call Duration
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827' }}>
+                      {Math.floor(analytics.average_call_duration / 60)}m
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                      {analytics.average_call_duration}s
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', height: '100%', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ color: '#555555', mb: 1 }}>
-                      Success Rate
+            {/* Charts */}
+            <Grid container spacing={3} sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#111827' }}>
+                      Disposition Breakdown
                     </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#000000' }}>
-                      79%
-                    </Typography>
-                  </Box>
-                  <CheckCircle sx={{ fontSize: 40, color: '#4caf50' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+                    {dispositionChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={dispositionChartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {dispositionChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Typography sx={{ textAlign: 'center', py: 4, color: '#6b7280' }}>
+                        No disposition data available
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', height: '100%', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ color: '#555555', mb: 1 }}>
-                      Avg. Duration
+              <Grid item xs={12} md={6}>
+                <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#111827' }}>
+                      Performance Metrics
                     </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#000000' }}>
-                      2:20
-                    </Typography>
-                  </Box>
-                  <Timeline sx={{ fontSize: 40, color: '#ff9800' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', height: '100%', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ color: '#555555', mb: 1 }}>
-                      Conversion Rate
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#000000' }}>
-                      65%
-                    </Typography>
-                  </Box>
-                  <BarChart sx={{ fontSize: 40, color: '#9c27b0' }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Report Data */}
-        <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#000000' }}>
-                Campaign Performance
-              </Typography>
-              <Chip
-                label="Last 30 days"
-                size="small"
-                sx={{ bgcolor: '#6366f1', color: '#ffffff' }}
-              />
-            </Box>
-
-            <TableContainer component={Paper} sx={{ bgcolor: '#ffffff', border: '1px solid #e0e0e0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ color: '#000000', fontWeight: 700, borderBottom: '1px solid #e0e0e0' }}>Campaign</TableCell>
-                    <TableCell sx={{ color: '#000000', fontWeight: 700, borderBottom: '1px solid #e0e0e0' }}>Total Calls</TableCell>
-                    <TableCell sx={{ color: '#000000', fontWeight: 700, borderBottom: '1px solid #e0e0e0' }}>Completed</TableCell>
-                    <TableCell sx={{ color: '#000000', fontWeight: 700, borderBottom: '1px solid #e0e0e0' }}>Success Rate</TableCell>
-                    <TableCell sx={{ color: '#000000', fontWeight: 700, borderBottom: '1px solid #e0e0e0' }}>Avg. Duration</TableCell>
-                    <TableCell sx={{ color: '#000000', fontWeight: 700, borderBottom: '1px solid #e0e0e0' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {reportData.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      sx={{
-                        '&:last-child td, &:last-child th': { border: 0 },
-                        '&:hover': { backgroundColor: 'rgba(0,0,0,0.03)' }
-                      }}
-                    >
-                      <TableCell sx={{ color: '#000000', borderBottom: '1px solid #e0e0e0' }}>
-                        {row.campaign}
-                      </TableCell>
-                      <TableCell sx={{ color: '#000000', borderBottom: '1px solid #e0e0e0' }}>
-                        {row.calls}
-                      </TableCell>
-                      <TableCell sx={{ color: '#000000', borderBottom: '1px solid #e0e0e0' }}>
-                        {row.completed}
-                      </TableCell>
-                      <TableCell sx={{ borderBottom: '1px solid #e0e0e0' }}>
-                        <Chip
-                          label={row.successRate}
-                          size="small"
-                          sx={{
-                            bgcolor: '#6366f1',
-                            color: '#ffffff'
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ color: '#000000', borderBottom: '1px solid #e0e0e0' }}>
-                        {row.duration}
-                      </TableCell>
-                      <TableCell sx={{ borderBottom: '1px solid #e0e0e0' }}>
-                        <Button
-                          size="small"
-                          startIcon={<Analytics />}
-                          sx={{
-                            color: '#6366f1',
-                            borderColor: '#6366f1',
-                            '&:hover': {
-                              borderColor: '#4f46e5',
-                              backgroundColor: 'rgba(99,102,241,0.05)'
-                            }
-                          }}
-                          variant="outlined"
-                        >
-                          Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+                    <Box sx={{ mb: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>Transfer Success Rate</Typography>
+                        <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
+                          {analytics.transfer_success_rate}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={analytics.transfer_success_rate}
+                        sx={{ bgcolor: '#e5e7eb', '& .MuiLinearProgress-bar': { bgcolor: '#22c55e' } }}
+                      />
+                    </Box>
+                    <Box sx={{ mb: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>Callback Completion Rate</Typography>
+                        <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
+                          {analytics.callback_completion_rate}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={analytics.callback_completion_rate}
+                        sx={{ bgcolor: '#e5e7eb', '& .MuiLinearProgress-bar': { bgcolor: '#8b5cf6' } }}
+                      />
+                    </Box>
+                    <Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>Connection Rate</Typography>
+                        <Typography variant="body2" sx={{ color: '#111827', fontWeight: 600 }}>
+                          {analytics.connection_rate}%
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={analytics.connection_rate}
+                        sx={{ bgcolor: '#e5e7eb', '& .MuiLinearProgress-bar': { bgcolor: '#6366f1' } }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" sx={{ color: '#6b7280' }}>
+              Select a campaign to view analytics
+            </Typography>
+          </Box>
+        )}
       </Box>
     </NavigationLayout>
   );

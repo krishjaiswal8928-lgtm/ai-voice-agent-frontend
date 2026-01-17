@@ -52,7 +52,20 @@ class CustomAgent:
         average_satisfaction: float = 0.0,
         last_learning_update: Optional[datetime] = None,
         # Phone Number Assignment
-        phone_number_id: Optional[str] = None
+        phone_number_id: Optional[str] = None,
+        
+        # Qualification Settings
+        qualification_criteria: Optional[Dict[str, Any]] = None,
+        lead_scoring_rules: Optional[Dict[str, Any]] = None,
+        auto_qualify_threshold: int = 7,
+        auto_transfer_threshold: int = 8,
+        qualification_questions: Optional[List[str]] = None,
+        
+        # Tool Enablement
+        enable_call_transfer: bool = True,
+        enable_callback_scheduling: bool = True,
+        enable_call_ending: bool = True,
+        enable_lead_scoring: bool = True
     ):
         self.id = id
         self.user_id = user_id
@@ -97,6 +110,19 @@ class CustomAgent:
         self.average_satisfaction = average_satisfaction
         self.last_learning_update = last_learning_update
         self.phone_number_id = phone_number_id
+        
+        # Qualification Settings
+        self.qualification_criteria = qualification_criteria or {}
+        self.lead_scoring_rules = lead_scoring_rules or {}
+        self.auto_qualify_threshold = auto_qualify_threshold
+        self.auto_transfer_threshold = auto_transfer_threshold
+        self.qualification_questions = qualification_questions or []
+        
+        # Tool Enablement
+        self.enable_call_transfer = enable_call_transfer
+        self.enable_callback_scheduling = enable_callback_scheduling
+        self.enable_call_ending = enable_call_ending
+        self.enable_lead_scoring = enable_lead_scoring
 
     def to_dict(self):
         return {
@@ -138,7 +164,18 @@ class CustomAgent:
             "average_satisfaction": self.average_satisfaction,
             "last_learning_update": self.last_learning_update,
             # Phone Number
-            "phone_number_id": self.phone_number_id
+            "phone_number_id": self.phone_number_id,
+            # Qualification Settings
+            "qualification_criteria": self.qualification_criteria,
+            "lead_scoring_rules": self.lead_scoring_rules,
+            "auto_qualify_threshold": self.auto_qualify_threshold,
+            "auto_transfer_threshold": self.auto_transfer_threshold,
+            "qualification_questions": self.qualification_questions,
+            # Tool Enablement
+            "enable_call_transfer": self.enable_call_transfer,
+            "enable_callback_scheduling": self.enable_callback_scheduling,
+            "enable_call_ending": self.enable_call_ending,
+            "enable_lead_scoring": self.enable_lead_scoring
         }
 
     @staticmethod
@@ -183,5 +220,16 @@ class CustomAgent:
             average_satisfaction=source.get("average_satisfaction", 0.0),
             last_learning_update=source.get("last_learning_update"),
             # Phone Number
-            phone_number_id=source.get("phone_number_id")
+            phone_number_id=source.get("phone_number_id"),
+            # Qualification Settings
+            qualification_criteria=source.get("qualification_criteria"),
+            lead_scoring_rules=source.get("lead_scoring_rules"),
+            auto_qualify_threshold=source.get("auto_qualify_threshold", 7),
+            auto_transfer_threshold=source.get("auto_transfer_threshold", 8),
+            qualification_questions=source.get("qualification_questions"),
+            # Tool Enablement
+            enable_call_transfer=source.get("enable_call_transfer", True),
+            enable_callback_scheduling=source.get("enable_callback_scheduling", True),
+            enable_call_ending=source.get("enable_call_ending", True),
+            enable_lead_scoring=source.get("enable_lead_scoring", True)
         )
