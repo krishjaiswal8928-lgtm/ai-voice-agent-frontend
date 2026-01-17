@@ -56,6 +56,7 @@ interface ScheduledCall {
 
 export default function ScheduledCallsPage() {
     const [calls, setCalls] = useState<ScheduledCall[]>([]);
+    const [allFetchedCalls, setAllFetchedCalls] = useState<ScheduledCall[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [openSummaryDialog, setOpenSummaryDialog] = useState(false);
@@ -69,9 +70,11 @@ export default function ScheduledCallsPage() {
         try {
             setLoading(true);
             const response = await api.get('/api/callbacks/upcoming?hours_ahead=168');
-            // Only show scheduled calls
-            const scheduledOnly = response.data.filter((call: ScheduledCall) => call.status === 'scheduled');
+            // Show only scheduled in table, but keep all for metrics
+            const allCalls = response.data;
+            const scheduledOnly = allCalls.filter((call: ScheduledCall) => call.status === 'scheduled');
             setCalls(scheduledOnly);
+            setAllFetchedCalls(allCalls); // Store all calls for metrics
             setError(null);
         } catch (err: any) {
             console.error('Failed to fetch scheduled calls:', err);
@@ -170,38 +173,74 @@ export default function ScheduledCallsPage() {
                     </Box>
                 </Fade>
 
-                {/* Scheduled Count Card */}
-                <Zoom in timeout={1000}>
-                    <Card sx={{
-                        mb: 4,
-                        borderRadius: '24px',
-                        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 100%)',
-                        backdropFilter: 'blur(10px)',
-                        boxShadow: '0 8px 32px rgba(139, 92, 246, 0.4)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                    }}>
-                        <CardContent sx={{ p: 4 }}>
-                            <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
-                                <Avatar sx={{
-                                    width: 80,
-                                    height: 80,
-                                    background: 'rgba(255, 255, 255, 0.2)',
-                                    backdropFilter: 'blur(10px)',
-                                }}>
-                                    <Schedule sx={{ fontSize: 40, color: 'white' }} />
-                                </Avatar>
-                                <Box textAlign="center">
-                                    <Typography variant="h2" fontWeight="900" color="white">
-                                        {scheduledCount}
-                                    </Typography>
-                                    <Typography variant="h6" color="rgba(255, 255, 255, 0.9)" fontWeight={600}>
-                                        Scheduled Callbacks
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Zoom>
+                {/* Metrics Cards */}
+                <Grid container spacing={3} mb={4}>
+                    <Grid item xs={12} md={6}>
+                        <Zoom in timeout={1000}>
+                            <Card sx={{
+                                borderRadius: '24px',
+                                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 100%)',
+                                backdropFilter: 'blur(10px)',
+                                boxShadow: '0 8px 32px rgba(139, 92, 246, 0.4)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                            }}>
+                                <CardContent sx={{ p: 4 }}>
+                                    <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
+                                        <Avatar sx={{
+                                            width: 80,
+                                            height: 80,
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            backdropFilter: 'blur(10px)',
+                                        }}>
+                                            <Schedule sx={{ fontSize: 40, color: 'white' }} />
+                                        </Avatar>
+                                        <Box textAlign="center">
+                                            <Typography variant="h2" fontWeight="900" color="white">
+                                                {scheduledCount}
+                                            </Typography>
+                                            <Typography variant="h6" color="rgba(255, 255, 255, 0.9)" fontWeight={600}>
+                                                Scheduled
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Zoom>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <Zoom in timeout={1100}>
+                            <Card sx={{
+                                borderRadius: '24px',
+                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%)',
+                                backdropFilter: 'blur(10px)',
+                                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.4)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                            }}>
+                                <CardContent sx={{ p: 4 }}>
+                                    <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
+                                        <Avatar sx={{
+                                            width: 80,
+                                            height: 80,
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            backdropFilter: 'blur(10px)',
+                                        }}>
+                                            <CheckCircle sx={{ fontSize: 40, color: 'white' }} />
+                                        </Avatar>
+                                        <Box textAlign="center">
+                                            <Typography variant="h2" fontWeight="900" color="white">
+                                                {allFetchedCalls.filter(c => c.status === 'completed').length}
+                                            </Typography>
+                                            <Typography variant="h6" color="rgba(255, 255, 255, 0.9)" fontWeight={600}>
+                                                Completed
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Zoom>
+                    </Grid>
+                </Grid>
 
                 {/* Error Alert */}
                 {error && (
