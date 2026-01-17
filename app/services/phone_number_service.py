@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from google.cloud import firestore
 from app.models.phone_number import VirtualPhoneNumber
 from app.schemas.phone_number import VirtualPhoneNumberCreate, VirtualPhoneNumberUpdate
-from app.services.phone_providers.factory import ProviderFactory
+from app.services.phone_providers.factory import PhoneProviderFactory
 from cryptography.fernet import Fernet
 import os
 import json
@@ -53,7 +53,7 @@ class PhoneNumberService:
 
     def create_phone_number(self, db: firestore.Client, phone_data: VirtualPhoneNumberCreate, user_id: str, webhook_base_url: str = None) -> VirtualPhoneNumber:
         # 1. Validate credentials with provider
-        provider = ProviderFactory.get_provider(phone_data.provider, phone_data.credentials)
+        provider = PhoneProviderFactory.get_provider(phone_data.provider, phone_data.credentials)
         if not provider.validate_credentials():
             raise ValueError("Invalid provider credentials")
 
@@ -133,7 +133,7 @@ class PhoneNumberService:
         if 'credentials' in updates:
             # Re-validate if credentials changing
             provider_type = updates.get('provider', current_data.get('provider'))
-            provider = ProviderFactory.get_provider(provider_type, updates['credentials'])
+            provider = PhoneProviderFactory.get_provider(provider_type, updates['credentials'])
             if not provider.validate_credentials():
                 raise ValueError("Invalid provider credentials")
             updates['credentials'] = self._encrypt_credentials(updates['credentials'], db)

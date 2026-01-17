@@ -147,7 +147,7 @@ async def import_phone_number(
             raise HTTPException(status_code=400, detail="Phone number already imported")
         
         # Import the phone number using existing phone_number_service
-        from app.services.phone_providers.factory import ProviderFactory
+        from app.services.phone_providers.factory import PhoneProviderFactory
         
         # Create phone number with webhook configuration
         phone_number_create = VirtualPhoneNumberCreate(

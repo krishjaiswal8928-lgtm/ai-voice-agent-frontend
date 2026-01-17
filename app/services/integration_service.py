@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from google.cloud import firestore
 from app.models.integration import Integration
 from app.schemas.integration import IntegrationCreate, IntegrationUpdate
-from app.services.phone_providers.factory import ProviderFactory
+from app.services.phone_providers.factory import PhoneProviderFactory
 from app.core.security import EncryptionManager
 import json
 import uuid
@@ -59,7 +59,7 @@ class IntegrationService:
     ) -> Integration:
         """Create a new provider integration"""
         # 1. Validate credentials with provider
-        provider = ProviderFactory.get_provider(
+        provider = PhoneProviderFactory.get_provider(
             integration_data.provider, 
             integration_data.credentials
         )
@@ -109,7 +109,7 @@ class IntegrationService:
             # Re-validate if credentials changing
             current_data = doc.to_dict()
             provider_type = current_data.get('provider')
-            provider = ProviderFactory.get_provider(provider_type, updates['credentials'])
+            provider = PhoneProviderFactory.get_provider(provider_type, updates['credentials'])
             if not provider.validate_credentials():
                 raise ValueError("Invalid provider credentials")
             updates['credentials'] = self._encrypt_credentials(updates['credentials'], db)
@@ -135,7 +135,7 @@ class IntegrationService:
             raise ValueError("Integration not found")
         
         # Get provider instance
-        provider = ProviderFactory.get_provider(
+        provider = PhoneProviderFactory.get_provider(
             integration.provider, 
             integration.credentials
         )
