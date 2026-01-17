@@ -162,7 +162,9 @@ async def startup_event():
         logger.warning("⚠️ Twilio credentials not found, outbound calling will not work")
     
     # Start the callback scheduler
-    asyncio.create_task(callback_scheduler._run_scheduler())
+    # Note: Callback scheduler will be initialized on first use due to lazy loading
+    # asyncio.create_task(callback_scheduler._run_scheduler())
+    logger.info("✅ Callback scheduler configured (lazy initialization)")
     
     # Start SIP trunk monitoring
     logger.info("🔍 Starting SIP trunk monitoring...")
