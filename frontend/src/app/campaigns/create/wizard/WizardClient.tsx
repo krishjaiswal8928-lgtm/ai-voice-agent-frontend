@@ -87,6 +87,7 @@ export default function CampaignCreationWizard() {
   const [campaignType, setCampaignType] = useState<'outbound' | 'inbound'>(initialType as any);
   const [campaignName, setCampaignName] = useState('');
   const [campaignGoal, setCampaignGoal] = useState('');
+  const [idealCustomerDescription, setIdealCustomerDescription] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [campaignId, setCampaignId] = useState<number | null>(null);
   const [customAgentId, setCustomAgentId] = useState<number | null>(null);
@@ -126,8 +127,8 @@ export default function CampaignCreationWizard() {
   };
 
   const steps = campaignType === 'outbound'
-    ? ['Call Session Type', 'Upload Leads', 'Select Agent', 'Set Goal', 'Review & Create']
-    : ['Call Session Type', 'Select Agent', 'Set Goal', 'Review & Create'];
+    ? ['Call Session Type', 'Upload Leads', 'Select Agent', 'Goal & Qualification', 'Review & Create']
+    : ['Call Session Type', 'Select Agent', 'Goal & Qualification', 'Review & Create'];
 
   // Step 0: Campaign Type
   const handleTypeChange = (type: 'outbound' | 'inbound') => {
@@ -276,6 +277,7 @@ export default function CampaignCreationWizard() {
       await callSessionAPI.update(campaignId.toString(), {
         name: campaignName,
         goal: campaignGoal,
+        ideal_customer_description: idealCustomerDescription,
         type: campaignType,
         custom_agent_id: customAgentId
       });
@@ -717,7 +719,7 @@ export default function CampaignCreationWizard() {
 
   const renderGoalSetting = () => (
     <Fade in timeout={500}>
-      <Box sx={{ maxWidth: 800, mx: 'auto', width: '100%' }}>
+      <Box sx={{ maxWidth: 900, mx: 'auto', width: '100%' }}>
         <Box sx={{ textAlign: 'center', mb: 5 }}>
           <Box sx={{
             width: 80,
@@ -738,55 +740,170 @@ export default function CampaignCreationWizard() {
             gutterBottom
             sx={{
               fontWeight: 800,
-              color: theme.palette.text.primary,
+              background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
               mb: 2
             }}
           >
-            Define Your Call Session Goal
+            Goal & Qualification Criteria
           </Typography>
-          <Typography variant="body1" sx={{ color: theme.palette.text.secondary, maxWidth: 600, mx: 'auto' }}>
-            What do you want the AI agent to achieve during conversations?
+          <Typography variant="body1" sx={{ color: theme.palette.text.secondary, maxWidth: 700, mx: 'auto' }}>
+            Define what you're selling and who your ideal customer is. The AI agent will use this to qualify leads intelligently.
           </Typography>
         </Box>
 
-        <AnimatedCard glassEffect sx={{ p: 4 }}>
-          <TextField
-            fullWidth
-            label="Campaign Goal"
-            variant="outlined"
-            multiline
-            rows={6}
-            value={campaignGoal}
-            onChange={(e) => setCampaignGoal(e.target.value)}
-            placeholder="Example: Book demo appointments by collecting prospect's name, email, and preferred date. Qualify leads based on company size and budget. Answer common questions about our product features."
-            required
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: '#f59e0b',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#f59e0b',
-                  borderWidth: 2
-                },
-              },
-            }}
-          />
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-              Be specific about what information to collect and actions to take
-            </Typography>
-            <Typography
-              variant="caption"
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Campaign Goal */}
+          <AnimatedCard glassEffect sx={{ p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <TrendingUp sx={{ fontSize: 24, color: '#ffffff' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Campaign Goal
+                </Typography>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                  What do you want to achieve?
+                </Typography>
+              </Box>
+            </Box>
+            <TextField
+              fullWidth
+              variant="outlined"
+              multiline
+              rows={4}
+              value={campaignGoal}
+              onChange={(e) => setCampaignGoal(e.target.value)}
+              placeholder="Example: Qualify people who are interested to buy Rich Dad Poor Dad book"
+              required
               sx={{
-                color: campaignGoal.length > 50 ? '#10b981' : theme.palette.text.secondary,
-                fontWeight: 600
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#f59e0b',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#f59e0b',
+                    borderWidth: 2
+                  },
+                },
               }}
-            >
-              {campaignGoal.length} characters
-            </Typography>
-          </Box>
-        </AnimatedCard>
+            />
+            <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                Be clear and specific about what you're selling
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: campaignGoal.length > 20 ? '#10b981' : theme.palette.text.secondary,
+                  fontWeight: 600
+                }}
+              >
+                {campaignGoal.length} characters
+              </Typography>
+            </Box>
+          </AnimatedCard>
+
+          {/* Ideal Customer Description */}
+          <AnimatedCard glassEffect sx={{ p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Groups sx={{ fontSize: 24, color: '#ffffff' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Define Ideal Customer
+                </Typography>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                  Who are you targeting?
+                </Typography>
+              </Box>
+            </Box>
+            <TextField
+              fullWidth
+              variant="outlined"
+              multiline
+              rows={4}
+              value={idealCustomerDescription}
+              onChange={(e) => setIdealCustomerDescription(e.target.value)}
+              placeholder="Example: People who are interested in reading books, and want to know about Rich Dad Poor Dad"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#8b5cf6',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#8b5cf6',
+                    borderWidth: 2
+                  },
+                },
+              }}
+            />
+            <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                Describe your ideal customer's interests, needs, or characteristics
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: idealCustomerDescription.length > 20 ? '#10b981' : theme.palette.text.secondary,
+                  fontWeight: 600
+                }}
+              >
+                {idealCustomerDescription.length} characters
+              </Typography>
+            </Box>
+          </AnimatedCard>
+
+          {/* Helper Card */}
+          <AnimatedCard sx={{
+            p: 3,
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.2)'
+          }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <AutoAwesome sx={{ color: '#6366f1', fontSize: 28 }} />
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#6366f1' }}>
+                  💡 AI Agent will use this to:
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2.5, '& li': { mb: 0.5 } }}>
+                  <Typography component="li" variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                    Ask relevant qualifying questions
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                    Identify if the lead matches your ideal customer
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                    Score leads based on fit (1-10)
+                  </Typography>
+                  <Typography component="li" variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                    Transfer qualified leads or schedule callbacks
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </AnimatedCard>
+        </Box>
       </Box>
     </Fade>
   );

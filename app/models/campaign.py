@@ -13,6 +13,7 @@ class CallSession:
         type: str,
         status: str = "draft",
         goal: Optional[str] = None,
+        ideal_customer_description: Optional[str] = None,
         custom_agent_id: Optional[Union[int, str]] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
@@ -71,6 +72,7 @@ class CallSession:
         self.type = type
         self.status = status
         self.goal = goal
+        self.ideal_customer_description = ideal_customer_description
         self.custom_agent_id = custom_agent_id
         self.created_at = created_at or datetime.now()
         self.updated_at = updated_at or datetime.now()
@@ -129,6 +131,7 @@ class CallSession:
             "type": self.type,
             "status": self.status,
             "goal": self.goal,
+            "ideal_customer_description": self.ideal_customer_description,
             "custom_agent_id": self.custom_agent_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -190,6 +193,7 @@ class CallSession:
             type=source.get("type"),
             status=source.get("status", "draft"),
             goal=source.get("goal"),
+            ideal_customer_description=source.get("ideal_customer_description"),
             custom_agent_id=source.get("custom_agent_id"),
             created_at=source.get("created_at"),
             updated_at=source.get("updated_at"),
