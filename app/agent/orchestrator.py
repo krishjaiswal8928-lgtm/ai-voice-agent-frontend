@@ -532,11 +532,12 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
     Helper task to generate LLM response and stream TTS.
     Designed to be cancellable.
     """
+    full_response_text = ""  # Initialize at the top
+    
     try:
         logger.info(f"🤖 Generating Streaming AI Response...")
         
         # --- 1. Lazy Initialization of Autonomous Agent ---
-        # If we have a connected agent ID but the object isn't loaded, load it now.
         if not state.autonomous_agent and state.custom_agent_id:
             logger.info(f"🔄 Lazily initializing Autonomous Agent: {state.custom_agent_id}")
             custom_agent = await _fetch_custom_agent(state.custom_agent_id)
@@ -544,18 +545,17 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                 state.autonomous_agent = create_agent(custom_agent)
                 state.autonomous_agent.conversation_history = state.conversation_history
                 
-                # INJECT CAMPAIGN GOAL: Override the generic agent goal with the specific campaign goal
+                # INJECT CAMPAIGN GOAL
                 if state.goal:
                     state.autonomous_agent.config.primary_goal = state.goal
                     logger.info(f"🎯 Overrode agent goal with campaign goal: {state.goal}")
                 
-                # INJECT IDEAL CUSTOMER PROFILE: Add ICP to agent's context for lead qualification
+                # INJECT IDEAL CUSTOMER PROFILE
                 if state.ideal_customer_description:
-                    # Store ICP in agent's context so it can use it for qualification
                     state.autonomous_agent.current_context["ideal_customer_profile"] = state.ideal_customer_description
                     logger.info(f"👥 Injected ICP into agent context: {state.ideal_customer_description[:100]}...")
                 
-                # INJECT CALL SID into context for tools like end_call
+                # INJECT CALL SID into context for tools
                 state.autonomous_agent.current_context["call_sid"] = state.call_sid
                 state.autonomous_agent.current_context["campaign_id"] = state.campaign_id
                 state.autonomous_agent.current_context["lead_id"] = state.lead_id
@@ -564,13 +564,11 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                 logger.info(f"✅ Agent '{custom_agent.name}' initialized ({len(state.conversation_history)} history items)")
         
         # --- 2. RAG Context Retrieval ---
-        # Fetch relevant context if we have a campaign/client ID
         rag_context = ""
         client_id_for_rag = state.campaign_id or state.custom_agent_id
         
         if client_id_for_rag:
             try:
-                # Run blocking DB call in thread
                 logger.info(f"🔍 Fetching RAG context for ID: {client_id_for_rag}")
                 rag_context_list = await asyncio.to_thread(
                     get_relevant_context, 
@@ -583,8 +581,7 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
             except Exception as e:
                 logger.error(f"Error fetching RAG context: {e}")
         
-        # --- 2.5. Fetch Lead Purpose for Outbound Calls ---
-        lead_purpose = None
+        # --- 2.5. Fetch Lead Purpose ---
         if state.lead_id:
             try:
                 from app.database.firestore import db
@@ -594,7 +591,6 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                     lead = Lead.from_dict(lead_doc.to_dict(), lead_doc.id)
                     lead_purpose = lead.purpose
                     
-                    # Update lead name in state and context
                     if lead.name:
                         state.lead_name = lead.name
                         logger.info(f"📋 Lead Name: {lead.name}")
@@ -602,12 +598,9 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
 
                     if lead_purpose:
                         logger.info(f"📋 Lead Purpose: {lead_purpose}")
-                        # Add purpose to RAG context
                         rag_context = f"CALL PURPOSE: {lead_purpose}\n\n{rag_context}"
                 
-                # --- 2.6. Add Campaign Goal and ICP to Context ---
-                # CRITICAL: Inject campaign goal and ideal customer profile into RAG context
-                # This ensures the agent knows WHAT to achieve and WHO to target
+                # Add campaign goal and ICP to context
                 if state.goal:
                     rag_context = f"CAMPAIGN GOAL: {state.goal}\n\n{rag_context}"
                     logger.info(f"🎯 Added campaign goal to context: {state.goal}")
@@ -619,15 +612,9 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                 logger.error(f"Error fetching lead purpose: {e}")
 
         # --- 3. Response Generation ---
-        sentence_buffer = ""
-        full_response_text = ""
-        
-        # Determine TTS provider with validation
         provider = "cartesia"
-        # Removed dynamic provider check as it was removed from CustomAgent model
-
         
-if state.autonomous_agent:
+        if state.autonomous_agent:
             # --- INTELLIGENT AGENT WITH TOOL CALLING ---
             from app.agent.autonomous.executor import AgentExecutor
             
@@ -736,12 +723,11 @@ if state.autonomous_agent:
 
         else:
             # Fallback for non-autonomous mode (legacy)
-            # IMPORTANT: Pass the fetched rag_context here too!
             ai_text = generate_response(
                 transcript=transcript, 
                 goal=state.goal or "Assist the user",
                 history=state.conversation_history,
-                context=rag_context, # Now passing context!
+                context=rag_context,
                 personality="helpful",
                 company_name="our company",
                 system_prompt="You are a helpful assistant.",
@@ -786,7 +772,6 @@ if state.autonomous_agent:
     finally:
         state.is_processing = False
         state.current_response_task = None
-
 
 
 async def process_audio_chunk(audio_bytes: bytes, call_sid: str) -> Optional[bytes]:
