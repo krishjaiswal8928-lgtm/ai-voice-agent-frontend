@@ -785,7 +785,7 @@ export default function CampaignCreationWizard() {
               rows={4}
               value={campaignGoal}
               onChange={(e) => setCampaignGoal(e.target.value)}
-              placeholder="Example: Qualify people who are interested to buy Rich Dad Poor Dad book"
+              placeholder=""
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -845,7 +845,7 @@ export default function CampaignCreationWizard() {
               rows={4}
               value={idealCustomerDescription}
               onChange={(e) => setIdealCustomerDescription(e.target.value)}
-              placeholder="Example: People who are interested in reading books, and want to know about Rich Dad Poor Dad"
+              placeholder=""
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
