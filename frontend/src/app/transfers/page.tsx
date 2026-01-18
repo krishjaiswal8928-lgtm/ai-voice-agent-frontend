@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import {
     Box,
-    Container,
     Typography,
     Button,
     Card,
@@ -22,19 +21,14 @@ import {
     RadioGroup,
     Radio,
     FormLabel,
-    Alert,
-    Fade,
-    Zoom,
 } from '@mui/material';
 import {
     Add,
     Delete,
     Phone,
     Edit,
-    FlashOn,
-    CheckCircle,
-    Schedule as ScheduleIcon,
 } from '@mui/icons-material';
+import { NavigationLayout } from '@/components/NavigationLayout';
 import api from '@/lib/api';
 
 interface TransferAction {
@@ -156,194 +150,157 @@ export default function TransfersPage() {
     };
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            position: 'relative',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
-                backgroundSize: '20px 20px',
-                opacity: 0.3,
-                pointerEvents: 'none'
-            }
-        }}>
-            <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 1 }}>
-                {/* Hero Section */}
-                <Fade in timeout={800}>
-                    <Box sx={{ mb: 6, textAlign: 'center' }}>
-                        <Box sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            mb: 2,
-                            px: 3,
-                            py: 1,
-                            borderRadius: '50px',
-                            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
-                            border: '1px solid rgba(139, 92, 246, 0.2)'
-                        }}>
-                            <FlashOn sx={{ color: '#8b5cf6', fontSize: '2rem' }} />
-                            <Typography variant="h3" fontWeight="800" sx={{
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}>
-                                Call Transfers
-                            </Typography>
-                        </Box>
-                        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+        <NavigationLayout>
+            <Box sx={{
+                p: 3,
+                background: '#f5f5f5',
+                minHeight: '100vh',
+                color: '#000000',
+                width: '100%',
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                    opacity: 0.3,
+                    pointerEvents: 'none',
+                    zIndex: 0
+                }
+            }}>
+                {/* Header */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, position: 'relative', zIndex: 1 }}>
+                    <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827' }}>
+                            Call Transfers
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: '#6b7280', mt: 1 }}>
                             Configure intelligent transfer actions for your AI agents
                         </Typography>
                     </Box>
-                </Fade>
-
-                {/* Action Button */}
-                <Zoom in timeout={1000}>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
-                        <Button
-                            variant="contained"
-                            startIcon={<Add />}
-                            onClick={() => handleOpenDialog()}
-                            sx={{
-                                px: 4,
-                                py: 1.5,
-                                borderRadius: '12px',
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4)',
-                                '&:hover': {
-                                    background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                                    boxShadow: '0 12px 32px rgba(139, 92, 246, 0.5)',
-                                    transform: 'translateY(-2px)',
-                                },
-                                transition: 'all 0.3s ease'
-                            }}
-                        >
-                            Create Transfer Action
-                        </Button>
-                    </Box>
-                </Zoom>
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => handleOpenDialog()}
+                        sx={{
+                            px: 3,
+                            py: 1.5,
+                            bgcolor: '#6366f1',
+                            '&:hover': {
+                                bgcolor: '#4f46e5',
+                            }
+                        }}
+                    >
+                        Create Transfer Action
+                    </Button>
+                </Box>
 
                 {/* Transfer Cards */}
                 {transfers.length === 0 ? (
-                    <Fade in timeout={1200}>
-                        <Card sx={{
-                            borderRadius: '24px',
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(10px)',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                        }}>
-                            <CardContent sx={{ textAlign: 'center', py: 12 }}>
-                                <Phone sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.5 }} />
-                                <Typography variant="h5" fontWeight="700" gutterBottom>
-                                    No Transfer Actions Yet
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                                    Create your first transfer action to enable intelligent human handoff
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<Add />}
-                                    onClick={() => handleOpenDialog()}
-                                    sx={{
-                                        px: 4,
-                                        py: 1.5,
-                                        borderRadius: '12px',
-                                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                    }}
-                                >
-                                    Create Transfer Action
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </Fade>
+                    <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)', position: 'relative', zIndex: 1 }}>
+                        <CardContent sx={{ textAlign: 'center', py: 12 }}>
+                            <Phone sx={{ fontSize: 80, color: '#6366f1', mb: 3, opacity: 0.5 }} />
+                            <Typography variant="h5" fontWeight="700" gutterBottom sx={{ color: '#111827' }}>
+                                No Transfer Actions Yet
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                                Create your first transfer action to enable intelligent human handoff
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => handleOpenDialog()}
+                                sx={{
+                                    px: 3,
+                                    py: 1.5,
+                                    bgcolor: '#6366f1',
+                                    '&:hover': {
+                                        bgcolor: '#4f46e5',
+                                    }
+                                }}
+                            >
+                                Create Transfer Action
+                            </Button>
+                        </CardContent>
+                    </Card>
                 ) : (
-                    <Grid container spacing={3}>
+                    <Grid container spacing={3} sx={{ position: 'relative', zIndex: 1 }}>
                         {transfers.map((transfer, index) => (
                             <Grid item xs={12} md={6} key={transfer.id}>
-                                <Zoom in timeout={800 + index * 100}>
-                                    <Card sx={{
-                                        borderRadius: '20px',
-                                        background: 'rgba(255, 255, 255, 0.95)',
-                                        backdropFilter: 'blur(10px)',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            transform: 'translateY(-8px)',
-                                            boxShadow: '0 12px 40px rgba(139, 92, 246, 0.2)',
-                                        }
-                                    }}>
-                                        <CardContent sx={{ p: 3 }}>
-                                            <Box display="flex" justifyContent="space-between" alignItems="start" mb={3}>
-                                                <Box>
-                                                    <Typography variant="h5" fontWeight="700" gutterBottom>
-                                                        {transfer.name}
-                                                    </Typography>
-                                                    <Chip
-                                                        label={transfer.transfer_mode === 'blind' ? 'Blind Transfer' : 'Warm Transfer'}
-                                                        size="small"
-                                                        sx={{
-                                                            background: transfer.transfer_mode === 'blind'
-                                                                ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
-                                                                : 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-                                                            color: 'white',
-                                                            fontWeight: 600
-                                                        }}
-                                                    />
-                                                </Box>
-                                                <Box>
-                                                    <IconButton size="small" onClick={() => handleOpenDialog(transfer)} sx={{ color: '#8b5cf6' }}>
-                                                        <Edit />
-                                                    </IconButton>
-                                                    <IconButton size="small" onClick={() => handleDelete(transfer.id)} sx={{ color: '#ef4444' }}>
-                                                        <Delete />
-                                                    </IconButton>
-                                                </Box>
-                                            </Box>
-
-                                            <Box sx={{ mb: 2 }}>
-                                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                    <strong>Target:</strong> {transfer.phone_number || transfer.sip_uri || 'Not configured'}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    <strong>Timezone:</strong> {transfer.timezone}
-                                                </Typography>
-                                            </Box>
-
+                                <Card sx={{
+                                    bgcolor: '#ffffff',
+                                    border: '1px solid #e5e7eb',
+                                    boxShadow: '0 1px 3px rgba(99,102,241,0.1)',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        boxShadow: '0 4px 12px rgba(99,102,241,0.15)',
+                                        transform: 'translateY(-2px)',
+                                    }
+                                }}>
+                                    <CardContent sx={{ p: 3 }}>
+                                        <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
                                             <Box>
-                                                <Typography variant="caption" color="text.secondary" display="block" mb={1} fontWeight={600}>
-                                                    Availability:
+                                                <Typography variant="h6" fontWeight="700" gutterBottom sx={{ color: '#111827' }}>
+                                                    {transfer.name}
                                                 </Typography>
-                                                <Box display="flex" gap={0.5} flexWrap="wrap">
-                                                    {DAYS.map((day) => {
-                                                        const dayData = transfer.availability[day];
-                                                        return dayData?.enabled ? (
-                                                            <Chip
-                                                                key={day}
-                                                                label={day.substring(0, 3)}
-                                                                size="small"
-                                                                sx={{
-                                                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                                                    color: 'white',
-                                                                    fontWeight: 600,
-                                                                    fontSize: '0.7rem'
-                                                                }}
-                                                            />
-                                                        ) : null;
-                                                    })}
-                                                </Box>
+                                                <Chip
+                                                    label={transfer.transfer_mode === 'blind' ? 'Blind Transfer' : 'Warm Transfer'}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: transfer.transfer_mode === 'blind' ? '#6366f1' : '#ec4899',
+                                                        color: 'white',
+                                                        fontWeight: 600
+                                                    }}
+                                                />
                                             </Box>
-                                        </CardContent>
-                                    </Card>
-                                </Zoom>
+                                            <Box>
+                                                <IconButton size="small" onClick={() => handleOpenDialog(transfer)} sx={{ color: '#6366f1' }}>
+                                                    <Edit />
+                                                </IconButton>
+                                                <IconButton size="small" onClick={() => handleDelete(transfer.id)} sx={{ color: '#ef4444' }}>
+                                                    <Delete />
+                                                </IconButton>
+                                            </Box>
+                                        </Box>
+
+                                        <Box sx={{ mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                <strong>Target:</strong> {transfer.phone_number || transfer.sip_uri || 'Not configured'}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                <strong>Timezone:</strong> {transfer.timezone}
+                                            </Typography>
+                                        </Box>
+
+                                        <Box>
+                                            <Typography variant="caption" color="text.secondary" display="block" mb={1} fontWeight={600}>
+                                                Availability:
+                                            </Typography>
+                                            <Box display="flex" gap={0.5} flexWrap="wrap">
+                                                {DAYS.map((day) => {
+                                                    const dayData = transfer.availability[day];
+                                                    return dayData?.enabled ? (
+                                                        <Chip
+                                                            key={day}
+                                                            label={day.substring(0, 3)}
+                                                            size="small"
+                                                            sx={{
+                                                                bgcolor: '#22c55e',
+                                                                color: 'white',
+                                                                fontWeight: 600,
+                                                                fontSize: '0.7rem'
+                                                            }}
+                                                        />
+                                                    ) : null;
+                                                })}
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
                             </Grid>
                         ))}
                     </Grid>
@@ -357,17 +314,16 @@ export default function TransfersPage() {
                     fullWidth
                     PaperProps={{
                         sx: {
-                            borderRadius: '24px',
-                            background: 'rgba(255, 255, 255, 0.98)',
-                            backdropFilter: 'blur(20px)',
+                            bgcolor: '#ffffff',
+                            border: '1px solid #e5e7eb',
                         }
                     }}
                 >
                     <DialogTitle sx={{
-                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        bgcolor: '#6366f1',
                         color: 'white',
                         fontWeight: 700,
-                        fontSize: '1.5rem'
+                        fontSize: '1.25rem'
                     }}>
                         {editingTransfer ? 'Edit Transfer Action' : 'Create Transfer Action'}
                     </DialogTitle>
@@ -534,9 +490,9 @@ export default function TransfersPage() {
                             variant="contained"
                             sx={{
                                 px: 4,
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                bgcolor: '#6366f1',
                                 '&:hover': {
-                                    background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                                    bgcolor: '#4f46e5',
                                 }
                             }}
                         >
@@ -544,7 +500,7 @@ export default function TransfersPage() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-            </Container>
-        </Box>
+            </Box>
+        </NavigationLayout>
     );
 }

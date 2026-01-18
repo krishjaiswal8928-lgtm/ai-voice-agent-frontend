@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import {
     Box,
-    Container,
     Typography,
     Card,
     CardContent,
@@ -20,12 +19,10 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Fade,
-    Zoom,
-    Avatar,
     LinearProgress,
     Chip,
     Grid,
+    Avatar,
 } from '@mui/material';
 import {
     Schedule,
@@ -36,6 +33,7 @@ import {
     AccessTime,
     Person,
 } from '@mui/icons-material';
+import { NavigationLayout } from '@/components/NavigationLayout';
 import api from '@/lib/api';
 import { format } from 'date-fns';
 
@@ -109,310 +107,265 @@ export default function ScheduledCallsPage() {
 
     if (loading) {
         return (
-            <Box sx={{
-                minHeight: '100vh',
-                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <Box sx={{ textAlign: 'center' }}>
-                    <Schedule sx={{ fontSize: 80, color: '#8b5cf6', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary">Loading scheduled calls...</Typography>
-                    <LinearProgress sx={{ mt: 2, width: 200 }} />
+            <NavigationLayout>
+                <Box sx={{
+                    p: 3,
+                    background: '#f5f5f5',
+                    minHeight: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <Box sx={{ textAlign: 'center' }}>
+                        <Schedule sx={{ fontSize: 80, color: '#6366f1', mb: 2 }} />
+                        <Typography variant="h6" color="text.secondary">Loading scheduled calls...</Typography>
+                        <LinearProgress sx={{ mt: 2, width: 200 }} />
+                    </Box>
                 </Box>
-            </Box>
+            </NavigationLayout>
         );
     }
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-            position: 'relative',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
-                backgroundSize: '20px 20px',
-                opacity: 0.3,
-                pointerEvents: 'none'
-            }
-        }}>
-            <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 1 }}>
-                {/* Hero Section */}
-                <Fade in timeout={800}>
-                    <Box sx={{ mb: 6, textAlign: 'center' }}>
-                        <Box sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            mb: 2,
-                            px: 3,
-                            py: 1,
-                            borderRadius: '50px',
-                            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
-                            border: '1px solid rgba(139, 92, 246, 0.2)'
-                        }}>
-                            <Schedule sx={{ color: '#8b5cf6', fontSize: '2rem' }} />
-                            <Typography variant="h3" fontWeight="800" sx={{
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}>
-                                Scheduled Callbacks
-                            </Typography>
-                        </Box>
-                        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-                            Review and manage callbacks scheduled by your AI agents
-                        </Typography>
-                    </Box>
-                </Fade>
+        <NavigationLayout>
+            <Box sx={{
+                p: 3,
+                background: '#f5f5f5',
+                minHeight: '100vh',
+                color: '#000000',
+                width: '100%',
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: 'radial-gradient(circle, #d1d5db 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                    opacity: 0.3,
+                    pointerEvents: 'none',
+                    zIndex: 0
+                }
+            }}>
+                {/* Header */}
+                <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#111827' }}>
+                        Scheduled Callbacks
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: '#6b7280', mt: 1 }}>
+                        Review and manage callbacks scheduled by your AI agents
+                    </Typography>
+                </Box>
 
                 {/* Metrics Cards */}
-                <Grid container spacing={3} mb={4}>
+                <Grid container spacing={3} mb={4} sx={{ position: 'relative', zIndex: 1 }}>
                     <Grid item xs={12} md={6}>
-                        <Zoom in timeout={1000}>
-                            <Card sx={{
-                                borderRadius: '24px',
-                                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 100%)',
-                                backdropFilter: 'blur(10px)',
-                                boxShadow: '0 8px 32px rgba(139, 92, 246, 0.4)',
-                                border: '1px solid rgba(255, 255, 255, 0.2)',
-                            }}>
-                                <CardContent sx={{ p: 4 }}>
-                                    <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
-                                        <Avatar sx={{
-                                            width: 80,
-                                            height: 80,
-                                            background: 'rgba(255, 255, 255, 0.2)',
-                                            backdropFilter: 'blur(10px)',
-                                        }}>
-                                            <Schedule sx={{ fontSize: 40, color: 'white' }} />
-                                        </Avatar>
-                                        <Box textAlign="center">
-                                            <Typography variant="h2" fontWeight="900" color="white">
-                                                {scheduledCount}
-                                            </Typography>
-                                            <Typography variant="h6" color="rgba(255, 255, 255, 0.9)" fontWeight={600}>
-                                                Scheduled
-                                            </Typography>
-                                        </Box>
+                        <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                            <CardContent sx={{ p: 4 }}>
+                                <Box display="flex" alignItems="center" justifyContent="space-between">
+                                    <Box>
+                                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 1, fontWeight: 600 }}>
+                                            Scheduled
+                                        </Typography>
+                                        <Typography variant="h2" sx={{ fontWeight: 700, color: '#6366f1' }}>
+                                            {scheduledCount}
+                                        </Typography>
                                     </Box>
-                                </CardContent>
-                            </Card>
-                        </Zoom>
+                                    <Avatar sx={{
+                                        width: 60,
+                                        height: 60,
+                                        bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                    }}>
+                                        <Schedule sx={{ fontSize: 32, color: '#6366f1' }} />
+                                    </Avatar>
+                                </Box>
+                            </CardContent>
+                        </Card>
                     </Grid>
 
                     <Grid item xs={12} md={6}>
-                        <Zoom in timeout={1100}>
-                            <Card sx={{
-                                borderRadius: '24px',
-                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%)',
-                                backdropFilter: 'blur(10px)',
-                                boxShadow: '0 8px 32px rgba(16, 185, 129, 0.4)',
-                                border: '1px solid rgba(255, 255, 255, 0.2)',
-                            }}>
-                                <CardContent sx={{ p: 4 }}>
-                                    <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
-                                        <Avatar sx={{
-                                            width: 80,
-                                            height: 80,
-                                            background: 'rgba(255, 255, 255, 0.2)',
-                                            backdropFilter: 'blur(10px)',
-                                        }}>
-                                            <CheckCircle sx={{ fontSize: 40, color: 'white' }} />
-                                        </Avatar>
-                                        <Box textAlign="center">
-                                            <Typography variant="h2" fontWeight="900" color="white">
-                                                {allFetchedCalls.filter(c => c.status === 'completed').length}
-                                            </Typography>
-                                            <Typography variant="h6" color="rgba(255, 255, 255, 0.9)" fontWeight={600}>
-                                                Completed
-                                            </Typography>
-                                        </Box>
+                        <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)' }}>
+                            <CardContent sx={{ p: 4 }}>
+                                <Box display="flex" alignItems="center" justifyContent="space-between">
+                                    <Box>
+                                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 1, fontWeight: 600 }}>
+                                            Completed
+                                        </Typography>
+                                        <Typography variant="h2" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                                            {allFetchedCalls.filter(c => c.status === 'completed').length}
+                                        </Typography>
                                     </Box>
-                                </CardContent>
-                            </Card>
-                        </Zoom>
+                                    <Avatar sx={{
+                                        width: 60,
+                                        height: 60,
+                                        bgcolor: 'rgba(34, 197, 94, 0.1)',
+                                    }}>
+                                        <CheckCircle sx={{ fontSize: 32, color: '#22c55e' }} />
+                                    </Avatar>
+                                </Box>
+                            </CardContent>
+                        </Card>
                     </Grid>
                 </Grid>
 
                 {/* Error Alert */}
                 {error && (
-                    <Fade in>
-                        <Card sx={{ mb: 3, borderRadius: '16px', background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' }}>
-                            <CardContent>
-                                <Typography color="error">{error}</Typography>
-                            </CardContent>
-                        </Card>
-                    </Fade>
+                    <Card sx={{ mb: 3, bgcolor: '#fee2e2', border: '1px solid #fecaca', position: 'relative', zIndex: 1 }}>
+                        <CardContent>
+                            <Typography color="error">{error}</Typography>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Calls Table */}
                 {calls.length === 0 ? (
-                    <Fade in timeout={1200}>
-                        <Card sx={{
-                            borderRadius: '24px',
-                            background: 'rgba(255, 255, 255, 0.9)',
-                            backdropFilter: 'blur(10px)',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                        }}>
-                            <CardContent sx={{ textAlign: 'center', py: 12 }}>
-                                <Schedule sx={{ fontSize: 80, color: '#8b5cf6', mb: 3, opacity: 0.5 }} />
-                                <Typography variant="h5" fontWeight="700" gutterBottom>
-                                    No Scheduled Callbacks
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary">
-                                    When your AI agents schedule callbacks, they will appear here
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Fade>
+                    <Card sx={{ bgcolor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(99,102,241,0.1)', position: 'relative', zIndex: 1 }}>
+                        <CardContent sx={{ textAlign: 'center', py: 12 }}>
+                            <Schedule sx={{ fontSize: 80, color: '#6366f1', mb: 3, opacity: 0.5 }} />
+                            <Typography variant="h5" fontWeight="700" gutterBottom sx={{ color: '#111827' }}>
+                                No Scheduled Callbacks
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary">
+                                When your AI agents schedule callbacks, they will appear here
+                            </Typography>
+                        </CardContent>
+                    </Card>
                 ) : (
-                    <Zoom in timeout={1200}>
-                        <TableContainer component={Paper} sx={{
-                            borderRadius: '24px',
-                            background: 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(10px)',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                        }}>
-                            <Table>
-                                <TableHead>
-                                    <TableRow sx={{
-                                        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
-                                    }}>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Customer Name</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Phone Number</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Agent</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Scheduled Time</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Priority</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Actions</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {calls.map((call, index) => (
-                                        <TableRow
-                                            key={call.id}
-                                            sx={{
-                                                '&:hover': {
-                                                    background: 'rgba(139, 92, 246, 0.05)',
-                                                },
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                        >
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={1.5}>
-                                                    <Avatar sx={{
-                                                        width: 36,
-                                                        height: 36,
-                                                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                                        fontSize: '0.9rem',
-                                                        fontWeight: 700
-                                                    }}>
-                                                        {call.lead_name ? call.lead_name.charAt(0).toUpperCase() : '?'}
-                                                    </Avatar>
-                                                    <Typography variant="body1" fontWeight={600}>
-                                                        {call.lead_name || 'Unknown'}
+                    <TableContainer component={Paper} sx={{
+                        bgcolor: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 1px 3px rgba(99,102,241,0.1)',
+                        position: 'relative',
+                        zIndex: 1
+                    }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow sx={{ bgcolor: '#f9fafb' }}>
+                                    <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>Customer Name</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>Phone Number</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>Agent</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>Scheduled Time</TableCell>
+                                    <TableCell sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>Priority</TableCell>
+                                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {calls.map((call, index) => (
+                                    <TableRow
+                                        key={call.id}
+                                        sx={{
+                                            '&:hover': {
+                                                bgcolor: 'rgba(99, 102, 241, 0.05)',
+                                            },
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        <TableCell>
+                                            <Box display="flex" alignItems="center" gap={1.5}>
+                                                <Avatar sx={{
+                                                    width: 36,
+                                                    height: 36,
+                                                    bgcolor: '#6366f1',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: 700
+                                                }}>
+                                                    {call.lead_name ? call.lead_name.charAt(0).toUpperCase() : '?'}
+                                                </Avatar>
+                                                <Typography variant="body1" fontWeight={600}>
+                                                    {call.lead_name || 'Unknown'}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box display="flex" alignItems="center" gap={1}>
+                                                <Phone sx={{ fontSize: '1rem', color: '#6366f1' }} />
+                                                <Typography variant="body2" fontWeight={500}>
+                                                    {call.lead_phone}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box display="flex" alignItems="center" gap={1}>
+                                                <Person sx={{ fontSize: '1rem', color: '#6366f1' }} />
+                                                <Typography variant="body2" fontWeight={500}>
+                                                    {call.assigned_to_agent_name || 'AI Agent'}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box>
+                                                <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
+                                                    <Event sx={{ fontSize: '0.9rem', color: '#6b7280' }} />
+                                                    <Typography variant="body2" fontWeight={600}>
+                                                        {format(new Date(call.scheduled_datetime), 'MMM dd, yyyy')}
                                                     </Typography>
                                                 </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={1}>
-                                                    <Phone sx={{ fontSize: '1rem', color: '#8b5cf6' }} />
-                                                    <Typography variant="body2" fontWeight={500}>
-                                                        {call.lead_phone}
+                                                <Box display="flex" alignItems="center" gap={0.5}>
+                                                    <AccessTime sx={{ fontSize: '0.9rem', color: '#6b7280' }} />
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {format(new Date(call.scheduled_datetime), 'hh:mm a')}
                                                     </Typography>
                                                 </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box display="flex" alignItems="center" gap={1}>
-                                                    <Person sx={{ fontSize: '1rem', color: '#8b5cf6' }} />
-                                                    <Typography variant="body2" fontWeight={500}>
-                                                        {call.assigned_to_agent_name || 'AI Agent'}
-                                                    </Typography>
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box>
-                                                    <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
-                                                        <Event sx={{ fontSize: '0.9rem', color: '#6b7280' }} />
-                                                        <Typography variant="body2" fontWeight={600}>
-                                                            {format(new Date(call.scheduled_datetime), 'MMM dd, yyyy')}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box display="flex" alignItems="center" gap={0.5}>
-                                                        <AccessTime sx={{ fontSize: '0.9rem', color: '#6b7280' }} />
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            {format(new Date(call.scheduled_datetime), 'hh:mm a')}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={call.priority}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={call.priority}
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: call.priority === 'high'
+                                                        ? '#ef4444'
+                                                        : call.priority === 'medium'
+                                                            ? '#f59e0b'
+                                                            : '#6b7280',
+                                                    color: 'white',
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase',
+                                                    fontSize: '0.7rem'
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <Box display="flex" gap={1} justifyContent="flex-end">
+                                                <Button
                                                     size="small"
+                                                    variant="outlined"
+                                                    startIcon={<Visibility />}
+                                                    onClick={() => handleViewSummary(call)}
                                                     sx={{
-                                                        background: call.priority === 'high'
-                                                            ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                                                            : call.priority === 'medium'
-                                                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                                                                : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                                                        color: 'white',
-                                                        fontWeight: 700,
-                                                        textTransform: 'uppercase',
-                                                        fontSize: '0.7rem'
+                                                        borderColor: '#6366f1',
+                                                        color: '#6366f1',
+                                                        '&:hover': {
+                                                            borderColor: '#4f46e5',
+                                                            bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                                        }
                                                     }}
-                                                />
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                <Box display="flex" gap={1} justifyContent="flex-end">
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        startIcon={<Visibility />}
-                                                        onClick={() => handleViewSummary(call)}
-                                                        sx={{
-                                                            borderColor: '#8b5cf6',
-                                                            color: '#8b5cf6',
-                                                            '&:hover': {
-                                                                borderColor: '#7c3aed',
-                                                                background: 'rgba(139, 92, 246, 0.1)',
-                                                            }
-                                                        }}
-                                                    >
-                                                        View Summary
-                                                    </Button>
-                                                    <Button
-                                                        size="small"
-                                                        variant="contained"
-                                                        startIcon={<CheckCircle />}
-                                                        onClick={() => handleMarkComplete(call.id)}
-                                                        sx={{
-                                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                                            '&:hover': {
-                                                                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                                                            }
-                                                        }}
-                                                    >
-                                                        Complete
-                                                    </Button>
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Zoom>
+                                                >
+                                                    View
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    startIcon={<CheckCircle />}
+                                                    onClick={() => handleMarkComplete(call.id)}
+                                                    sx={{
+                                                        bgcolor: '#22c55e',
+                                                        '&:hover': {
+                                                            bgcolor: '#16a34a',
+                                                        }
+                                                    }}
+                                                >
+                                                    Complete
+                                                </Button>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 )}
 
                 {/* Summary Dialog */}
@@ -423,17 +376,16 @@ export default function ScheduledCallsPage() {
                     fullWidth
                     PaperProps={{
                         sx: {
-                            borderRadius: '24px',
-                            background: 'rgba(255, 255, 255, 0.98)',
-                            backdropFilter: 'blur(20px)',
+                            bgcolor: '#ffffff',
+                            border: '1px solid #e5e7eb',
                         }
                     }}
                 >
                     <DialogTitle sx={{
-                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        bgcolor: '#6366f1',
                         color: 'white',
                         fontWeight: 700,
-                        fontSize: '1.5rem'
+                        fontSize: '1.25rem'
                     }}>
                         Conversation Summary
                     </DialogTitle>
@@ -443,16 +395,15 @@ export default function ScheduledCallsPage() {
                                 {/* Customer Info */}
                                 <Card sx={{
                                     mb: 3,
-                                    borderRadius: '16px',
-                                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%)',
-                                    border: '1px solid rgba(139, 92, 246, 0.2)'
+                                    bgcolor: 'rgba(99, 102, 241, 0.05)',
+                                    border: '1px solid rgba(99, 102, 241, 0.2)'
                                 }}>
                                     <CardContent>
                                         <Box display="flex" alignItems="center" gap={2} mb={2}>
                                             <Avatar sx={{
                                                 width: 50,
                                                 height: 50,
-                                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                                bgcolor: '#6366f1',
                                                 fontSize: '1.2rem',
                                                 fontWeight: 700
                                             }}>
@@ -486,14 +437,13 @@ export default function ScheduledCallsPage() {
 
                                 {/* Callback Reason */}
                                 <Box mb={3}>
-                                    <Typography variant="subtitle2" fontWeight={700} gutterBottom color="#8b5cf6">
+                                    <Typography variant="subtitle2" fontWeight={700} gutterBottom color="#6366f1">
                                         Callback Reason:
                                     </Typography>
                                     <Typography variant="body1" sx={{
                                         p: 2,
-                                        borderRadius: '12px',
-                                        background: 'rgba(139, 92, 246, 0.05)',
-                                        border: '1px solid rgba(139, 92, 246, 0.1)'
+                                        bgcolor: 'rgba(99, 102, 241, 0.05)',
+                                        border: '1px solid rgba(99, 102, 241, 0.1)'
                                     }}>
                                         {selectedCall.callback_reason || 'No reason provided'}
                                     </Typography>
@@ -501,14 +451,13 @@ export default function ScheduledCallsPage() {
 
                                 {/* Conversation Summary */}
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight={700} gutterBottom color="#8b5cf6">
+                                    <Typography variant="subtitle2" fontWeight={700} gutterBottom color="#6366f1">
                                         Conversation Summary:
                                     </Typography>
                                     <Typography variant="body1" sx={{
                                         p: 3,
-                                        borderRadius: '12px',
-                                        background: 'rgba(139, 92, 246, 0.05)',
-                                        border: '1px solid rgba(139, 92, 246, 0.1)',
+                                        bgcolor: 'rgba(99, 102, 241, 0.05)',
+                                        border: '1px solid rgba(99, 102, 241, 0.1)',
                                         minHeight: 120,
                                         lineHeight: 1.8
                                     }}>
@@ -524,9 +473,9 @@ export default function ScheduledCallsPage() {
                             variant="contained"
                             sx={{
                                 px: 4,
-                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                bgcolor: '#6366f1',
                                 '&:hover': {
-                                    background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                                    bgcolor: '#4f46e5',
                                 }
                             }}
                         >
@@ -534,7 +483,7 @@ export default function ScheduledCallsPage() {
                         </Button>
                     </DialogActions>
                 </Dialog>
-            </Container>
-        </Box>
+            </Box>
+        </NavigationLayout>
     );
 }
