@@ -215,6 +215,10 @@ class ConversationState:
         self.current_response_task: Optional[asyncio.Task] = None # Track current response generation task
         self.silence_timer_task: Optional[asyncio.Task] = None # Track silence monitoring
         self.reprompt_count = 0 # Track number of reprompts per turn
+        
+        # Intelligent agent executor and state
+        self.executor = None  # AgentExecutor for intelligent tool calling
+        self.conversation_ended = False  # Flag to indicate if AI decided to end conversation
 
         active_conversations[call_sid] = self
         print("\n" + "=" * 60)
@@ -624,72 +628,152 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
 
         
         if state.autonomous_agent:
-            # Stream tokens
-            async for token in state.autonomous_agent.process_user_input_stream(
-                user_text=transcript,
-                context=rag_context,
-                history=state.conversation_history # Pass ref; agent updates it
-            ):
-                sentence_buffer += token
-                full_response_text += token
+            # --- INTELLIGENT AGENT WITH TOOL CALLING ---
+            from app.agent.autonomous.executor import AgentExecutor
+            
+            # Create executor if not exists
+            if state.executor is None:
+                state.executor = AgentExecutor(state.autonomous_agent.config)
+                logger.info("✅ Created AgentExecutor for intelligent tool calling")
+            
+            # Build context for executor
+            executor_context = {
+                "goal": state.goal or "",
+                "rag_context": rag_context,
+                "history": state.conversation_history,
+                "call_sid": state.call_sid,
+                "campaign_id": state.campaign_id,
+                "lead_id": state.lead_id,
+                "phone_number": state.phone_number,
+                "lead_name": state.lead_name,
+                "agent_name": state.autonomous_agent.config.name if state.autonomous_agent.config else "Assistant"
+            }
+            
+            # Execute with intelligence (supports tools)
+            action_result = await state.executor.execute_with_intelligence(
+                user_input=transcript,
+                context=executor_context
+            )
+            
+            # Handle the action result
+            if action_result.success:
+                output = action_result.output
+                tool_name = action_result.metadata.get("tool") if action_result.metadata else None
                 
-                # Check for sentence end (naive but fast: . ! ?) followed by space or just end of token if it was punctuation
-                # LATENCY OPTIMIZATION: Trigger on commas/semicolons if buffer is long enough to pipeline TTS
-                buffer_len = len(sentence_buffer)
-                punc_end = any(sentence_buffer.strip().endswith(p) for p in [".", "!", "?"])
-                comma_end = any(sentence_buffer.strip().endswith(p) for p in [",", ";", ":"])
-                
-                # Trigger if:
-                # 1. Strong punctuation (.!?) AND moderate length (>20 chars) to avoid "Mr."
-                # 2. Weak punctuation (,) AND long length (>150 chars) to break up long sentences
-                # 3. Buffer is getting too long (>250 chars) regardless of punctuation
-                
-                # Trigger if:
-                # 1. Strong punctuation (.!?) AND buffer is long enough (>30 chars) to form a coherent clause
-                # 2. Very long buffer (>200 chars) as a failsafe
-                
-                strong_punc = any(sentence_buffer.strip().endswith(p) for p in [".", "!", "?", "。", "\n"])
-                
-                # LATENCY OPTIMIZATION: Lower thresholds for faster TTS triggering
-                should_trigger = (strong_punc and buffer_len > 30) or (buffer_len > 200)
-                
-                if should_trigger:
-                    # Synthesize this chunk STREAMING
-                    logger.info(f"🗣️ TTS Chunk: '{sentence_buffer}'")
+                if tool_name:
+                    logger.info(f"🛠️ Tool executed: {tool_name}")
                     
-                    # STREAMING TTS: Yield bytes as they come in
-                    from app.services.tts_service import synthesize_speech_stream
+                    if tool_name == "end_call":
+                        logger.info(f"📵 AI ending call - Reason: {output.get('reason')}")
+                        final_text = output.get("text", "Thank you for your time. Goodbye!")
+                        final_audio = output.get("audio")
+                        state.add_message("assistant", final_text)
+                        if final_audio:
+                            state.outbound_audio_queue.put_nowait(final_audio)
+                            state.is_speaking = True
+                        state.conversation_ended = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
                     
-                    async for chunk in synthesize_speech_stream(provider, sentence_buffer):
-                        if chunk:
-                            state.outbound_audio_queue.put_nowait(chunk)
-                            if not state.is_speaking:
-                                state.is_speaking = True
+                    elif tool_name == "schedule_callback":
+                        logger.info(f"📞 AI scheduled callback - Delay: {action_result.metadata.get('delay_minutes')} min")
+                        confirmation_text = output.get("text", "I'll call you back soon.")
+                        confirmation_audio = output.get("audio")
+                        state.add_message("assistant", confirmation_text)
+                        if confirmation_audio:
+                            state.outbound_audio_queue.put_nowait(confirmation_audio)
+                            state.is_speaking = True
+                        state.conversation_ended = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
                     
-                    # Clear buffer
-                    sentence_buffer = ""
+                    elif tool_name == "transfer_to_human":
+                        logger.info(f"👤 AI transferring to human - Urgency: {output.get('urgency')}")
+                        transfer_text = output.get("text", "Let me connect you with a specialist.")
+                        transfer_audio = output.get("audio")
+                        state.add_message("assistant", transfer_text)
+                        if transfer_audio:
+                            state.outbound_audio_queue.put_nowait(transfer_audio)
+                            state.is_speaking = True
+                        state.conversation_ended = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
+                    
+                    elif tool_name == "continue_conversation":
+                        response_text = output.get("text", "I understand.")
+                        response_audio = output.get("audio")
+                        state.add_message("assistant", response_text)
+                        if response_audio:
+                            state.outbound_audio_queue.put_nowait(response_audio)
+                            state.is_speaking = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
+                
+                else:
+                    # Regular text response (no tool)
+                    response_text = output.get("text", "")
+                    response_audio = output.get("audio")
+                    if response_text:
+                        state.add_message("assistant", response_text)
+                        if response_audio:
+                            state.outbound_audio_queue.put_nowait(response_audio)
+                            state.is_speaking = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
+            
+            else:
+                # Action failed
+                logger.error(f"Action execution failed: {action_result.error}")
+                fallback_text = "I apologize, I'm having trouble processing that."
+                state.add_message("assistant", fallback_text)
+                from app.services.tts_service import synthesize_speech_with_provider
+                fallback_audio = await synthesize_speech_with_provider(provider, fallback_text)
+                if fallback_audio:
+                    state.outbound_audio_queue.put_nowait(fallback_audio)
+                    state.is_speaking = True
+                if state.is_speaking:
+                    asyncio.create_task(reset_speaking_state(state))
 
-            # Process any remaining text
-            if sentence_buffer.strip():
-                 logger.info(f"🗣️ TTS Final Chunk: '{sentence_buffer}'")
-                 from app.services.tts_service import synthesize_speech_stream
-                 
-                 async for chunk in synthesize_speech_stream(provider, sentence_buffer):
-                     if chunk:
-                         state.outbound_audio_queue.put_nowait(chunk)
-                         print(f"DEBUG: Queued final chunk {len(chunk)} bytes")
-                         state.is_speaking = True
+                            state.is_speaking = True
+                        state.conversation_ended = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
+                    
+                    elif tool_name == "continue_conversation":
+                        response_text = output.get("text", "I understand.")
+                        response_audio = output.get("audio")
+                        state.add_message("assistant", response_text)
+                        if response_audio:
+                            state.outbound_audio_queue.put_nowait(response_audio)
+                            state.is_speaking = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
+                
+                else:
+                    # Regular text response (no tool)
+                    response_text = output.get("text", "")
+                    response_audio = output.get("audio")
+                    if response_text:
+                        state.add_message("assistant", response_text)
+                        if response_audio:
+                            state.outbound_audio_queue.put_nowait(response_audio)
+                            state.is_speaking = True
+                        if state.is_speaking:
+                            asyncio.create_task(reset_speaking_state(state))
             
-            logger.info(f"🤖 Full AI Response: {full_response_text}")
-            
-            # Reset speaking state after stream completes
-            if state.is_speaking:
-                asyncio.create_task(reset_speaking_state(state))
-            
-            # CRITICAL FIX: Add response to history regardless of stream completeness
-            # Note: process_user_input_stream adds to history internally, so we SHOULD NOT add it again here for autonomous agents
-            # The agent.py logic already appends the full response to state.conversation_history
-            pass
+            else:
+                # Action failed
+                logger.error(f"Action execution failed: {action_result.error}")
+                fallback_text = "I apologize, I'm having trouble processing that."
+                state.add_message("assistant", fallback_text)
+                from app.services.tts_service import synthesize_speech_with_provider
+                fallback_audio = await synthesize_speech_with_provider(provider, fallback_text)
+                if fallback_audio:
+                    state.outbound_audio_queue.put_nowait(fallback_audio)
+                    state.is_speaking = True
+                if state.is_speaking:
+                    asyncio.create_task(reset_speaking_state(state))
+
 
         else:
             # Fallback for non-autonomous mode (legacy)
@@ -776,6 +860,11 @@ async def process_audio_chunk(audio_bytes: bytes, call_sid: str) -> Optional[byt
 
         
         state = active_conversations[call_sid]
+        
+        # CHECK IF CONVERSATION ENDED BY AI TOOL
+        if hasattr(state, 'conversation_ended') and state.conversation_ended:
+            logger.info("🔴 Conversation ended by AI tool - stopping audio processing")
+            return None
         
         # 1. Stream Audio to STT (Fire & Forget)
         # We assume stt_service.stream_audio_packet is imported and available
