@@ -734,7 +734,7 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                 if state.is_speaking:
                     asyncio.create_task(reset_speaking_state(state))
 
-                            state.is_speaking = True
+                        state.is_speaking = True
                         state.conversation_ended = True
                         if state.is_speaking:
                             asyncio.create_task(reset_speaking_state(state))
