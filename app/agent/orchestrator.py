@@ -627,7 +627,7 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
         # Removed dynamic provider check as it was removed from CustomAgent model
 
         
-        if state.autonomous_agent:
+if state.autonomous_agent:
             # --- INTELLIGENT AGENT WITH TOOL CALLING ---
             from app.agent.autonomous.executor import AgentExecutor
             
@@ -664,7 +664,7 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                     logger.info(f"🛠️ Tool executed: {tool_name}")
                     
                     if tool_name == "end_call":
-                        logger.info(f"📵 AI ending call - Reason: {output.get('reason')}")
+                        logger.info(f"🔵 AI ending call - Reason: {output.get('reason')}")
                         final_text = output.get("text", "Thank you for your time. Goodbye!")
                         final_audio = output.get("audio")
                         state.add_message("assistant", final_text)
@@ -734,47 +734,6 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                 if state.is_speaking:
                     asyncio.create_task(reset_speaking_state(state))
 
-                        state.is_speaking = True
-                        state.conversation_ended = True
-                        if state.is_speaking:
-                            asyncio.create_task(reset_speaking_state(state))
-                    
-                    elif tool_name == "continue_conversation":
-                        response_text = output.get("text", "I understand.")
-                        response_audio = output.get("audio")
-                        state.add_message("assistant", response_text)
-                        if response_audio:
-                            state.outbound_audio_queue.put_nowait(response_audio)
-                            state.is_speaking = True
-                        if state.is_speaking:
-                            asyncio.create_task(reset_speaking_state(state))
-                
-                else:
-                    # Regular text response (no tool)
-                    response_text = output.get("text", "")
-                    response_audio = output.get("audio")
-                    if response_text:
-                        state.add_message("assistant", response_text)
-                        if response_audio:
-                            state.outbound_audio_queue.put_nowait(response_audio)
-                            state.is_speaking = True
-                        if state.is_speaking:
-                            asyncio.create_task(reset_speaking_state(state))
-            
-            else:
-                # Action failed
-                logger.error(f"Action execution failed: {action_result.error}")
-                fallback_text = "I apologize, I'm having trouble processing that."
-                state.add_message("assistant", fallback_text)
-                from app.services.tts_service import synthesize_speech_with_provider
-                fallback_audio = await synthesize_speech_with_provider(provider, fallback_text)
-                if fallback_audio:
-                    state.outbound_audio_queue.put_nowait(fallback_audio)
-                    state.is_speaking = True
-                if state.is_speaking:
-                    asyncio.create_task(reset_speaking_state(state))
-
-
         else:
             # Fallback for non-autonomous mode (legacy)
             # IMPORTANT: Pass the fetched rag_context here too!
@@ -827,9 +786,6 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
     finally:
         state.is_processing = False
         state.current_response_task = None
-
-
-
 
 
 
