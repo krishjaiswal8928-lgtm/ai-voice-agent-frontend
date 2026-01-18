@@ -174,6 +174,7 @@ class ConversationState:
         lead_id: Optional[str] = None,
         lead_name: Optional[str] = None,
         custom_agent_id: Optional[str] = None,
+        ideal_customer_description: Optional[str] = None,
     ):
         self.call_sid = call_sid
         self.goal = goal
@@ -182,6 +183,7 @@ class ConversationState:
         self.lead_id = lead_id
         self.lead_name = lead_name
         self.custom_agent_id = custom_agent_id
+        self.ideal_customer_description = ideal_customer_description
 
         self.audio_buffer = bytearray()
         self.last_audio_time = asyncio.get_event_loop().time()
@@ -543,6 +545,12 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                     state.autonomous_agent.config.primary_goal = state.goal
                     logger.info(f"🎯 Overrode agent goal with campaign goal: {state.goal}")
                 
+                # INJECT IDEAL CUSTOMER PROFILE: Add ICP to agent's context for lead qualification
+                if state.ideal_customer_description:
+                    # Store ICP in agent's context so it can use it for qualification
+                    state.autonomous_agent.current_context["ideal_customer_profile"] = state.ideal_customer_description
+                    logger.info(f"👥 Injected ICP into agent context: {state.ideal_customer_description[:100]}...")
+                
                 # INJECT CALL SID into context for tools like end_call
                 state.autonomous_agent.current_context["call_sid"] = state.call_sid
                 state.autonomous_agent.current_context["campaign_id"] = state.campaign_id
@@ -592,6 +600,17 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
                         logger.info(f"📋 Lead Purpose: {lead_purpose}")
                         # Add purpose to RAG context
                         rag_context = f"CALL PURPOSE: {lead_purpose}\n\n{rag_context}"
+                
+                # --- 2.6. Add Campaign Goal and ICP to Context ---
+                # CRITICAL: Inject campaign goal and ideal customer profile into RAG context
+                # This ensures the agent knows WHAT to achieve and WHO to target
+                if state.goal:
+                    rag_context = f"CAMPAIGN GOAL: {state.goal}\n\n{rag_context}"
+                    logger.info(f"🎯 Added campaign goal to context: {state.goal}")
+                
+                if state.ideal_customer_description:
+                    rag_context = f"IDEAL CUSTOMER PROFILE: {state.ideal_customer_description}\n\n{rag_context}"
+                    logger.info(f"👥 Added ICP to context: {state.ideal_customer_description[:100]}...")
             except Exception as e:
                 logger.error(f"Error fetching lead purpose: {e}")
 
@@ -1089,13 +1108,14 @@ def get_conversation_state(
     lead_id: Optional[str] = None,
     lead_name: Optional[str] = None,
     custom_agent_id: Optional[str] = None,
+    ideal_customer_description: Optional[str] = None,
 ) -> "ConversationState":
     """
     Get or create a conversation state for a call.
     """
     if call_sid not in active_conversations:
         active_conversations[call_sid] = ConversationState(
-            call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id
+            call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id, ideal_customer_description
         )
     return active_conversations[call_sid]
 
@@ -1111,8 +1131,9 @@ def get_conversation_state_with_params(call_sid: str, params: dict) -> "Conversa
         lead_id = params.get("lead_id") or None
         lead_name = params.get("lead_name", "Unknown")
         custom_agent_id = params.get("custom_agent_id") or None
+        ideal_customer_description = params.get("ideal_customer_description", "")
         active_conversations[call_sid] = ConversationState(
-            call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id
+            call_sid, goal, campaign_id, phone_number, lead_id, lead_name, custom_agent_id, ideal_customer_description
         )
     else:
         # Update existing state with params if provided
@@ -1129,6 +1150,8 @@ def get_conversation_state_with_params(call_sid: str, params: dict) -> "Conversa
             state.lead_name = params.get("lead_name", "Unknown")
         if params.get("custom_agent_id"):
             state.custom_agent_id = params.get("custom_agent_id")
+        if params.get("ideal_customer_description"):
+            state.ideal_customer_description = params.get("ideal_customer_description", "")
     return active_conversations[call_sid]
 
 

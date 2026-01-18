@@ -314,7 +314,19 @@ async def synthesize_speech_with_provider(provider: str, text: str, voice_id: Op
                     return None
                     
             except Exception as e:
+                error_msg = str(e)
                 logger.error(f"Cartesia TTS error: {e}")
+                
+                # Check if it's a credit/quota error (402 or credit-related message)
+                if "402" in error_msg or "credit" in error_msg.lower() or "quota" in error_msg.lower():
+                    logger.warning("⚠️ Cartesia credits exhausted, falling back to OpenAI TTS")
+                    # Fallback to OpenAI
+                    try:
+                        return await synthesize_speech_with_provider("openai", text, voice_id)
+                    except Exception as fallback_error:
+                        logger.error(f"OpenAI fallback also failed: {fallback_error}")
+                        return None
+                
                 import traceback
                 traceback.print_exc()
                 return None
@@ -481,7 +493,17 @@ async def synthesize_speech_stream(provider: str, text: str, voice_id: Optional[
                 logger.info(f"✅ Cartesia streamed {chunk_count} audio chunks via SSE")
 
             except Exception as e:
+                error_msg = str(e)
                 logger.error(f"Cartesia TTS Stream Error: {e}")
+                
+                # Check if it's a credit/quota error and fallback to OpenAI
+                if "402" in error_msg or "credit" in error_msg.lower() or "quota" in error_msg.lower():
+                    logger.warning("⚠️ Cartesia credits exhausted in streaming, falling back to OpenAI TTS")
+                    # Fallback to OpenAI streaming
+                    async for chunk in synthesize_speech_stream("openai", text, voice_id):
+                        if chunk:
+                            yield chunk
+                    return
 
 
 
