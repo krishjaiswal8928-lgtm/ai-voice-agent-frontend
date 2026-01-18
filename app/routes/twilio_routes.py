@@ -93,12 +93,15 @@ async def voice_webhook(request: Request):
 
         if is_outbound_api:
             # Treat as outbound
-            logger.info("Handling Outbound Call Context (validated via Direction or Context)")
+            # Get ICP from query params
+            ideal_customer_description = form_data.get("ideal_customer_description") or request.query_params.get("ideal_customer_description") or ""
+            
             connect = Connect()
             stream = Stream(url=WEBSOCKET_URL)
             stream.parameter(name="campaign_id", value=str(campaign_id))
             stream.parameter(name="lead_id", value=str(lead_id))
             stream.parameter(name="goal", value=goal)
+            stream.parameter(name="ideal_customer_description", value=ideal_customer_description)
             stream.parameter(name="rag_document_id", value=rag_document_id or "")
             stream.parameter(name="call_sid", value=call_sid)
             stream.parameter(name="phone_number", value=to_num_norm)
@@ -160,6 +163,7 @@ async def voice_webhook(request: Request):
                 if call_session:
                     resolved_campaign_id = call_session.id
                     resolved_goal = call_session.goal or ""
+                    resolved_icp = call_session.ideal_customer_description or ""
                     resolved_agent_id = call_session.custom_agent_id
 
                     logger.info(
@@ -171,6 +175,7 @@ async def voice_webhook(request: Request):
                     stream = Stream(url=WEBSOCKET_URL)
                     stream.parameter(name="campaign_id", value=str(resolved_campaign_id))
                     stream.parameter(name="goal", value=resolved_goal)
+                    stream.parameter(name="ideal_customer_description", value=resolved_icp)
                     stream.parameter(name="call_sid", value=call_sid)
                     # IMPORTANT: pass the business 'To' number so WS can re-validate mapping
                     stream.parameter(name="phone_number", value=to_num_norm)

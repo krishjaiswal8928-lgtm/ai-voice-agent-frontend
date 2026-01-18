@@ -164,6 +164,7 @@ class LeadCallerService:
                         "lead_name": lead.name or "",
                         "lead_purpose": lead.purpose or "",  # NEW - Pass purpose
                         "goal": call_session.goal or "",
+                        "ideal_customer_description": call_session.ideal_customer_description or "",
                         "custom_agent_id": str(call_session.custom_agent_id) if call_session.custom_agent_id else ""
                     }
                     
