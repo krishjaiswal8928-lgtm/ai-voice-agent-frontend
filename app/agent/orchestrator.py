@@ -1223,19 +1223,22 @@ def cleanup_conversation(call_sid: str):
         print(f"No conversation found for: {call_sid}")
 
 
-async def trigger_outbound_greeting(call_sid: str):
+async def trigger_outbound_greeting(call_sid: str) -> Optional[bytes]:
     """
     Manually trigger the initial greeting for an outbound call.
     This ensures the AI speaks first, even before the user speaks.
+    
+    Returns:
+        bytes: The TTS audio bytes for immediate sending, or None if failed
     """
     state = active_conversations.get(call_sid)
     if not state:
         logger.warning(f"Cannot trigger greeting: No conversation state for {call_sid}")
-        return
+        return None
 
     if not state.needs_greeting:
         logger.info(f"Greeting already handling/sent for {call_sid}")
-        return
+        return None
 
     logger.info(f"📢 Triggering outbound greeting for {call_sid}")
     
@@ -1272,17 +1275,21 @@ async def trigger_outbound_greeting(call_sid: str):
     logger.info(f"🤖 Generated Outbound Greeting: {greeting}")
     
     try:
-        # 4. Synthesize & Queue
+        # 4. Synthesize & Return
         # Pass voice_id to ensure consistent voice
         tts_audio = await synthesize_speech_with_provider("cartesia", greeting, voice_id=voice_id)
         if tts_audio:
-            logger.info(f"✅ Queued greeting audio ({len(tts_audio)} bytes)")
+            logger.info(f"✅ Generated greeting audio ({len(tts_audio)} bytes)")
+            # Also queue it as backup
             state.outbound_audio_queue.put_nowait(tts_audio)
             asyncio.create_task(reset_speaking_state(state))
+            return tts_audio  # Return for immediate sending
         else:
             logger.error("❌ TTS returned no audio for greeting")
             state.is_speaking = False
+            return None
             
     except Exception as e:
         logger.error(f"Failed to synthesize outbound greeting: {e}", exc_info=True)
         state.is_speaking = False
+        return None

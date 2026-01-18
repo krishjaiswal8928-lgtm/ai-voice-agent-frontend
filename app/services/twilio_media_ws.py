@@ -17,9 +17,9 @@ _SILENCE_MULAW_20MS = b"\xff" * 160   # 8 kHz * 0.02 s = 160 samples
 
 
 async def _send_keepalive(ws: WebSocket, stream_sid: str):
-    """Send a tiny silence packet every 15 s to keep Twilio alive."""
+    """Send a tiny silence packet every 5s to keep Twilio alive and prevent timeouts."""
     while True:
-        await asyncio.sleep(10)  # Reduced to 10 seconds to be safe against 15s timeouts
+        await asyncio.sleep(5)  # Reduced to 5 seconds for better reliability
         try:
             # Check if WebSocket is still connected
             if not hasattr(ws, 'client_state') or ws.client_state.name != "CONNECTED":
@@ -307,18 +307,49 @@ async def handle_twilio_ws(ws: WebSocket):
                     keepalive_task = asyncio.create_task(
                         _send_keepalive(ws, stream_sid)
                     )
+                    
+                    # Send initial silence packet to establish media stream
+                    try:
+                        silence_payload = base64.b64encode(_SILENCE_MULAW_20MS).decode()
+                        message = {
+                            "event": "media",
+                            "streamSid": stream_sid,
+                            "media": {
+                                "payload": silence_payload
+                            }
+                        }
+                        await ws.send_text(json.dumps(message))
+                        logger.info("✅ Sent initial silence packet to establish media stream")
+                    except Exception as e:
+                        logger.error(f"Error sending initial silence: {e}")
                 
                 # Pass parameters to orchestrator (after override)
                 if stream_params and call_sid:
                     from app.agent.orchestrator import get_conversation_state_with_params
                     get_conversation_state_with_params(call_sid, stream_params)
 
-                    # NEW: Trigger greeting immediately for outbound calls
+                    # CRITICAL: Trigger and SEND greeting immediately for outbound calls
                     if is_outbound_flag:
                         logger.info(f"📢 Outbound call detected: {call_sid} - Triggering initial greeting")
                         from app.agent.orchestrator import trigger_outbound_greeting
-                        # Run as background task to avoid blocking the WS loop
-                        asyncio.create_task(trigger_outbound_greeting(call_sid))
+                        
+                        # Await the greeting generation and send it immediately
+                        try:
+                            greeting_audio = await asyncio.wait_for(
+                                trigger_outbound_greeting(call_sid),
+                                timeout=5.0  # 5 second timeout for greeting generation
+                            )
+                            
+                            if greeting_audio and stream_sid:
+                                logger.info(f"🎤 Sending greeting immediately: {len(greeting_audio)} bytes")
+                                await _send_tts_chunked(ws, stream_sid, greeting_audio)
+                                logger.info("✅ Greeting sent successfully")
+                            else:
+                                logger.warning("⚠️ No greeting audio generated")
+                        except asyncio.TimeoutError:
+                            logger.error("❌ Greeting generation timeout")
+                        except Exception as e:
+                            logger.error(f"❌ Error sending greeting: {e}")
 
             # ------------------- MEDIA ------------------- #
             elif event == "media":
