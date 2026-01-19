@@ -20,7 +20,8 @@ import {
   Business,
   LocalHospital,
   School,
-  Storefront
+  Storefront,
+  HeadsetMic
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { LandingNav } from '@/components/LandingNav';
@@ -397,7 +398,7 @@ export default function LandingPage() {
                   }}
                   className="float"
                 >
-                  <SmartToy sx={{ fontSize: 120, opacity: 0.9 }} />
+                  <HeadsetMic sx={{ fontSize: 120, opacity: 0.9 }} />
                 </Box>
               </Box>
             </Grid>
