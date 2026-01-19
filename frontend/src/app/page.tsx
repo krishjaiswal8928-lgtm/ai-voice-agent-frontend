@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { LandingNav } from '@/components/LandingNav';
 import { Footer } from '@/components/Footer';
-import '../styles/animations.css';
+import '@/styles/animations.css';
 
 export default function LandingPage() {
   const router = useRouter();

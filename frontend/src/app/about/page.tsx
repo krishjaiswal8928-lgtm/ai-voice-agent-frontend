@@ -5,7 +5,7 @@ import { Box, Typography, Container, Grid, Card, CardContent, Avatar } from '@mu
 import { Business, Speed, Security, Support } from '@mui/icons-material';
 import { LandingNav } from '@/components/LandingNav';
 import { Footer } from '@/components/Footer';
-import '../styles/animations.css';
+import '@/styles/animations.css';
 
 export default function AboutPage() {
     return (

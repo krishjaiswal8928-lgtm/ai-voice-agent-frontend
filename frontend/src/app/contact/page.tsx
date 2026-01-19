@@ -5,7 +5,7 @@ import { Box, Typography, Container, Card, CardContent, TextField, Button, Grid,
 import { Email, Phone, LocationOn } from '@mui/icons-material';
 import { LandingNav } from '@/components/LandingNav';
 import { Footer } from '@/components/Footer';
-import '../styles/animations.css';
+import '@/styles/animations.css';
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });

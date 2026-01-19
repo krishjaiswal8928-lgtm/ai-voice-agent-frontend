@@ -6,7 +6,7 @@ import { Phone, AutoAwesome, TrendingUp, Speed, Security, Support } from '@mui/i
 import { useRouter } from 'next/navigation';
 import { LandingNav } from '@/components/LandingNav';
 import { Footer } from '@/components/Footer';
-import '../styles/animations.css';
+import '@/styles/animations.css';
 
 export default function HomePage() {
     const router = useRouter();
