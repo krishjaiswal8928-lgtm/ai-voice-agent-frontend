@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Container, Grid, Card, CardContent, Chip, Avatar } from '@mui/material';
+import { Box, Typography, Button, Container, Grid, Card, CardContent, Chip, Avatar, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
   AutoAwesome,
   Speed,
@@ -11,7 +11,16 @@ import {
   SmartToy,
   CheckCircle,
   ArrowForward,
-  Star
+  Star,
+  Schedule,
+  PersonSearch,
+  CallSplit,
+  Assessment,
+  Lightbulb,
+  Business,
+  LocalHospital,
+  School,
+  Storefront
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { LandingNav } from '@/components/LandingNav';
@@ -50,58 +59,177 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <AutoAwesome sx={{ fontSize: 48 }} />,
+      icon: <PersonSearch sx={{ fontSize: 48 }} />,
       title: 'AI Lead Qualification',
-      description: 'Automatically qualify leads using BANT criteria, detect buying signals, and score leads 1-10 in real-time',
-      color: '#6366f1'
+      description: 'Automatically qualify leads using BANT criteria (Budget, Authority, Need, Timeline). Our AI detects buying signals, asks qualifying questions, and scores leads 1-10 based on conversion probability.',
+      color: '#6366f1',
+      details: [
+        'BANT framework qualification',
+        'Real-time lead scoring (1-10)',
+        'Buying signal detection',
+        'Custom qualification criteria'
+      ]
     },
     {
-      icon: <TrendingUp sx={{ fontSize: 48 }} />,
+      icon: <CallSplit sx={{ fontSize: 48 }} />,
       title: 'Smart Call Transfers',
-      description: 'Transfer qualified leads to human agents instantly with warm or cold transfers and automatic agent selection',
-      color: '#22c55e'
+      description: 'Transfer hot leads to your sales team instantly. Choose between warm transfers (AI introduces the lead) or cold transfers (direct connection). Automatic agent selection based on availability and expertise.',
+      color: '#22c55e',
+      details: [
+        'Warm & cold transfer options',
+        'Automatic agent routing',
+        'Lead context handoff',
+        'Transfer success tracking'
+      ]
     },
     {
-      icon: <Speed sx={{ fontSize: 48 }} />,
-      title: 'Intelligent Callbacks',
-      description: 'Schedule callbacks with lead context, talking points, and auto-assignment to available agents',
-      color: '#f59e0b'
+      icon: <Schedule sx={{ fontSize: 48 }} />,
+      title: 'Intelligent Call Scheduling',
+      description: 'Schedule callbacks automatically when leads aren\'t ready to buy now. AI captures preferred time slots, adds context notes, and assigns to the best-fit agent. Automatic calendar integration.',
+      color: '#f59e0b',
+      details: [
+        'Automatic callback scheduling',
+        'Calendar integration',
+        'Lead context preservation',
+        'Smart agent assignment'
+      ]
     },
     {
-      icon: <Security sx={{ fontSize: 48 }} />,
-      title: 'Enterprise Security',
-      description: 'Bank-level encryption, SOC 2 compliance, and GDPR-ready data handling for complete peace of mind',
-      color: '#8b5cf6'
+      icon: <Assessment sx={{ fontSize: 48 }} />,
+      title: 'Real-Time Analytics',
+      description: 'Track qualification rates, transfer success, callback completion, and agent performance in real-time. Get insights into conversion patterns and optimize your sales process.',
+      color: '#8b5cf6',
+      details: [
+        'Live call monitoring',
+        'Conversion tracking',
+        'Performance dashboards',
+        'ROI analytics'
+      ]
     },
     {
       icon: <PhoneInTalk sx={{ fontSize: 48 }} />,
       title: 'Multi-Provider Support',
-      description: 'Works seamlessly with Twilio and SIP trunking providers (3CX, FreePBX, Ziwo) for maximum flexibility',
-      color: '#ef4444'
+      description: 'Works seamlessly with Twilio and any SIP trunking provider (3CX, FreePBX, Ziwo, Asterisk). Use your existing phone infrastructure without vendor lock-in.',
+      color: '#ef4444',
+      details: [
+        'Twilio integration',
+        'Universal SIP support',
+        'No vendor lock-in',
+        'Easy migration'
+      ]
     },
     {
       icon: <SmartToy sx={{ fontSize: 48 }} />,
       title: 'Custom AI Agents',
-      description: 'Create reusable autonomous AI agents with custom configurations, goals, and conversation flows',
-      color: '#22d3ee'
+      description: 'Create reusable autonomous AI agents with custom goals, conversation flows, and qualification criteria. Train agents for different campaigns and industries.',
+      color: '#22d3ee',
+      details: [
+        'Custom conversation flows',
+        'Industry-specific training',
+        'Multi-language support',
+        'Voice customization'
+      ]
     }
   ];
 
-  const steps = [
+  const useCases = [
+    {
+      icon: <Business />,
+      industry: 'B2B Sales',
+      title: 'Enterprise Lead Qualification',
+      description: 'Qualify enterprise leads 24/7, identify decision-makers, and schedule demos with qualified prospects automatically.',
+      results: '3x more qualified leads, 60% time saved'
+    },
+    {
+      icon: <Storefront />,
+      industry: 'E-commerce',
+      title: 'Customer Support & Upsells',
+      description: 'Handle order inquiries, qualify upsell opportunities, and transfer high-value customers to sales specialists.',
+      results: '40% increase in upsell conversions'
+    },
+    {
+      icon: <LocalHospital />,
+      industry: 'Healthcare',
+      title: 'Patient Appointment Scheduling',
+      description: 'Schedule appointments, qualify patient needs, and route urgent cases to appropriate medical staff.',
+      results: '80% reduction in scheduling time'
+    },
+    {
+      icon: <School />,
+      industry: 'Education',
+      title: 'Student Enrollment & Counseling',
+      description: 'Qualify prospective students, answer program questions, and schedule counseling sessions automatically.',
+      results: '50% more enrollments per quarter'
+    }
+  ];
+
+  const workflowSteps = [
     {
       number: '01',
-      title: 'Configure Your Agent',
-      description: 'Set up your AI agent with custom goals, conversation flows, and qualification criteria in minutes'
+      title: 'Configure Your AI Agent',
+      description: 'Set up your AI agent in minutes with our intuitive interface',
+      details: [
+        'Define qualification criteria (BANT, custom questions)',
+        'Set conversation goals (qualify, transfer, schedule)',
+        'Customize voice and personality',
+        'Add your product/service knowledge base'
+      ]
     },
     {
       number: '02',
-      title: 'Connect Your Phone',
-      description: 'Integrate with Twilio or your existing SIP trunk provider with just a few clicks'
+      title: 'Connect Your Phone System',
+      description: 'Integrate with your existing phone infrastructure seamlessly',
+      details: [
+        'Connect Twilio account or SIP trunk',
+        'Import or purchase phone numbers',
+        'Configure call routing rules',
+        'Set up agent availability schedules'
+      ]
     },
     {
       number: '03',
-      title: 'Start Converting',
-      description: 'Watch as your AI agent qualifies leads, transfers hot prospects, and schedules callbacks automatically'
+      title: 'Launch & Monitor',
+      description: 'Go live and watch your AI agent qualify leads automatically',
+      details: [
+        'Start receiving/making calls immediately',
+        'Monitor live calls in real-time dashboard',
+        'Review call transcripts and recordings',
+        'Track qualification rates and conversions'
+      ]
+    },
+    {
+      number: '04',
+      title: 'Optimize & Scale',
+      description: 'Use analytics to improve performance and scale your operations',
+      details: [
+        'Analyze conversion patterns',
+        'A/B test different conversation flows',
+        'Train agents with successful examples',
+        'Scale to handle unlimited concurrent calls'
+      ]
+    }
+  ];
+
+  const qualificationProcess = [
+    {
+      step: 'Initial Engagement',
+      description: 'AI greets the lead, introduces your company, and builds rapport naturally'
+    },
+    {
+      step: 'Need Discovery',
+      description: 'Asks targeted questions to understand the lead\'s pain points and requirements'
+    },
+    {
+      step: 'BANT Qualification',
+      description: 'Evaluates Budget, Authority, Need, and Timeline through conversational questions'
+    },
+    {
+      step: 'Lead Scoring',
+      description: 'Assigns a score (1-10) based on qualification criteria and buying signals'
+    },
+    {
+      step: 'Smart Routing',
+      description: 'Hot leads (8-10) → Instant transfer | Warm leads (5-7) → Schedule callback | Cold leads (1-4) → Nurture sequence'
     }
   ];
 
@@ -158,7 +286,7 @@ export default function LandingPage() {
             <Grid item xs={12} md={7}>
               <Box className="fade-in-left">
                 <Chip
-                  label="🚀 AI-Powered Voice Automation"
+                  label="🚀 AI-Powered Voice Automation Platform"
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.2)',
                     color: '#ffffff',
@@ -178,7 +306,7 @@ export default function LandingPage() {
                     textShadow: '0 4px 20px rgba(0,0,0,0.2)'
                   }}
                 >
-                  Orchestrate Your AI Agent
+                  Qualify Leads, Transfer Calls & Schedule Callbacks Automatically
                 </Typography>
                 <Typography
                   variant="h5"
@@ -190,9 +318,9 @@ export default function LandingPage() {
                     fontWeight: 400
                   }}
                 >
-                  Automate lead qualification, transfer hot leads to your sales team, and schedule callbacks intelligently with our AI-powered voice platform
+                  Your AI-powered sales assistant that works 24/7 to qualify leads using BANT criteria, transfer hot prospects to your team, and schedule callbacks intelligently
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
                   <Button
                     variant="contained"
                     size="large"
@@ -241,6 +369,13 @@ export default function LandingPage() {
                     Book a Demo
                   </Button>
                 </Box>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  {['✓ No credit card required', '✓ 14-day free trial', '✓ Setup in 5 minutes'].map((item, i) => (
+                    <Typography key={i} variant="body2" sx={{ display: 'flex', alignItems: 'center', opacity: 0.9 }}>
+                      {item}
+                    </Typography>
+                  ))}
+                </Box>
               </Box>
             </Grid>
             <Grid item xs={12} md={5}>
@@ -276,7 +411,7 @@ export default function LandingPage() {
           {[
             { label: 'Calls Processed', value: stats.calls.toLocaleString() + '+', icon: <PhoneInTalk /> },
             { label: 'Happy Customers', value: stats.users.toLocaleString() + '+', icon: <Star /> },
-            { label: 'Accuracy Rate', value: stats.accuracy + '%', icon: <CheckCircle /> }
+            { label: 'Qualification Accuracy', value: stats.accuracy + '%', icon: <CheckCircle /> }
           ].map((stat, index) => (
             <Grid item xs={12} md={4} key={index}>
               <Card
@@ -318,9 +453,10 @@ export default function LandingPage() {
         </Grid>
       </Container>
 
-      {/* Features Section */}
+      {/* Lead Qualification Process */}
       <Container maxWidth="lg" sx={{ py: 12 }}>
         <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
+          <Chip label="HOW IT QUALIFIES" sx={{ bgcolor: '#6366f1', color: '#ffffff', mb: 2, fontWeight: 600 }} />
           <Typography
             variant="h2"
             sx={{
@@ -330,16 +466,161 @@ export default function LandingPage() {
               fontSize: { xs: '2rem', md: '2.5rem' }
             }}
           >
-            Powerful Features
+            Intelligent Lead Qualification Process
           </Typography>
-          <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: 600, mx: 'auto' }}>
-            Everything you need to automate your voice operations and scale your sales
+          <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: 700, mx: 'auto' }}>
+            Our AI follows a proven 5-step process to qualify every lead and route them intelligently
+          </Typography>
+        </Box>
+
+        <Grid container spacing={3}>
+          {qualificationProcess.map((item, index) => (
+            <Grid item xs={12} key={index}>
+              <Card
+                className={`fade-in-up delay-${(index + 1) * 100}`}
+                sx={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  transition: 'all 0.3s',
+                  '&:hover': {
+                    borderColor: '#6366f1',
+                    boxShadow: '0 8px 24px rgba(99,102,241,0.15)'
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                    <Chip
+                      label={index + 1}
+                      sx={{
+                        bgcolor: '#6366f1',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: '1.2rem',
+                        width: 48,
+                        height: 48
+                      }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
+                        {item.step}
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7 }}>
+                        {item.description}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* Features Section */}
+      <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
+            <Chip label="FEATURES" sx={{ bgcolor: '#22c55e', color: '#ffffff', mb: 2, fontWeight: 600 }} />
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 800,
+                mb: 2,
+                color: '#111827',
+                fontSize: { xs: '2rem', md: '2.5rem' }
+              }}
+            >
+              Everything You Need to Automate Sales
+            </Typography>
+            <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: 600, mx: 'auto' }}>
+              Comprehensive features designed to qualify leads, transfer calls, and schedule callbacks automatically
+            </Typography>
+          </Box>
+
+          <Grid container spacing={4}>
+            {features.map((feature, index) => (
+              <Grid item xs={12} md={6} lg={4} key={index}>
+                <Card
+                  className={`fade-in-up delay-${(index + 1) * 100}`}
+                  sx={{
+                    height: '100%',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '16px',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: `0 20px 60px ${feature.color}30`,
+                      borderColor: feature.color
+                    }
+                  }}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Box
+                      sx={{
+                        color: feature.color,
+                        mb: 3,
+                        display: 'inline-block',
+                        p: 2,
+                        borderRadius: '12px',
+                        bgcolor: `${feature.color}15`
+                      }}
+                    >
+                      {feature.icon}
+                    </Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#111827' }}>
+                      {feature.title}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7, mb: 3 }}>
+                      {feature.description}
+                    </Typography>
+                    <List dense>
+                      {feature.details.map((detail, i) => (
+                        <ListItem key={i} sx={{ px: 0, py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <CheckCircle sx={{ fontSize: 18, color: feature.color }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={detail}
+                            primaryTypographyProps={{
+                              fontSize: '0.9rem',
+                              color: '#6b7280'
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* Use Cases Section */}
+      <Container maxWidth="lg" sx={{ py: 12 }}>
+        <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
+          <Chip label="USE CASES" sx={{ bgcolor: '#f59e0b', color: '#ffffff', mb: 2, fontWeight: 600 }} />
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 800,
+              mb: 2,
+              color: '#111827',
+              fontSize: { xs: '2rem', md: '2.5rem' }
+            }}
+          >
+            Proven Results Across Industries
+          </Typography>
+          <Typography variant="h6" sx={{ color: '#6b7280' }}>
+            See how businesses use SpeakSynth AI to transform their sales operations
           </Typography>
         </Box>
 
         <Grid container spacing={4}>
-          {features.map((feature, index) => (
-            <Grid item xs={12} md={6} lg={4} key={index}>
+          {useCases.map((useCase, index) => (
+            <Grid item xs={12} md={6} key={index}>
               <Card
                 className={`fade-in-up delay-${(index + 1) * 100}`}
                 sx={{
@@ -348,31 +629,29 @@ export default function LandingPage() {
                   borderRadius: '16px',
                   transition: 'all 0.3s',
                   '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: `0 20px 60px ${feature.color}30`,
-                    borderColor: feature.color
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.1)'
                   }
                 }}
               >
                 <CardContent sx={{ p: 4 }}>
-                  <Box
-                    sx={{
-                      color: feature.color,
-                      mb: 3,
-                      display: 'inline-block',
-                      p: 2,
-                      borderRadius: '12px',
-                      bgcolor: `${feature.color}15`
-                    }}
-                  >
-                    {feature.icon}
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar sx={{ bgcolor: '#6366f1', mr: 2 }}>
+                      {useCase.icon}
+                    </Avatar>
+                    <Chip label={useCase.industry} sx={{ bgcolor: '#f3f4f6', fontWeight: 600 }} />
                   </Box>
                   <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#111827' }}>
-                    {feature.title}
+                    {useCase.title}
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7 }}>
-                    {feature.description}
+                  <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7, mb: 3 }}>
+                    {useCase.description}
                   </Typography>
+                  <Box sx={{ bgcolor: '#f0fdf4', p: 2, borderRadius: '8px', borderLeft: '4px solid #22c55e' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#166534' }}>
+                      📈 Results: {useCase.results}
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -384,6 +663,7 @@ export default function LandingPage() {
       <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
+            <Chip label="SIMPLE SETUP" sx={{ bgcolor: '#8b5cf6', color: '#ffffff', mb: 2, fontWeight: 600 }} />
             <Typography
               variant="h2"
               sx={{
@@ -393,41 +673,60 @@ export default function LandingPage() {
                 fontSize: { xs: '2rem', md: '2.5rem' }
               }}
             >
-              How It Works
+              Get Started in 4 Simple Steps
             </Typography>
             <Typography variant="h6" sx={{ color: '#6b7280' }}>
-              Get started in three simple steps
+              From setup to your first qualified lead in under 10 minutes
             </Typography>
           </Box>
 
           <Grid container spacing={6}>
-            {steps.map((step, index) => (
-              <Grid item xs={12} md={4} key={index}>
+            {workflowSteps.map((step, index) => (
+              <Grid item xs={12} md={6} key={index}>
                 <Box
                   className={`fade-in-up delay-${(index + 1) * 200}`}
-                  sx={{ textAlign: 'center' }}
                 >
-                  <Typography
-                    variant="h1"
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: '5rem',
-                      background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      mb: 2,
-                      opacity: 0.3
-                    }}
-                  >
-                    {step.number}
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#111827' }}>
-                    {step.title}
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7 }}>
-                    {step.description}
-                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 3 }}>
+                    <Typography
+                      variant="h1"
+                      sx={{
+                        fontWeight: 900,
+                        fontSize: '4rem',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        opacity: 0.3,
+                        lineHeight: 1
+                      }}
+                    >
+                      {step.number}
+                    </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
+                        {step.title}
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: '#6b7280', mb: 2, lineHeight: 1.7 }}>
+                        {step.description}
+                      </Typography>
+                      <List dense>
+                        {step.details.map((detail, i) => (
+                          <ListItem key={i} sx={{ px: 0, py: 0.5 }}>
+                            <ListItemIcon sx={{ minWidth: 28 }}>
+                              <CheckCircle sx={{ fontSize: 16, color: '#6366f1' }} />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={detail}
+                              primaryTypographyProps={{
+                                fontSize: '0.9rem',
+                                color: '#6b7280'
+                              }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  </Box>
                 </Box>
               </Grid>
             ))}
@@ -453,10 +752,10 @@ export default function LandingPage() {
                 fontSize: { xs: '2rem', md: '2.5rem' }
               }}
             >
-              Ready to Transform Your Sales Process?
+              Ready to 10x Your Lead Qualification?
             </Typography>
             <Typography variant="h6" sx={{ mb: 4, opacity: 0.9, lineHeight: 1.7 }}>
-              Join thousands of companies using SpeakSynth AI to qualify leads, transfer calls, and close deals faster
+              Join thousands of companies using SpeakSynth AI to qualify leads 24/7, transfer hot prospects instantly, and never miss a callback
             </Typography>
             <Button
               variant="contained"
@@ -483,7 +782,7 @@ export default function LandingPage() {
               Start Free Trial
             </Button>
             <Typography variant="body2" sx={{ mt: 3, opacity: 0.7 }}>
-              No credit card required • 14-day free trial • Cancel anytime
+              No credit card required • 14-day free trial • Setup in 5 minutes • Cancel anytime
             </Typography>
           </Box>
         </Container>

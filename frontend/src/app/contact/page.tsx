@@ -95,7 +95,7 @@ export default function ContactPage() {
                                             Email
                                         </Typography>
                                         <Typography variant="body1" sx={{ color: '#111827', fontWeight: 600 }}>
-                                            support@aivoiceagent.com
+                                            hello@speaksynthai.com
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -127,7 +127,7 @@ export default function ContactPage() {
                                             Office
                                         </Typography>
                                         <Typography variant="body1" sx={{ color: '#111827', fontWeight: 600 }}>
-                                            San Francisco, CA
+                                            India
                                         </Typography>
                                     </Box>
                                 </Box>
