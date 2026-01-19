@@ -614,6 +614,9 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
         # --- 3. Response Generation ---
         provider = "cartesia"
         
+        # DEBUG: Log agent state before intelligent agent check
+        logger.info(f"🔍 Agent state check - autonomous_agent: {state.autonomous_agent is not None}, custom_agent_id: {state.custom_agent_id}")
+        
         if state.autonomous_agent:
             # --- INTELLIGENT AGENT WITH TOOL CALLING ---
             from app.agent.autonomous.executor import AgentExecutor
