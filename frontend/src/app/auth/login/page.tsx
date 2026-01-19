@@ -42,7 +42,7 @@ export default function LoginPage() {
     try {
       const response = await authAPI.login(username, password);
       localStorage.setItem('token', response.data.access_token);
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Invalid credentials');
     } finally {
@@ -55,7 +55,7 @@ export default function LoginPage() {
     try {
       const response = await authAPI.googleAuth(credentialResponse.credential);
       localStorage.setItem('token', response.data.access_token);
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: any) {
       setError('Google authentication failed');
     } finally {

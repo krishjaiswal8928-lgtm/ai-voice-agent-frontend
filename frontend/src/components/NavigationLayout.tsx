@@ -176,7 +176,7 @@ export function NavigationLayout({
           <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
               <Box
-                onClick={() => router.push('/')}
+                onClick={() => router.push('/dashboard')}
                 sx={{
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -248,8 +248,8 @@ export function NavigationLayout({
             </Box>
 
             <MenuItem
-              onClick={() => handleNavigation('/')}
-              className={pathname === '/' ? 'active' : ''}
+              onClick={() => handleNavigation('/dashboard')}
+              className={pathname === '/dashboard' ? 'active' : ''}
               sx={{
                 py: 2,
                 px: sidebarOpen ? 3 : 2,
@@ -263,7 +263,7 @@ export function NavigationLayout({
                 justifyContent: sidebarOpen ? 'flex-start' : 'center',
                 display: 'flex',
                 alignItems: 'center',
-                ...(pathname === '/' && {
+                ...(pathname === '/dashboard' && {
                   background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%)',
                   boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
                   '&::after': {

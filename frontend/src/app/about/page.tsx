@@ -3,10 +3,14 @@
 import React from 'react';
 import { Box, Typography, Container, Grid, Card, CardContent, Avatar } from '@mui/material';
 import { Business, Speed, Security, Support } from '@mui/icons-material';
+import { LandingNav } from '@/components/LandingNav';
+import { Footer } from '@/components/Footer';
+import '../styles/animations.css';
 
 export default function AboutPage() {
     return (
-        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 8 }}>
+        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+            <LandingNav />
             <Container maxWidth="lg">
                 <Box sx={{ textAlign: 'center', mb: 8 }}>
                     <Typography variant="h2" sx={{ fontWeight: 700, mb: 2, color: '#111827' }}>
@@ -127,6 +131,8 @@ export default function AboutPage() {
                     </Grid>
                 </Grid>
             </Container>
+
+            <Footer />
         </Box>
     );
 }

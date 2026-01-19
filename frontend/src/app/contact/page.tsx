@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { Box, Typography, Container, Card, CardContent, TextField, Button, Grid, Snackbar, Alert } from '@mui/material';
 import { Email, Phone, LocationOn } from '@mui/icons-material';
+import { LandingNav } from '@/components/LandingNav';
+import { Footer } from '@/components/Footer';
+import '../styles/animations.css';
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -15,7 +18,8 @@ export default function ContactPage() {
     };
 
     return (
-        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh', py: 8 }}>
+        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+            <LandingNav />
             <Container maxWidth="lg">
                 <Box sx={{ textAlign: 'center', mb: 8 }}>
                     <Typography variant="h2" sx={{ fontWeight: 700, mb: 2, color: '#111827' }}>
@@ -140,6 +144,8 @@ export default function ContactPage() {
                     <Alert severity="success">{snackbar.message}</Alert>
                 </Snackbar>
             </Container>
+
+            <Footer />
         </Box>
     );
 }

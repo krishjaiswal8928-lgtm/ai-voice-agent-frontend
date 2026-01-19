@@ -4,12 +4,16 @@ import React from 'react';
 import { Box, Typography, Button, Container, Grid, Card, CardContent, Chip } from '@mui/material';
 import { Phone, AutoAwesome, TrendingUp, Speed, Security, Support } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { LandingNav } from '@/components/LandingNav';
+import { Footer } from '@/components/Footer';
+import '../styles/animations.css';
 
 export default function HomePage() {
     const router = useRouter();
 
     return (
         <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+            <LandingNav />
             {/* Hero Section */}
             <Box sx={{
                 background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
@@ -231,6 +235,8 @@ export default function HomePage() {
                     </Typography>
                 </Container>
             </Box>
+
+            <Footer />
         </Box>
     );
 }
