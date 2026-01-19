@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Container, Grid, Card, CardContent, Chip, Avatar, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Typography, Button, Container, Grid, Card, CardContent, Chip, Avatar, List, ListItem, ListItemIcon, ListItemText, LinearProgress } from '@mui/material';
 import {
   AutoAwesome,
   Speed,
   Security,
   TrendingUp,
   PhoneInTalk,
-  SmartToy,
   CheckCircle,
   ArrowForward,
   Star,
@@ -21,7 +20,11 @@ import {
   LocalHospital,
   School,
   Storefront,
-  HeadsetMic
+  HeadsetMic,
+  RecordVoiceOver,
+  Psychology,
+  Insights,
+  TrendingUpOutlined
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { LandingNav } from '@/components/LandingNav';
@@ -30,7 +33,8 @@ import '@/styles/animations.css';
 
 export default function LandingPage() {
   const router = useRouter();
-  const [stats, setStats] = useState({ calls: 0, users: 0, accuracy: 0 });
+  const [stats, setStats] = useState({ calls: 0, users: 0, accuracy: 0, qualified: 0 });
+  const [activeDemo, setActiveDemo] = useState(0);
 
   // Count-up animation for stats
   useEffect(() => {
@@ -38,18 +42,20 @@ export default function LandingPage() {
     const steps = 60;
     const interval = duration / steps;
 
-    const targets = { calls: 1000000, users: 5000, accuracy: 98 };
-    let current = { calls: 0, users: 0, accuracy: 0 };
+    const targets = { calls: 1000000, users: 5000, accuracy: 98, qualified: 85 };
+    let current = { calls: 0, users: 0, accuracy: 0, qualified: 0 };
 
     const timer = setInterval(() => {
       current.calls = Math.min(current.calls + targets.calls / steps, targets.calls);
       current.users = Math.min(current.users + targets.users / steps, targets.users);
       current.accuracy = Math.min(current.accuracy + targets.accuracy / steps, targets.accuracy);
+      current.qualified = Math.min(current.qualified + targets.qualified / steps, targets.qualified);
 
       setStats({
         calls: Math.floor(current.calls),
         users: Math.floor(current.users),
-        accuracy: Math.floor(current.accuracy)
+        accuracy: Math.floor(current.accuracy),
+        qualified: Math.floor(current.qualified)
       });
 
       if (current.calls >= targets.calls) clearInterval(timer);
@@ -58,77 +64,118 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Demo conversation rotation
+  useEffect(() => {
+    const demoTimer = setInterval(() => {
+      setActiveDemo((prev) => (prev + 1) % 3);
+    }, 4000);
+    return () => clearInterval(demoTimer);
+  }, []);
+
+  const demoConversations = [
+    {
+      lead: "Hi, I'm interested in your product",
+      ai: "Great! Let me understand your needs. What's your current challenge?",
+      action: "🎯 Qualifying lead...",
+      color: '#6366f1'
+    },
+    {
+      lead: "I need this urgently for my team",
+      ai: "Perfect timing! I can connect you with our sales specialist right now.",
+      action: "📞 Transferring to sales...",
+      color: '#22c55e'
+    },
+    {
+      lead: "Can we discuss this next week?",
+      ai: "Absolutely! What day and time works best for you?",
+      action: "📅 Scheduling callback...",
+      color: '#f59e0b'
+    }
+  ];
+
   const features = [
     {
       icon: <PersonSearch sx={{ fontSize: 48 }} />,
-      title: 'AI Lead Qualification',
-      description: 'Automatically qualify leads using BANT criteria (Budget, Authority, Need, Timeline). Our AI detects buying signals, asks qualifying questions, and scores leads 1-10 based on conversion probability.',
+      title: 'BANT Lead Qualification',
+      description: 'Automatically qualify every lead using the proven BANT framework (Budget, Authority, Need, Timeline). Our AI asks intelligent questions, detects buying signals, and scores leads 1-10 in real-time.',
       color: '#6366f1',
       details: [
-        'BANT framework qualification',
-        'Real-time lead scoring (1-10)',
-        'Buying signal detection',
-        'Custom qualification criteria'
+        'Budget assessment through conversational questions',
+        'Authority identification (decision-maker detection)',
+        'Need analysis with pain point discovery',
+        'Timeline evaluation for purchase readiness',
+        'Real-time lead scoring (1-10 scale)',
+        'Custom qualification criteria support'
       ]
     },
     {
       icon: <CallSplit sx={{ fontSize: 48 }} />,
-      title: 'Smart Call Transfers',
-      description: 'Transfer hot leads to your sales team instantly. Choose between warm transfers (AI introduces the lead) or cold transfers (direct connection). Automatic agent selection based on availability and expertise.',
+      title: 'Intelligent Call Transfers',
+      description: 'Transfer qualified leads to your sales team instantly with full context. Choose warm transfers (AI introduces the lead) or cold transfers (direct connection). Smart agent routing based on availability, expertise, and lead score.',
       color: '#22c55e',
       details: [
-        'Warm & cold transfer options',
-        'Automatic agent routing',
-        'Lead context handoff',
-        'Transfer success tracking'
+        'Warm transfers with AI introduction',
+        'Cold transfers for immediate connection',
+        'Automatic agent selection by expertise',
+        'Round-robin or priority-based routing',
+        'Lead context handoff (notes, score, history)',
+        'Transfer success tracking & analytics'
       ]
     },
     {
       icon: <Schedule sx={{ fontSize: 48 }} />,
-      title: 'Intelligent Call Scheduling',
-      description: 'Schedule callbacks automatically when leads aren\'t ready to buy now. AI captures preferred time slots, adds context notes, and assigns to the best-fit agent. Automatic calendar integration.',
+      title: 'Smart Callback Scheduling',
+      description: 'Schedule callbacks automatically when leads aren\'t ready to buy now. AI captures preferred time slots, timezone detection, adds conversation context, and assigns to the best-fit agent. Automatic calendar integration with reminders.',
       color: '#f59e0b',
       details: [
-        'Automatic callback scheduling',
-        'Calendar integration',
-        'Lead context preservation',
-        'Smart agent assignment'
+        'Natural language time slot capture',
+        'Automatic timezone detection',
+        'Calendar integration (Google, Outlook)',
+        'Smart agent assignment',
+        'Context preservation (conversation notes)',
+        'Automated reminder notifications'
       ]
     },
     {
-      icon: <Assessment sx={{ fontSize: 48 }} />,
-      title: 'Real-Time Analytics',
-      description: 'Track qualification rates, transfer success, callback completion, and agent performance in real-time. Get insights into conversion patterns and optimize your sales process.',
+      icon: <Psychology sx={{ fontSize: 48 }} />,
+      title: 'AI Conversation Intelligence',
+      description: 'Advanced NLP analyzes every conversation to detect sentiment, buying signals, objections, and competitor mentions. Real-time insights help your AI agent adapt and improve qualification accuracy.',
       color: '#8b5cf6',
       details: [
-        'Live call monitoring',
-        'Conversion tracking',
-        'Performance dashboards',
-        'ROI analytics'
+        'Sentiment analysis (positive/negative/neutral)',
+        'Buying signal detection',
+        'Objection handling suggestions',
+        'Competitor mention alerts',
+        'Intent classification',
+        'Conversation quality scoring'
       ]
     },
     {
-      icon: <PhoneInTalk sx={{ fontSize: 48 }} />,
-      title: 'Multi-Provider Support',
-      description: 'Works seamlessly with Twilio and any SIP trunking provider (3CX, FreePBX, Ziwo, Asterisk). Use your existing phone infrastructure without vendor lock-in.',
+      icon: <Insights sx={{ fontSize: 48 }} />,
+      title: 'Real-Time Analytics Dashboard',
+      description: 'Track qualification rates, transfer success, callback completion, and agent performance in real-time. Get actionable insights into conversion patterns, peak call times, and ROI metrics.',
       color: '#ef4444',
       details: [
-        'Twilio integration',
-        'Universal SIP support',
-        'No vendor lock-in',
-        'Easy migration'
+        'Live call monitoring dashboard',
+        'Qualification rate tracking',
+        'Conversion funnel analytics',
+        'Agent performance metrics',
+        'Peak time analysis',
+        'ROI calculation & reporting'
       ]
     },
     {
-      icon: <SmartToy sx={{ fontSize: 48 }} />,
-      title: 'Custom AI Agents',
-      description: 'Create reusable autonomous AI agents with custom goals, conversation flows, and qualification criteria. Train agents for different campaigns and industries.',
+      icon: <RecordVoiceOver sx={{ fontSize: 48 }} />,
+      title: 'Custom Voice & Personality',
+      description: 'Create unique AI agents with custom voices, personalities, and conversation flows. Train agents for different campaigns, industries, and customer segments. Multi-language support with natural accents.',
       color: '#22d3ee',
       details: [
-        'Custom conversation flows',
+        'Custom voice selection (male/female)',
+        'Personality customization',
         'Industry-specific training',
-        'Multi-language support',
-        'Voice customization'
+        'Multi-language support (50+ languages)',
+        'Natural accent options',
+        'Brand tone alignment'
       ]
     }
   ];
@@ -136,101 +183,68 @@ export default function LandingPage() {
   const useCases = [
     {
       icon: <Business />,
-      industry: 'B2B Sales',
+      industry: 'B2B SaaS',
       title: 'Enterprise Lead Qualification',
-      description: 'Qualify enterprise leads 24/7, identify decision-makers, and schedule demos with qualified prospects automatically.',
-      results: '3x more qualified leads, 60% time saved'
+      description: 'Qualify enterprise leads 24/7, identify decision-makers using BANT criteria, schedule demos with qualified prospects, and transfer hot leads to account executives automatically.',
+      results: '3x more qualified leads, 60% time saved, 45% higher conversion rate',
+      metrics: { qualified: 85, transferred: 42, scheduled: 38 }
     },
     {
       icon: <Storefront />,
       industry: 'E-commerce',
       title: 'Customer Support & Upsells',
-      description: 'Handle order inquiries, qualify upsell opportunities, and transfer high-value customers to sales specialists.',
-      results: '40% increase in upsell conversions'
+      description: 'Handle order inquiries, qualify upsell opportunities based on purchase history, transfer high-value customers to sales specialists, and schedule follow-up calls for abandoned carts.',
+      results: '40% increase in upsell conversions, 70% faster response time',
+      metrics: { qualified: 78, transferred: 35, scheduled: 45 }
     },
     {
       icon: <LocalHospital />,
       industry: 'Healthcare',
       title: 'Patient Appointment Scheduling',
-      description: 'Schedule appointments, qualify patient needs, and route urgent cases to appropriate medical staff.',
-      results: '80% reduction in scheduling time'
+      description: 'Schedule appointments 24/7, qualify patient needs and urgency, route urgent cases to appropriate medical staff, send automated appointment reminders, and handle rescheduling requests.',
+      results: '80% reduction in scheduling time, 95% appointment show-up rate',
+      metrics: { qualified: 92, transferred: 15, scheduled: 73 }
     },
     {
       icon: <School />,
       industry: 'Education',
       title: 'Student Enrollment & Counseling',
-      description: 'Qualify prospective students, answer program questions, and schedule counseling sessions automatically.',
-      results: '50% more enrollments per quarter'
-    }
-  ];
-
-  const workflowSteps = [
-    {
-      number: '01',
-      title: 'Configure Your AI Agent',
-      description: 'Set up your AI agent in minutes with our intuitive interface',
-      details: [
-        'Define qualification criteria (BANT, custom questions)',
-        'Set conversation goals (qualify, transfer, schedule)',
-        'Customize voice and personality',
-        'Add your product/service knowledge base'
-      ]
-    },
-    {
-      number: '02',
-      title: 'Connect Your Phone System',
-      description: 'Integrate with your existing phone infrastructure seamlessly',
-      details: [
-        'Connect Twilio account or SIP trunk',
-        'Import or purchase phone numbers',
-        'Configure call routing rules',
-        'Set up agent availability schedules'
-      ]
-    },
-    {
-      number: '03',
-      title: 'Launch & Monitor',
-      description: 'Go live and watch your AI agent qualify leads automatically',
-      details: [
-        'Start receiving/making calls immediately',
-        'Monitor live calls in real-time dashboard',
-        'Review call transcripts and recordings',
-        'Track qualification rates and conversions'
-      ]
-    },
-    {
-      number: '04',
-      title: 'Optimize & Scale',
-      description: 'Use analytics to improve performance and scale your operations',
-      details: [
-        'Analyze conversion patterns',
-        'A/B test different conversation flows',
-        'Train agents with successful examples',
-        'Scale to handle unlimited concurrent calls'
-      ]
+      description: 'Qualify prospective students using custom criteria, answer program questions, schedule counseling sessions automatically, transfer interested students to admissions, and follow up on applications.',
+      results: '50% more enrollments per quarter, 65% faster response time',
+      metrics: { qualified: 88, transferred: 40, scheduled: 48 }
     }
   ];
 
   const qualificationProcess = [
     {
       step: 'Initial Engagement',
-      description: 'AI greets the lead, introduces your company, and builds rapport naturally'
+      description: 'AI greets the lead warmly, introduces your company professionally, and builds rapport through natural conversation',
+      icon: <PhoneInTalk />,
+      example: '"Hi! Thanks for calling SpeakSynth AI. I\'m here to help you find the perfect solution. May I ask your name?"'
     },
     {
       step: 'Need Discovery',
-      description: 'Asks targeted questions to understand the lead\'s pain points and requirements'
+      description: 'Asks targeted, open-ended questions to understand the lead\'s pain points, current situation, and desired outcomes',
+      icon: <PersonSearch />,
+      example: '"What challenges are you currently facing with lead qualification? What would an ideal solution look like for you?"'
     },
     {
       step: 'BANT Qualification',
-      description: 'Evaluates Budget, Authority, Need, and Timeline through conversational questions'
+      description: 'Evaluates Budget, Authority, Need, and Timeline through conversational, non-pushy questions',
+      icon: <Assessment />,
+      example: '"Do you have a budget allocated for this? Are you the decision-maker, or should we include others in the conversation?"'
     },
     {
       step: 'Lead Scoring',
-      description: 'Assigns a score (1-10) based on qualification criteria and buying signals'
+      description: 'Assigns a qualification score (1-10) based on BANT criteria, buying signals, and conversation quality',
+      icon: <TrendingUpOutlined />,
+      example: 'Score: 8/10 - High Budget ✓ Decision Maker ✓ Urgent Need ✓ Timeline: This Quarter ✓'
     },
     {
       step: 'Smart Routing',
-      description: 'Hot leads (8-10) → Instant transfer | Warm leads (5-7) → Schedule callback | Cold leads (1-4) → Nurture sequence'
+      description: 'Routes leads based on score: Hot leads (8-10) → Instant transfer | Warm leads (5-7) → Schedule callback | Cold leads (1-4) → Nurture sequence',
+      icon: <CallSplit />,
+      example: 'Hot Lead Detected! Transferring to Sarah (Top Sales Rep) with full context...'
     }
   ];
 
@@ -238,7 +252,7 @@ export default function LandingPage() {
     <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <LandingNav />
 
-      {/* Hero Section */}
+      {/* Hero Section with Live Demo */}
       <Box
         sx={{
           position: 'relative',
@@ -252,7 +266,7 @@ export default function LandingPage() {
         }}
         className="gradient-shift"
       >
-        {/* Floating orbs */}
+        {/* Animated Background Orbs */}
         <Box
           sx={{
             position: 'absolute',
@@ -284,18 +298,20 @@ export default function LandingPage() {
 
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={7}>
+            <Grid item xs={12} md={6}>
               <Box className="fade-in-left">
                 <Chip
-                  label="🚀 AI-Powered Voice Automation Platform"
+                  label="🚀 AI-Powered Lead Qualification Platform"
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.2)',
                     color: '#ffffff',
                     fontWeight: 600,
                     mb: 3,
                     backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.3)'
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    animation: 'pulse 2s ease-in-out infinite'
                   }}
+                  className="pulse"
                 />
                 <Typography
                   variant="h1"
@@ -307,7 +323,7 @@ export default function LandingPage() {
                     textShadow: '0 4px 20px rgba(0,0,0,0.2)'
                   }}
                 >
-                  Qualify Leads, Transfer Calls & Schedule Callbacks Automatically
+                  Qualify Leads Automatically with AI Voice Agents
                 </Typography>
                 <Typography
                   variant="h5"
@@ -319,7 +335,7 @@ export default function LandingPage() {
                     fontWeight: 400
                   }}
                 >
-                  Your AI-powered sales assistant that works 24/7 to qualify leads using BANT criteria, transfer hot prospects to your team, and schedule callbacks intelligently
+                  Your AI-powered sales assistant works 24/7 to qualify leads using BANT criteria, transfer hot prospects instantly, and schedule callbacks intelligently
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
                   <Button
@@ -379,42 +395,125 @@ export default function LandingPage() {
                 </Box>
               </Box>
             </Grid>
-            <Grid item xs={12} md={5}>
+
+            {/* Live Demo Conversation */}
+            <Grid item xs={12} md={6}>
               <Box
                 className="fade-in-right delay-300"
                 sx={{
-                  position: 'relative',
-                  display: { xs: 'none', md: 'block' }
+                  position: 'relative'
                 }}
               >
-                <Box
+                <Card
                   sx={{
-                    bgcolor: 'rgba(255,255,255,0.1)',
+                    bgcolor: 'rgba(255,255,255,0.95)',
                     backdropFilter: 'blur(20px)',
                     borderRadius: '24px',
-                    p: 4,
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+                    p: 3,
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                    minHeight: '320px'
                   }}
                   className="float"
                 >
-                  <HeadsetMic sx={{ fontSize: 120, opacity: 0.9 }} />
-                </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar sx={{ bgcolor: '#6366f1', mr: 2, width: 56, height: 56 }}>
+                      <HeadsetMic sx={{ fontSize: 32 }} />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#111827' }}>
+                        AI Voice Agent
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22c55e', animation: 'pulse 2s ease-in-out infinite' }} />
+                        <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                          Live Demo
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ mb: 3 }}>
+                    <Box
+                      sx={{
+                        bgcolor: '#f3f4f6',
+                        p: 2,
+                        borderRadius: '12px',
+                        mb: 2,
+                        animation: 'fadeInLeft 0.5s ease-out'
+                      }}
+                      className="fade-in-left"
+                    >
+                      <Typography variant="body2" sx={{ color: '#6b7280', mb: 0.5 }}>
+                        Lead
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: '#111827' }}>
+                        {demoConversations[activeDemo].lead}
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        bgcolor: '#6366f1',
+                        color: '#ffffff',
+                        p: 2,
+                        borderRadius: '12px',
+                        mb: 2,
+                        animation: 'fadeInRight 0.5s ease-out 0.3s both'
+                      }}
+                      className="fade-in-right delay-300"
+                    >
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                        AI Agent
+                      </Typography>
+                      <Typography variant="body1">
+                        {demoConversations[activeDemo].ai}
+                      </Typography>
+                    </Box>
+
+                    <Chip
+                      label={demoConversations[activeDemo].action}
+                      sx={{
+                        bgcolor: demoConversations[activeDemo].color,
+                        color: '#ffffff',
+                        fontWeight: 600,
+                        animation: 'pulse 2s ease-in-out infinite'
+                      }}
+                      className="pulse"
+                    />
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                    {[0, 1, 2].map((i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: activeDemo === i ? 24 : 8,
+                          height: 8,
+                          borderRadius: '4px',
+                          bgcolor: activeDemo === i ? '#6366f1' : '#d1d5db',
+                          transition: 'all 0.3s'
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Card>
               </Box>
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* Stats Section */}
+      {/* Stats Section with Progress Bars */}
       <Container maxWidth="lg" sx={{ mt: -6, position: 'relative', zIndex: 2 }}>
         <Grid container spacing={3}>
           {[
-            { label: 'Calls Processed', value: stats.calls.toLocaleString() + '+', icon: <PhoneInTalk /> },
-            { label: 'Happy Customers', value: stats.users.toLocaleString() + '+', icon: <Star /> },
-            { label: 'Qualification Accuracy', value: stats.accuracy + '%', icon: <CheckCircle /> }
+            { label: 'Calls Processed', value: stats.calls.toLocaleString() + '+', icon: <PhoneInTalk />, progress: 100 },
+            { label: 'Happy Customers', value: stats.users.toLocaleString() + '+', icon: <Star />, progress: 100 },
+            { label: 'Qualification Accuracy', value: stats.accuracy + '%', icon: <CheckCircle />, progress: stats.accuracy },
+            { label: 'Leads Qualified', value: stats.qualified + '%', icon: <TrendingUpOutlined />, progress: stats.qualified }
           ].map((stat, index) => (
-            <Grid item xs={12} md={4} key={index}>
+            <Grid item xs={12} sm={6} md={3} key={index}>
               <Card
                 className={`fade-in-up delay-${(index + 1) * 100}`}
                 sx={{
@@ -429,24 +528,37 @@ export default function LandingPage() {
                   }
                 }}
               >
-                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
                   <Avatar
                     sx={{
                       bgcolor: 'rgba(99, 102, 241, 0.1)',
-                      width: 64,
-                      height: 64,
+                      width: 56,
+                      height: 56,
                       mx: 'auto',
                       mb: 2
                     }}
                   >
-                    {React.cloneElement(stat.icon, { sx: { fontSize: 32, color: '#6366f1' } })}
+                    {React.cloneElement(stat.icon, { sx: { fontSize: 28, color: '#6366f1' } })}
                   </Avatar>
                   <Typography variant="h3" sx={{ fontWeight: 800, color: '#111827', mb: 1 }}>
                     {stat.value}
                   </Typography>
-                  <Typography variant="body1" sx={{ color: '#6b7280', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ color: '#6b7280', fontWeight: 500, mb: 2 }}>
                     {stat.label}
                   </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={stat.progress}
+                    sx={{
+                      height: 6,
+                      borderRadius: 3,
+                      bgcolor: '#e5e7eb',
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: '#6366f1',
+                        borderRadius: 3
+                      }
+                    }}
+                  />
                 </CardContent>
               </Card>
             </Grid>
@@ -454,7 +566,7 @@ export default function LandingPage() {
         </Grid>
       </Container>
 
-      {/* Lead Qualification Process */}
+      {/* Lead Qualification Process with Examples */}
       <Container maxWidth="lg" sx={{ py: 12 }}>
         <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
           <Chip label="HOW IT QUALIFIES" sx={{ bgcolor: '#6366f1', color: '#ffffff', mb: 2, fontWeight: 600 }} />
@@ -467,48 +579,66 @@ export default function LandingPage() {
               fontSize: { xs: '2rem', md: '2.5rem' }
             }}
           >
-            Intelligent Lead Qualification Process
+            5-Step Lead Qualification Process
           </Typography>
           <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: 700, mx: 'auto' }}>
-            Our AI follows a proven 5-step process to qualify every lead and route them intelligently
+            Our AI follows a proven methodology to qualify every lead and route them intelligently
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           {qualificationProcess.map((item, index) => (
             <Grid item xs={12} key={index}>
               <Card
                 className={`fade-in-up delay-${(index + 1) * 100}`}
                 sx={{
                   border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
+                  borderRadius: '16px',
                   transition: 'all 0.3s',
+                  overflow: 'hidden',
                   '&:hover': {
                     borderColor: '#6366f1',
-                    boxShadow: '0 8px 24px rgba(99,102,241,0.15)'
+                    boxShadow: '0 12px 40px rgba(99,102,241,0.15)',
+                    transform: 'translateX(8px)'
                   }
                 }}
               >
-                <CardContent sx={{ p: 3 }}>
+                <CardContent sx={{ p: 4 }}>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
-                    <Chip
-                      label={index + 1}
+                    <Avatar
                       sx={{
                         bgcolor: '#6366f1',
-                        color: '#ffffff',
-                        fontWeight: 700,
-                        fontSize: '1.2rem',
-                        width: 48,
-                        height: 48
+                        width: 64,
+                        height: 64,
+                        fontSize: '1.5rem',
+                        fontWeight: 700
                       }}
-                    />
+                    >
+                      {index + 1}
+                    </Avatar>
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
-                        {item.step}
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
+                          {item.step}
+                        </Typography>
+                        {React.cloneElement(item.icon, { sx: { color: '#6366f1' } })}
+                      </Box>
+                      <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7, mb: 3 }}>
                         {item.description}
                       </Typography>
+                      <Box
+                        sx={{
+                          bgcolor: '#f0fdf4',
+                          border: '1px solid #22c55e',
+                          borderLeft: '4px solid #22c55e',
+                          p: 2,
+                          borderRadius: '8px'
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#166534', fontStyle: 'italic' }}>
+                          💬 Example: "{item.example}"
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
                 </CardContent>
@@ -518,7 +648,7 @@ export default function LandingPage() {
         </Grid>
       </Container>
 
-      {/* Features Section */}
+      {/* Features Section with Detailed Lists */}
       <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
@@ -532,10 +662,10 @@ export default function LandingPage() {
                 fontSize: { xs: '2rem', md: '2.5rem' }
               }}
             >
-              Everything You Need to Automate Sales
+              Everything You Need to Automate Lead Qualification
             </Typography>
             <Typography variant="h6" sx={{ color: '#6b7280', maxWidth: 600, mx: 'auto' }}>
-              Comprehensive features designed to qualify leads, transfer calls, and schedule callbacks automatically
+              Comprehensive features designed to qualify, transfer, and schedule with precision
             </Typography>
           </Box>
 
@@ -550,8 +680,8 @@ export default function LandingPage() {
                     borderRadius: '16px',
                     transition: 'all 0.3s',
                     '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: `0 20px 60px ${feature.color}30`,
+                      transform: 'translateY(-12px)',
+                      boxShadow: `0 24px 60px ${feature.color}30`,
                       borderColor: feature.color
                     }
                   }}
@@ -599,7 +729,7 @@ export default function LandingPage() {
         </Container>
       </Box>
 
-      {/* Use Cases Section */}
+      {/* Use Cases with Metrics */}
       <Container maxWidth="lg" sx={{ py: 12 }}>
         <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
           <Chip label="USE CASES" sx={{ bgcolor: '#f59e0b', color: '#ffffff', mb: 2, fontWeight: 600 }} />
@@ -630,24 +760,61 @@ export default function LandingPage() {
                   borderRadius: '16px',
                   transition: 'all 0.3s',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 12px 40px rgba(0,0,0,0.1)'
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 16px 48px rgba(0,0,0,0.12)'
                   }
                 }}
               >
                 <CardContent sx={{ p: 4 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: '#6366f1', mr: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar sx={{ bgcolor: '#6366f1', mr: 2, width: 56, height: 56 }}>
                       {useCase.icon}
                     </Avatar>
-                    <Chip label={useCase.industry} sx={{ bgcolor: '#f3f4f6', fontWeight: 600 }} />
+                    <Box>
+                      <Chip label={useCase.industry} sx={{ bgcolor: '#f3f4f6', fontWeight: 600, mb: 1 }} />
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
+                        {useCase.title}
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#111827' }}>
-                    {useCase.title}
-                  </Typography>
                   <Typography variant="body1" sx={{ color: '#6b7280', lineHeight: 1.7, mb: 3 }}>
                     {useCase.description}
                   </Typography>
+
+                  {/* Metrics */}
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid item xs={4}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: '8px' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#6366f1' }}>
+                          {useCase.metrics.qualified}%
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                          Qualified
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: '8px' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#22c55e' }}>
+                          {useCase.metrics.transferred}%
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                          Transferred
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f9fafb', borderRadius: '8px' }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                          {useCase.metrics.scheduled}%
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                          Scheduled
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
                   <Box sx={{ bgcolor: '#f0fdf4', p: 2, borderRadius: '8px', borderLeft: '4px solid #22c55e' }}>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: '#166534' }}>
                       📈 Results: {useCase.results}
@@ -659,81 +826,6 @@ export default function LandingPage() {
           ))}
         </Grid>
       </Container>
-
-      {/* How It Works Section */}
-      <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
-            <Chip label="SIMPLE SETUP" sx={{ bgcolor: '#8b5cf6', color: '#ffffff', mb: 2, fontWeight: 600 }} />
-            <Typography
-              variant="h2"
-              sx={{
-                fontWeight: 800,
-                mb: 2,
-                color: '#111827',
-                fontSize: { xs: '2rem', md: '2.5rem' }
-              }}
-            >
-              Get Started in 4 Simple Steps
-            </Typography>
-            <Typography variant="h6" sx={{ color: '#6b7280' }}>
-              From setup to your first qualified lead in under 10 minutes
-            </Typography>
-          </Box>
-
-          <Grid container spacing={6}>
-            {workflowSteps.map((step, index) => (
-              <Grid item xs={12} md={6} key={index}>
-                <Box
-                  className={`fade-in-up delay-${(index + 1) * 200}`}
-                >
-                  <Box sx={{ display: 'flex', gap: 3 }}>
-                    <Typography
-                      variant="h1"
-                      sx={{
-                        fontWeight: 900,
-                        fontSize: '4rem',
-                        background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        opacity: 0.3,
-                        lineHeight: 1
-                      }}
-                    >
-                      {step.number}
-                    </Typography>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
-                        {step.title}
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: '#6b7280', mb: 2, lineHeight: 1.7 }}>
-                        {step.description}
-                      </Typography>
-                      <List dense>
-                        {step.details.map((detail, i) => (
-                          <ListItem key={i} sx={{ px: 0, py: 0.5 }}>
-                            <ListItemIcon sx={{ minWidth: 28 }}>
-                              <CheckCircle sx={{ fontSize: 16, color: '#6366f1' }} />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={detail}
-                              primaryTypographyProps={{
-                                fontSize: '0.9rem',
-                                color: '#6b7280'
-                              }}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </Box>
-                  </Box>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
 
       {/* CTA Section */}
       <Box
