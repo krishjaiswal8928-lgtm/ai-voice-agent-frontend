@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Box, Button, IconButton, Drawer, List, ListItem, ListItemButton, ListItemText, Container } from '@mui/material';
-import { Menu as MenuIcon, Close } from '@mui/icons-material';
+import { AppBar, Toolbar, Box, Button, IconButton, Drawer, List, ListItem, ListItemButton, ListItemText, Container, Menu, MenuItem as MuiMenuItem } from '@mui/material';
+import { Menu as MenuIcon, Close, KeyboardArrowDown } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function LandingNav() {
@@ -10,6 +10,7 @@ export function LandingNav() {
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [productAnchor, setProductAnchor] = useState<null | HTMLElement>(null);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -30,9 +31,17 @@ export function LandingNav() {
         setMobileOpen(!mobileOpen);
     };
 
+    const handleProductClick = (event: React.MouseEvent<HTMLElement>) => {
+        setProductAnchor(event.currentTarget);
+    };
+
+    const handleProductClose = () => {
+        setProductAnchor(null);
+    };
+
     const drawer = (
         <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center', bgcolor: '#ffffff', height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, borderBottom: '1px solid #e5e7eb' }}>
                 <Box sx={{ fontWeight: 700, fontSize: '1.5rem', display: 'flex', alignItems: 'center' }}>
                     <span style={{ color: '#1c2e91ff' }}>Spe</span>
                     <span style={{ color: '#007f90ff' }}>a</span>
@@ -52,22 +61,23 @@ export function LandingNav() {
                             onClick={() => router.push(item.path)}
                             sx={{
                                 textAlign: 'center',
-                                bgcolor: pathname === item.path ? 'rgba(99, 102, 241, 0.1)' : 'transparent'
+                                bgcolor: pathname === item.path ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                                py: 2
                             }}
                         >
                             <ListItemText
                                 primary={item.label}
                                 sx={{
                                     color: pathname === item.path ? '#6366f1' : '#000000',
-                                    fontWeight: pathname === item.path ? 700 : 500
+                                    fontWeight: pathname === item.path ? 600 : 500
                                 }}
                             />
                         </ListItemButton>
                     </ListItem>
                 ))}
                 <ListItem disablePadding>
-                    <ListItemButton onClick={() => router.push('/auth/login')} sx={{ textAlign: 'center' }}>
-                        <ListItemText primary="Login" />
+                    <ListItemButton onClick={() => router.push('/auth/login')} sx={{ textAlign: 'center', py: 2 }}>
+                        <ListItemText primary="Login" sx={{ fontWeight: 500 }} />
                     </ListItemButton>
                 </ListItem>
                 <ListItem disablePadding sx={{ px: 2, mt: 1 }}>
@@ -76,14 +86,17 @@ export function LandingNav() {
                         variant="contained"
                         onClick={() => router.push('/auth/register')}
                         sx={{
-                            bgcolor: '#6366f1',
+                            bgcolor: '#000000',
                             color: '#ffffff',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             py: 1.5,
-                            '&:hover': { bgcolor: '#4f46e5' }
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            fontSize: '0.95rem',
+                            '&:hover': { bgcolor: '#1a1a1a' }
                         }}
                     >
-                        Sign Up
+                        Try For Free
                     </Button>
                 </ListItem>
             </List>
@@ -94,29 +107,29 @@ export function LandingNav() {
         <>
             <AppBar
                 position="fixed"
-                elevation={scrolled ? 4 : 0}
+                elevation={0}
                 sx={{
-                    bgcolor: scrolled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.8)',
-                    backdropFilter: 'blur(10px)',
-                    borderBottom: scrolled ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(0,0,0,0.05)',
+                    bgcolor: scrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(12px)',
+                    borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(0,0,0,0.05)',
                     transition: 'all 0.3s ease',
-                    boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.08)' : 'none'
+                    boxShadow: scrolled ? '0 2px 12px rgba(0,0,0,0.04)' : 'none'
                 }}
             >
-                <Container maxWidth="lg">
-                    <Toolbar sx={{ justifyContent: 'space-between', py: 1 }}>
+                <Container maxWidth="xl">
+                    <Toolbar sx={{ justifyContent: 'space-between', py: 1.5, px: { xs: 2, sm: 3 } }}>
                         {/* Logo */}
                         <Box
                             onClick={() => router.push('/')}
                             sx={{
                                 fontWeight: 700,
                                 cursor: 'pointer',
-                                fontSize: '1.75rem',
+                                fontSize: '1.5rem',
                                 display: 'flex',
                                 alignItems: 'center',
                                 fontFamily: 'inherit',
                                 transition: 'transform 0.2s',
-                                '&:hover': { transform: 'scale(1.05)' }
+                                '&:hover': { transform: 'scale(1.02)' }
                             }}
                         >
                             <span style={{ color: '#1c2e91ff' }}>Spe</span>
@@ -128,43 +141,94 @@ export function LandingNav() {
                         </Box>
 
                         {/* Desktop Navigation */}
-                        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-                            {navItems.map((item) => (
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
+                            {/* Product Dropdown */}
+                            <Button
+                                onClick={handleProductClick}
+                                endIcon={<KeyboardArrowDown sx={{ fontSize: 18 }} />}
+                                sx={{
+                                    color: '#374151',
+                                    fontWeight: 500,
+                                    px: 2,
+                                    py: 1,
+                                    textTransform: 'none',
+                                    fontSize: '0.95rem',
+                                    borderRadius: '8px',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(0, 0, 0, 0.04)'
+                                    }
+                                }}
+                            >
+                                Product
+                            </Button>
+                            <Menu
+                                anchorEl={productAnchor}
+                                open={Boolean(productAnchor)}
+                                onClose={handleProductClose}
+                                sx={{
+                                    '& .MuiPaper-root': {
+                                        borderRadius: '12px',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                        mt: 1,
+                                        minWidth: 200
+                                    }
+                                }}
+                            >
+                                <MuiMenuItem onClick={() => { router.push('/'); handleProductClose(); }} sx={{ py: 1.5, fontSize: '0.95rem' }}>
+                                    Overview
+                                </MuiMenuItem>
+                                <MuiMenuItem onClick={() => { router.push('/pricing'); handleProductClose(); }} sx={{ py: 1.5, fontSize: '0.95rem' }}>
+                                    Pricing
+                                </MuiMenuItem>
+                            </Menu>
+
+                            {navItems.slice(1).map((item) => (
                                 <Button
                                     key={item.path}
                                     onClick={() => router.push(item.path)}
                                     sx={{
-                                        color: pathname === item.path ? '#6366f1' : '#000000',
-                                        fontWeight: pathname === item.path ? 700 : 500,
+                                        color: pathname === item.path ? '#6366f1' : '#374151',
+                                        fontWeight: pathname === item.path ? 600 : 500,
                                         px: 2,
+                                        py: 1,
+                                        textTransform: 'none',
+                                        fontSize: '0.95rem',
+                                        borderRadius: '8px',
                                         position: 'relative',
                                         '&::after': pathname === item.path ? {
                                             content: '""',
                                             position: 'absolute',
-                                            bottom: 0,
+                                            bottom: 4,
                                             left: '50%',
                                             transform: 'translateX(-50%)',
-                                            width: '60%',
+                                            width: '24px',
                                             height: '2px',
                                             bgcolor: '#6366f1',
                                             borderRadius: '2px'
                                         } : {},
                                         '&:hover': {
-                                            bgcolor: 'rgba(99, 102, 241, 0.05)'
+                                            bgcolor: 'rgba(0, 0, 0, 0.04)'
                                         }
                                     }}
                                 >
                                     {item.label}
                                 </Button>
                             ))}
+                        </Box>
+
+                        {/* Right side buttons */}
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1.5 }}>
                             <Button
                                 onClick={() => router.push('/auth/login')}
                                 sx={{
-                                    color: '#000000',
+                                    color: '#374151',
                                     fontWeight: 500,
-                                    px: 2,
-                                    ml: 2,
-                                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.05)' }
+                                    px: 2.5,
+                                    py: 1,
+                                    textTransform: 'none',
+                                    fontSize: '0.95rem',
+                                    borderRadius: '8px',
+                                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
                                 }}
                             >
                                 Login
@@ -173,22 +237,24 @@ export function LandingNav() {
                                 variant="contained"
                                 onClick={() => router.push('/auth/register')}
                                 sx={{
-                                    bgcolor: '#6366f1',
+                                    bgcolor: '#000000',
                                     color: '#ffffff',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     px: 3,
-                                    py: 1,
+                                    py: 1.25,
+                                    textTransform: 'none',
+                                    fontSize: '0.95rem',
                                     borderRadius: '8px',
-                                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                                    boxShadow: 'none',
                                     '&:hover': {
-                                        bgcolor: '#4f46e5',
-                                        boxShadow: '0 6px 16px rgba(99, 102, 241, 0.4)',
-                                        transform: 'translateY(-2px)'
+                                        bgcolor: '#1a1a1a',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                        transform: 'translateY(-1px)'
                                     },
                                     transition: 'all 0.2s'
                                 }}
                             >
-                                Sign Up
+                                Try For Free
                             </Button>
                         </Box>
 
