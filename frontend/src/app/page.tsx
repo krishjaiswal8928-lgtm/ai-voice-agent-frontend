@@ -30,6 +30,21 @@ import '@/styles/animations.css';
 export default function LandingPage() {
     const router = useRouter();
     const [stats, setStats] = useState({ calls: 0, users: 0, accuracy: 0 });
+    const [displayedText, setDisplayedText] = useState('');
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const fullText = "8 Hours Dialing, 2 Hours Selling.\nLet's Filter it with AI.";
+
+    // Typewriter effect for headline
+    useEffect(() => {
+        if (currentIndex < fullText.length) {
+            const timeout = setTimeout(() => {
+                setDisplayedText(prev => prev + fullText[currentIndex]);
+                setCurrentIndex(prev => prev + 1);
+            }, 50); // Speed of typing (50ms per character)
+
+            return () => clearTimeout(timeout);
+        }
+    }, [currentIndex, fullText]);
 
     // Count-up animation for stats
     useEffect(() => {
@@ -324,10 +339,27 @@ export default function LandingPage() {
                                         background: 'linear-gradient(135deg, #111827 0%, #374151 100%)',
                                         backgroundClip: 'text',
                                         WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent'
+                                        WebkitTextFillColor: 'transparent',
+                                        minHeight: { xs: '140px', md: '180px', lg: '220px' },
+                                        position: 'relative',
+                                        '&::after': currentIndex < fullText.length ? {
+                                            content: '""',
+                                            position: 'absolute',
+                                            right: { xs: 'auto', md: 0 },
+                                            width: '3px',
+                                            height: { xs: '40px', md: '60px', lg: '70px' },
+                                            bgcolor: '#6366f1',
+                                            animation: 'blink 0.7s infinite',
+                                            marginLeft: '4px'
+                                        } : {}
                                     }}
                                 >
-                                    Qualify Leads, Transfer Calls & Schedule Callbacks Automatically
+                                    {displayedText.split('\n').map((line, index) => (
+                                        <React.Fragment key={index}>
+                                            {line}
+                                            {index < displayedText.split('\n').length - 1 && <br />}
+                                        </React.Fragment>
+                                    ))}
                                 </Typography>
                                 <Typography
                                     variant="h5"
@@ -339,7 +371,7 @@ export default function LandingPage() {
                                         fontWeight: 400
                                     }}
                                 >
-                                    Your AI-powered sales assistant that works 24/7 to qualify leads using BANT criteria, transfer hot prospects to your team, and schedule callbacks intelligently
+                                    Stop wasting time on cold calls. Our AI qualifies every lead, filters out the noise, and transfers only hot prospects to your sales team—so they can focus on what they do best: closing deals.
                                 </Typography>
                                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 4 }}>
                                     <Button
