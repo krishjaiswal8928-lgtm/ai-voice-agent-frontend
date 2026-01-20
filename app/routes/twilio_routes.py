@@ -72,6 +72,7 @@ async def voice_webhook(request: Request):
         lead_id = form_data.get("lead_id") or request.query_params.get("lead_id")
         goal = form_data.get("goal") or request.query_params.get("goal") or ""
         rag_document_id = form_data.get("rag_document_id") or request.query_params.get("rag_document_id")
+        custom_agent_id = form_data.get("custom_agent_id") or request.query_params.get("custom_agent_id")
         
         from app.database.firestore import db
         if not db:
@@ -103,6 +104,7 @@ async def voice_webhook(request: Request):
             stream.parameter(name="goal", value=goal)
             stream.parameter(name="ideal_customer_description", value=ideal_customer_description)
             stream.parameter(name="rag_document_id", value=rag_document_id or "")
+            stream.parameter(name="custom_agent_id", value=custom_agent_id or "")
             stream.parameter(name="call_sid", value=call_sid)
             stream.parameter(name="phone_number", value=to_num_norm)
             # Explicitly flag as outbound to prevent WS from re-resolving as Inbound
