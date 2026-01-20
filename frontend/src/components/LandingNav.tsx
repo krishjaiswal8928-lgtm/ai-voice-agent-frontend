@@ -90,7 +90,7 @@ export function LandingNav() {
                             color: '#ffffff',
                             fontWeight: 600,
                             py: 1.5,
-                            borderRadius: '8px',
+                            borderRadius: '12px',
                             textTransform: 'none',
                             fontSize: '0.95rem',
                             '&:hover': { bgcolor: '#1a1a1a' }
@@ -105,39 +105,74 @@ export function LandingNav() {
 
     return (
         <>
-            <AppBar
-                position="fixed"
-                elevation={0}
+            <Box
                 sx={{
-                    bgcolor: scrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(12px)',
-                    borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(0,0,0,0.05)',
-                    transition: 'all 0.3s ease',
-                    boxShadow: scrolled ? '0 2px 12px rgba(0,0,0,0.04)' : 'none'
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1100,
+                    px: { xs: 2, sm: 3, md: 4 },
+                    pt: { xs: 2, sm: 2.5, md: 3 },
+                    pointerEvents: 'none'
                 }}
             >
-                <Container maxWidth="xl">
-                    <Toolbar sx={{ justifyContent: 'space-between', py: 1.5, px: { xs: 2, sm: 3 } }}>
+                <Box
+                    sx={{
+                        maxWidth: '1400px',
+                        mx: 'auto',
+                        bgcolor: scrolled
+                            ? 'rgba(255, 255, 255, 0.95)'
+                            : 'rgba(255, 255, 255, 0.85)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: { xs: '16px', md: '20px' },
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        boxShadow: scrolled
+                            ? '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)'
+                            : '0 4px 24px rgba(0, 0, 0, 0.08)',
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                        pointerEvents: 'auto',
+                        animation: 'slideDown 0.6s ease-out',
+                        '@keyframes slideDown': {
+                            from: {
+                                opacity: 0,
+                                transform: 'translateY(-20px)'
+                            },
+                            to: {
+                                opacity: 1,
+                                transform: 'translateY(0)'
+                            }
+                        },
+                        '&:hover': {
+                            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)',
+                            transform: 'translateY(-1px)'
+                        }
+                    }}
+                >
+                    <Toolbar sx={{ justifyContent: 'space-between', py: { xs: 1.5, md: 2 }, px: { xs: 2, md: 3 } }}>
                         {/* Logo */}
                         <Box
                             onClick={() => router.push('/')}
                             sx={{
                                 fontWeight: 700,
                                 cursor: 'pointer',
-                                fontSize: '1.5rem',
+                                fontSize: { xs: '1.3rem', md: '1.5rem' },
                                 display: 'flex',
                                 alignItems: 'center',
                                 fontFamily: 'inherit',
-                                transition: 'transform 0.2s',
-                                '&:hover': { transform: 'scale(1.02)' }
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    transform: 'scale(1.05)',
+                                    filter: 'brightness(1.1)'
+                                }
                             }}
                         >
-                            <span style={{ color: '#1c2e91ff' }}>Spe</span>
-                            <span style={{ color: '#007f90ff' }}>a</span>
-                            <span style={{ color: '#00bcd4ff' }}>k</span>
-                            <span style={{ color: '#e91e63' }}>Synt</span>
-                            <span style={{ color: '#e98e1eff' }}>h</span>
-                            <span style={{ color: '#000000' }}> AI</span>
+                            <span style={{ color: '#1c2e91ff', transition: 'all 0.3s' }}>Spe</span>
+                            <span style={{ color: '#007f90ff', transition: 'all 0.3s' }}>a</span>
+                            <span style={{ color: '#00bcd4ff', transition: 'all 0.3s' }}>k</span>
+                            <span style={{ color: '#e91e63', transition: 'all 0.3s' }}>Synt</span>
+                            <span style={{ color: '#e98e1eff', transition: 'all 0.3s' }}>h</span>
+                            <span style={{ color: '#000000', transition: 'all 0.3s' }}> AI</span>
                         </Box>
 
                         {/* Desktop Navigation */}
@@ -145,18 +180,41 @@ export function LandingNav() {
                             {/* Product Dropdown */}
                             <Button
                                 onClick={handleProductClick}
-                                endIcon={<KeyboardArrowDown sx={{ fontSize: 18 }} />}
+                                endIcon={<KeyboardArrowDown
+                                    sx={{
+                                        fontSize: 18,
+                                        transition: 'transform 0.3s',
+                                        transform: Boolean(productAnchor) ? 'rotate(180deg)' : 'rotate(0deg)'
+                                    }}
+                                />}
                                 sx={{
                                     color: '#374151',
                                     fontWeight: 500,
-                                    px: 2,
-                                    py: 1,
+                                    px: 2.5,
+                                    py: 1.2,
                                     textTransform: 'none',
                                     fontSize: '0.95rem',
-                                    borderRadius: '8px',
+                                    borderRadius: '12px',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: '-100%',
+                                        width: '100%',
+                                        height: '100%',
+                                        background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent)',
+                                        transition: 'left 0.5s'
+                                    },
+                                    '&:hover::before': {
+                                        left: '100%'
+                                    },
                                     '&:hover': {
-                                        bgcolor: 'rgba(0, 0, 0, 0.04)'
-                                    }
+                                        bgcolor: 'rgba(99, 102, 241, 0.08)',
+                                        transform: 'translateY(-2px)'
+                                    },
+                                    transition: 'all 0.3s ease'
                                 }}
                             >
                                 Product
@@ -167,17 +225,46 @@ export function LandingNav() {
                                 onClose={handleProductClose}
                                 sx={{
                                     '& .MuiPaper-root': {
-                                        borderRadius: '12px',
-                                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                                        borderRadius: '16px',
+                                        boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
                                         mt: 1,
-                                        minWidth: 200
+                                        minWidth: 220,
+                                        border: '1px solid rgba(0,0,0,0.08)',
+                                        overflow: 'hidden'
                                     }
                                 }}
+                                TransitionProps={{
+                                    timeout: 300
+                                }}
                             >
-                                <MuiMenuItem onClick={() => { router.push('/'); handleProductClose(); }} sx={{ py: 1.5, fontSize: '0.95rem' }}>
+                                <MuiMenuItem
+                                    onClick={() => { router.push('/'); handleProductClose(); }}
+                                    sx={{
+                                        py: 1.5,
+                                        px: 2.5,
+                                        fontSize: '0.95rem',
+                                        transition: 'all 0.2s',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(99, 102, 241, 0.08)',
+                                            pl: 3
+                                        }
+                                    }}
+                                >
                                     Overview
                                 </MuiMenuItem>
-                                <MuiMenuItem onClick={() => { router.push('/pricing'); handleProductClose(); }} sx={{ py: 1.5, fontSize: '0.95rem' }}>
+                                <MuiMenuItem
+                                    onClick={() => { router.push('/pricing'); handleProductClose(); }}
+                                    sx={{
+                                        py: 1.5,
+                                        px: 2.5,
+                                        fontSize: '0.95rem',
+                                        transition: 'all 0.2s',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(99, 102, 241, 0.08)',
+                                            pl: 3
+                                        }
+                                    }}
+                                >
                                     Pricing
                                 </MuiMenuItem>
                             </Menu>
@@ -189,26 +276,47 @@ export function LandingNav() {
                                     sx={{
                                         color: pathname === item.path ? '#6366f1' : '#374151',
                                         fontWeight: pathname === item.path ? 600 : 500,
-                                        px: 2,
-                                        py: 1,
+                                        px: 2.5,
+                                        py: 1.2,
                                         textTransform: 'none',
                                         fontSize: '0.95rem',
-                                        borderRadius: '8px',
+                                        borderRadius: '12px',
                                         position: 'relative',
+                                        overflow: 'hidden',
+                                        '&::before': pathname !== item.path ? {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent)',
+                                            transition: 'left 0.5s'
+                                        } : {},
+                                        '&:hover::before': {
+                                            left: '100%'
+                                        },
                                         '&::after': pathname === item.path ? {
                                             content: '""',
                                             position: 'absolute',
-                                            bottom: 4,
+                                            bottom: 8,
                                             left: '50%',
                                             transform: 'translateX(-50%)',
-                                            width: '24px',
-                                            height: '2px',
+                                            width: '32px',
+                                            height: '3px',
                                             bgcolor: '#6366f1',
-                                            borderRadius: '2px'
+                                            borderRadius: '2px',
+                                            animation: 'expandWidth 0.3s ease-out'
                                         } : {},
+                                        '@keyframes expandWidth': {
+                                            from: { width: '0px' },
+                                            to: { width: '32px' }
+                                        },
                                         '&:hover': {
-                                            bgcolor: 'rgba(0, 0, 0, 0.04)'
-                                        }
+                                            bgcolor: pathname === item.path ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
+                                            transform: 'translateY(-2px)'
+                                        },
+                                        transition: 'all 0.3s ease'
                                     }}
                                 >
                                     {item.label}
@@ -217,18 +325,24 @@ export function LandingNav() {
                         </Box>
 
                         {/* Right side buttons */}
-                        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
                             <Button
                                 onClick={() => router.push('/auth/login')}
                                 sx={{
                                     color: '#374151',
                                     fontWeight: 500,
-                                    px: 2.5,
-                                    py: 1,
+                                    px: 3,
+                                    py: 1.2,
                                     textTransform: 'none',
                                     fontSize: '0.95rem',
-                                    borderRadius: '8px',
-                                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' }
+                                    borderRadius: '12px',
+                                    border: '1.5px solid transparent',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                        border: '1.5px solid rgba(0, 0, 0, 0.1)',
+                                        transform: 'translateY(-2px)'
+                                    }
                                 }}
                             >
                                 Login
@@ -237,21 +351,36 @@ export function LandingNav() {
                                 variant="contained"
                                 onClick={() => router.push('/auth/register')}
                                 sx={{
-                                    bgcolor: '#000000',
+                                    background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
                                     color: '#ffffff',
                                     fontWeight: 600,
-                                    px: 3,
-                                    py: 1.25,
+                                    px: 3.5,
+                                    py: 1.4,
                                     textTransform: 'none',
                                     fontSize: '0.95rem',
-                                    borderRadius: '8px',
-                                    boxShadow: 'none',
-                                    '&:hover': {
-                                        bgcolor: '#1a1a1a',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                        transform: 'translateY(-1px)'
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: '-100%',
+                                        width: '100%',
+                                        height: '100%',
+                                        background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+                                        transition: 'left 0.6s'
                                     },
-                                    transition: 'all 0.2s'
+                                    '&:hover::before': {
+                                        left: '100%'
+                                    },
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.35)',
+                                        transform: 'translateY(-3px) scale(1.02)'
+                                    },
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                                 }}
                             >
                                 Try For Free
@@ -264,13 +393,21 @@ export function LandingNav() {
                             aria-label="open drawer"
                             edge="start"
                             onClick={handleDrawerToggle}
-                            sx={{ display: { md: 'none' }, color: '#000000' }}
+                            sx={{
+                                display: { md: 'none' },
+                                color: '#000000',
+                                transition: 'all 0.3s',
+                                '&:hover': {
+                                    bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                    transform: 'rotate(90deg)'
+                                }
+                            }}
                         >
                             <MenuIcon />
                         </IconButton>
                     </Toolbar>
-                </Container>
-            </AppBar>
+                </Box>
+            </Box>
 
             {/* Mobile drawer */}
             <Drawer
@@ -281,14 +418,18 @@ export function LandingNav() {
                 ModalProps={{ keepMounted: true }}
                 sx={{
                     display: { xs: 'block', md: 'none' },
-                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 280 }
+                    '& .MuiDrawer-paper': {
+                        boxSizing: 'border-box',
+                        width: 280,
+                        borderRadius: '20px 0 0 20px'
+                    }
                 }}
             >
                 {drawer}
             </Drawer>
 
-            {/* Spacer for fixed AppBar */}
-            <Toolbar />
+            {/* Spacer for content below */}
+            <Box sx={{ height: { xs: '80px', md: '100px' } }} />
         </>
     );
 }
