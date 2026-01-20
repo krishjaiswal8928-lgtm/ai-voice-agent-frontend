@@ -234,51 +234,67 @@ export default function LandingPage() {
     ];
 
     return (
-        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+        <Box
+            sx={{
+                bgcolor: '#f5f5f5',
+                backgroundImage: `
+                    radial-gradient(circle at 2px 2px, rgba(0,0,0,0.05) 1px, transparent 0)
+                `,
+                backgroundSize: '32px 32px',
+                minHeight: '100vh',
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.03) 0%, transparent 50%)',
+                    pointerEvents: 'none',
+                    zIndex: 0
+                }
+            }}
+        >
             <LandingNav />
 
             {/* Hero Section */}
             <Box
                 sx={{
                     position: 'relative',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)',
-                    backgroundSize: '200% 200%',
-                    color: '#ffffff',
-                    pt: { xs: 12, md: 16 },
-                    pb: { xs: 12, md: 16 },
-                    overflow: 'hidden',
-                    animation: 'gradientShift 15s ease infinite'
+                    pt: { xs: 8, md: 12 },
+                    pb: { xs: 8, md: 12 },
+                    overflow: 'hidden'
                 }}
-                className="gradient-shift"
             >
-                {/* Floating orbs */}
+                {/* Animated floating elements */}
                 <Box
                     sx={{
                         position: 'absolute',
                         top: '10%',
-                        left: '10%',
-                        width: '300px',
-                        height: '300px',
+                        left: '5%',
+                        width: '400px',
+                        height: '400px',
                         borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)',
-                        filter: 'blur(40px)',
-                        animation: 'floatSlow 8s ease-in-out infinite'
+                        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
+                        filter: 'blur(60px)',
+                        animation: 'float 8s ease-in-out infinite',
+                        zIndex: 0
                     }}
-                    className="float-slow"
                 />
                 <Box
                     sx={{
                         position: 'absolute',
                         bottom: '10%',
-                        right: '10%',
-                        width: '400px',
-                        height: '400px',
+                        right: '5%',
+                        width: '500px',
+                        height: '500px',
                         borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-                        filter: 'blur(60px)',
-                        animation: 'float 6s ease-in-out infinite'
+                        background: 'radial-gradient(circle, rgba(236, 72, 153, 0.06) 0%, transparent 70%)',
+                        filter: 'blur(80px)',
+                        animation: 'floatSlow 10s ease-in-out infinite',
+                        zIndex: 0
                     }}
-                    className="float"
                 />
 
                 <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
@@ -288,12 +304,13 @@ export default function LandingPage() {
                                 <Chip
                                     label="🚀 AI-Powered Voice Automation Platform"
                                     sx={{
-                                        bgcolor: 'rgba(255,255,255,0.2)',
-                                        color: '#ffffff',
+                                        bgcolor: '#ffffff',
+                                        color: '#6366f1',
                                         fontWeight: 600,
                                         mb: 3,
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.3)'
+                                        border: '1px solid rgba(99, 102, 241, 0.2)',
+                                        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.1)',
+                                        animation: 'pulse 3s ease-in-out infinite'
                                     }}
                                 />
                                 <Typography
@@ -303,7 +320,11 @@ export default function LandingPage() {
                                         mb: 3,
                                         fontSize: { xs: '2.5rem', md: '3.5rem', lg: '4rem' },
                                         lineHeight: 1.2,
-                                        textShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                                        color: '#111827',
+                                        background: 'linear-gradient(135deg, #111827 0%, #374151 100%)',
+                                        backgroundClip: 'text',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent'
                                     }}
                                 >
                                     Qualify Leads, Transfer Calls & Schedule Callbacks Automatically
@@ -312,7 +333,7 @@ export default function LandingPage() {
                                     variant="h5"
                                     sx={{
                                         mb: 4,
-                                        opacity: 0.95,
+                                        color: '#6b7280',
                                         lineHeight: 1.6,
                                         fontSize: { xs: '1.1rem', md: '1.3rem' },
                                         fontWeight: 400
@@ -327,18 +348,32 @@ export default function LandingPage() {
                                         endIcon={<ArrowForward />}
                                         onClick={() => router.push('/auth/register')}
                                         sx={{
-                                            bgcolor: '#ffffff',
-                                            color: '#6366f1',
+                                            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                                            color: '#ffffff',
                                             fontWeight: 700,
                                             px: 4,
                                             py: 2,
                                             fontSize: '1.1rem',
                                             borderRadius: '12px',
-                                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                                            boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            '&::before': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: '-100%',
+                                                width: '100%',
+                                                height: '100%',
+                                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                                                transition: 'left 0.6s'
+                                            },
+                                            '&:hover::before': {
+                                                left: '100%'
+                                            },
                                             '&:hover': {
-                                                bgcolor: '#f5f5f5',
                                                 transform: 'translateY(-2px)',
-                                                boxShadow: '0 12px 32px rgba(0,0,0,0.3)'
+                                                boxShadow: '0 12px 32px rgba(99, 102, 241, 0.4)'
                                             },
                                             transition: 'all 0.3s'
                                         }}
@@ -350,20 +385,23 @@ export default function LandingPage() {
                                         size="large"
                                         onClick={() => router.push('/contact')}
                                         sx={{
-                                            borderColor: '#ffffff',
-                                            color: '#ffffff',
+                                            borderColor: '#6366f1',
+                                            color: '#6366f1',
                                             fontWeight: 700,
                                             px: 4,
                                             py: 2,
                                             fontSize: '1.1rem',
                                             borderRadius: '12px',
                                             borderWidth: '2px',
-                                            backdropFilter: 'blur(10px)',
+                                            bgcolor: '#ffffff',
                                             '&:hover': {
-                                                borderColor: '#ffffff',
-                                                bgcolor: 'rgba(255,255,255,0.1)',
-                                                borderWidth: '2px'
-                                            }
+                                                borderColor: '#6366f1',
+                                                bgcolor: 'rgba(99, 102, 241, 0.05)',
+                                                borderWidth: '2px',
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 8px 24px rgba(99, 102, 241, 0.15)'
+                                            },
+                                            transition: 'all 0.3s'
                                         }}
                                     >
                                         Book a Demo
@@ -371,7 +409,7 @@ export default function LandingPage() {
                                 </Box>
                                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                                     {['✓ No credit card required', '✓ 14-day free trial', '✓ Setup in 5 minutes'].map((item, i) => (
-                                        <Typography key={i} variant="body2" sx={{ display: 'flex', alignItems: 'center', opacity: 0.9 }}>
+                                        <Typography key={i} variant="body2" sx={{ display: 'flex', alignItems: 'center', color: '#6b7280', fontWeight: 500 }}>
                                             {item}
                                         </Typography>
                                     ))}
@@ -383,21 +421,38 @@ export default function LandingPage() {
                                 className="fade-in-right delay-300"
                                 sx={{
                                     position: 'relative',
-                                    display: { xs: 'none', md: 'block' }
+                                    display: { xs: 'none', md: 'flex' },
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
                                 }}
                             >
                                 <Box
                                     sx={{
-                                        bgcolor: 'rgba(255,255,255,0.1)',
-                                        backdropFilter: 'blur(20px)',
+                                        bgcolor: '#ffffff',
                                         borderRadius: '24px',
-                                        p: 4,
-                                        border: '1px solid rgba(255,255,255,0.2)',
-                                        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+                                        p: 6,
+                                        border: '1px solid rgba(0,0,0,0.08)',
+                                        boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        position: 'relative',
+                                        animation: 'float 4s ease-in-out infinite',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            inset: -2,
+                                            borderRadius: '24px',
+                                            padding: '2px',
+                                            background: 'linear-gradient(135deg, #6366f1, #ec4899, #8b5cf6)',
+                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                            WebkitMaskComposite: 'xor',
+                                            maskComposite: 'exclude',
+                                            opacity: 0.5
+                                        }
                                     }}
-                                    className="float"
                                 >
-                                    <SmartToy sx={{ fontSize: 120, opacity: 0.9 }} />
+                                    <SmartToy sx={{ fontSize: 140, color: '#6366f1' }} />
                                 </Box>
                             </Box>
                         </Grid>
@@ -406,7 +461,7 @@ export default function LandingPage() {
             </Box>
 
             {/* Stats Section */}
-            <Container maxWidth="lg" sx={{ mt: -6, position: 'relative', zIndex: 2 }}>
+            <Container maxWidth="lg" sx={{ mt: -4, position: 'relative', zIndex: 2 }}>
                 <Grid container spacing={3}>
                     {[
                         { label: 'Calls Processed', value: stats.calls.toLocaleString() + '+', icon: <PhoneInTalk /> },
@@ -418,13 +473,14 @@ export default function LandingPage() {
                                 className={`fade-in-up delay-${(index + 1) * 100}`}
                                 sx={{
                                     bgcolor: '#ffffff',
-                                    border: '1px solid #e5e7eb',
+                                    border: '1px solid rgba(0,0,0,0.08)',
                                     borderRadius: '16px',
-                                    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
                                     transition: 'all 0.3s',
                                     '&:hover': {
                                         transform: 'translateY(-8px)',
-                                        boxShadow: '0 20px 60px rgba(99,102,241,0.2)'
+                                        boxShadow: '0 12px 40px rgba(99,102,241,0.15)',
+                                        borderColor: 'rgba(99, 102, 241, 0.3)'
                                     }
                                 }}
                             >
@@ -456,7 +512,17 @@ export default function LandingPage() {
             {/* Lead Qualification Process */}
             <Container maxWidth="lg" sx={{ py: 12 }}>
                 <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
-                    <Chip label="HOW IT QUALIFIES" sx={{ bgcolor: '#6366f1', color: '#ffffff', mb: 2, fontWeight: 600 }} />
+                    <Chip
+                        label="HOW IT QUALIFIES"
+                        sx={{
+                            bgcolor: '#ffffff',
+                            color: '#6366f1',
+                            mb: 2,
+                            fontWeight: 600,
+                            border: '1px solid rgba(99, 102, 241, 0.2)',
+                            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.1)'
+                        }}
+                    />
                     <Typography
                         variant="h2"
                         sx={{
@@ -479,12 +545,14 @@ export default function LandingPage() {
                             <Card
                                 className={`fade-in-up delay-${(index + 1) * 100}`}
                                 sx={{
-                                    border: '1px solid #e5e7eb',
+                                    bgcolor: '#ffffff',
+                                    border: '1px solid rgba(0,0,0,0.08)',
                                     borderRadius: '12px',
                                     transition: 'all 0.3s',
                                     '&:hover': {
                                         borderColor: '#6366f1',
-                                        boxShadow: '0 8px 24px rgba(99,102,241,0.15)'
+                                        boxShadow: '0 8px 24px rgba(99,102,241,0.15)',
+                                        transform: 'translateX(8px)'
                                     }
                                 }}
                             >
@@ -518,10 +586,20 @@ export default function LandingPage() {
             </Container>
 
             {/* Features Section */}
-            <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
+            <Box sx={{ bgcolor: 'rgba(255,255,255,0.5)', py: 12, backdropFilter: 'blur(10px)' }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
-                        <Chip label="FEATURES" sx={{ bgcolor: '#22c55e', color: '#ffffff', mb: 2, fontWeight: 600 }} />
+                        <Chip
+                            label="FEATURES"
+                            sx={{
+                                bgcolor: '#ffffff',
+                                color: '#22c55e',
+                                mb: 2,
+                                fontWeight: 600,
+                                border: '1px solid rgba(34, 197, 94, 0.2)',
+                                boxShadow: '0 2px 8px rgba(34, 197, 94, 0.1)'
+                            }}
+                        />
                         <Typography
                             variant="h2"
                             sx={{
@@ -545,12 +623,13 @@ export default function LandingPage() {
                                     className={`fade-in-up delay-${(index + 1) * 100}`}
                                     sx={{
                                         height: '100%',
-                                        border: '1px solid #e5e7eb',
+                                        bgcolor: '#ffffff',
+                                        border: '1px solid rgba(0,0,0,0.08)',
                                         borderRadius: '16px',
                                         transition: 'all 0.3s',
                                         '&:hover': {
                                             transform: 'translateY(-8px)',
-                                            boxShadow: `0 20px 60px ${feature.color}30`,
+                                            boxShadow: `0 20px 60px ${feature.color}20`,
                                             borderColor: feature.color
                                         }
                                     }}
@@ -601,7 +680,17 @@ export default function LandingPage() {
             {/* Use Cases Section */}
             <Container maxWidth="lg" sx={{ py: 12 }}>
                 <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
-                    <Chip label="USE CASES" sx={{ bgcolor: '#f59e0b', color: '#ffffff', mb: 2, fontWeight: 600 }} />
+                    <Chip
+                        label="USE CASES"
+                        sx={{
+                            bgcolor: '#ffffff',
+                            color: '#f59e0b',
+                            mb: 2,
+                            fontWeight: 600,
+                            border: '1px solid rgba(245, 158, 11, 0.2)',
+                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.1)'
+                        }}
+                    />
                     <Typography
                         variant="h2"
                         sx={{
@@ -625,7 +714,8 @@ export default function LandingPage() {
                                 className={`fade-in-up delay-${(index + 1) * 100}`}
                                 sx={{
                                     height: '100%',
-                                    border: '1px solid #e5e7eb',
+                                    bgcolor: '#ffffff',
+                                    border: '1px solid rgba(0,0,0,0.08)',
                                     borderRadius: '16px',
                                     transition: 'all 0.3s',
                                     '&:hover': {
@@ -660,10 +750,20 @@ export default function LandingPage() {
             </Container>
 
             {/* How It Works Section */}
-            <Box sx={{ bgcolor: '#ffffff', py: 12 }}>
+            <Box sx={{ bgcolor: 'rgba(255,255,255,0.5)', py: 12, backdropFilter: 'blur(10px)' }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: 'center', mb: 8 }} className="fade-in-up">
-                        <Chip label="SIMPLE SETUP" sx={{ bgcolor: '#8b5cf6', color: '#ffffff', mb: 2, fontWeight: 600 }} />
+                        <Chip
+                            label="SIMPLE SETUP"
+                            sx={{
+                                bgcolor: '#ffffff',
+                                color: '#8b5cf6',
+                                mb: 2,
+                                fontWeight: 600,
+                                border: '1px solid rgba(139, 92, 246, 0.2)',
+                                boxShadow: '0 2px 8px rgba(139, 92, 246, 0.1)'
+                            }}
+                        />
                         <Typography
                             variant="h2"
                             sx={{
@@ -739,10 +839,24 @@ export default function LandingPage() {
                 sx={{
                     background: 'linear-gradient(135deg, #111827 0%, #1f2937 100%)',
                     color: '#ffffff',
-                    py: 12
+                    py: 12,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: `
+                            radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)
+                        `,
+                        backgroundSize: '32px 32px'
+                    }
                 }}
             >
-                <Container maxWidth="md" sx={{ textAlign: 'center' }}>
+                <Container maxWidth="md" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
                     <Box className="fade-in-up">
                         <Typography
                             variant="h2"
@@ -763,7 +877,7 @@ export default function LandingPage() {
                             endIcon={<ArrowForward />}
                             onClick={() => router.push('/auth/register')}
                             sx={{
-                                bgcolor: '#6366f1',
+                                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                                 color: '#ffffff',
                                 fontWeight: 700,
                                 px: 6,
@@ -771,8 +885,22 @@ export default function LandingPage() {
                                 fontSize: '1.2rem',
                                 borderRadius: '12px',
                                 boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4)',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-100%',
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                                    transition: 'left 0.6s'
+                                },
+                                '&:hover::before': {
+                                    left: '100%'
+                                },
                                 '&:hover': {
-                                    bgcolor: '#4f46e5',
                                     transform: 'translateY(-2px)',
                                     boxShadow: '0 12px 32px rgba(99, 102, 241, 0.5)'
                                 },
