@@ -496,7 +496,7 @@ def generate_response_with_tools(
     agent_name: str = ""
 ) -> Dict[str, Any]:
     """
-    Generate response with intelligent tool calling capability.
+    Generate response with intelligent tool calling capability using DeepSeek.
     Returns either a text response or a tool call decision.
     
     This enables the AI agent to proactively:
@@ -506,7 +506,7 @@ def generate_response_with_tools(
     - Transfer to human agents when needed
     """
     import json
-    from app.agent.tools.agent_tools import AGENT_TOOLS
+    import re
     
     if not transcript or not transcript.strip():
         return {
@@ -534,7 +534,7 @@ def generate_response_with_tools(
         "Respond in English."
     )
     
-    # Build enhanced system prompt for intelligent decision making
+    # Build enhanced system prompt for intelligent decision making with JSON output
     system_prompt = f"""You are {agent_name or 'an AI sales agent'} from {company_name or 'our company'}.
 
 Your goal: {goal or 'Help the customer'}
@@ -543,114 +543,151 @@ You are a {personality} communicator with access to intelligent tools to make st
 
 AVAILABLE TOOLS:
 1. end_call - Use when lead is unqualified (competitor, not interested, already has product, hostile, wrong demographics)
-2. schedule_callback - Use when timing is bad but lead might be interested later
+2. schedule_callback - Use when timing is bad but lead might be interested later (busy, driving, requests callback)
 3. continue_conversation - Use when lead is engaged and conversation should continue
 4. transfer_to_human - Use when situation requires human judgment
 
 DECISION-MAKING GUIDELINES:
 - Be PROACTIVE and STRATEGIC - don't waste time on clearly unqualified leads
-- COMPETITOR detected? → Use end_call immediately with polite goodbye
-- "Already have product" + no interest? → Use end_call to save time
-- "Not interested" clearly stated? → Use end_call respectfully
-- Lead is busy/driving? → Use schedule_callback
+- COMPETITOR detected? → Use end_call immediately
+- "Already have product" + no interest? → Use end_call
+- "Not interested" clearly stated? → Use end_call
+- Lead is busy/driving/requests callback? → Use schedule_callback
 - Lead engaged/asking questions? → Use continue_conversation
-- Complex situation? → Use transfer_to_human
+- Complex situation needing human? → Use transfer_to_human
 
-IMPORTANT: Analyze each customer response intelligently and choose the RIGHT tool.
-Don't continue conversations that are clearly unproductive.
+CRITICAL: You MUST respond in this EXACT JSON format:
+{{
+  "tool": "tool_name",
+  "arguments": {{...}},
+  "response": "what to say to customer"
+}}
+
+TOOL FORMATS:
+
+For end_call:
+{{
+  "tool": "end_call",
+  "arguments": {{
+    "reason": "not_interested|competitor|already_has_product|hostile|unqualified",
+    "final_message": "Polite goodbye message",
+    "lead_classification": "not_interested|competitor|existing_customer|unqualified|do_not_call"
+  }},
+  "response": "Thank you for your time. Have a great day!"
+}}
+
+For schedule_callback:
+{{
+  "tool": "schedule_callback",
+  "arguments": {{
+    "delay_minutes": 1440,
+    "reason": "Lead is busy",
+    "confirmation_message": "I'll call you tomorrow at 10 AM"
+  }},
+  "response": "Perfect! I'll call you tomorrow at 10 AM. Have a great day!"
+}}
+
+For continue_conversation:
+{{
+  "tool": "continue_conversation",
+  "arguments": {{
+    "strategy": "answer_questions|handle_objection|build_rapport|qualify_lead",
+    "response": "Your conversational response here"
+  }},
+  "response": "Your conversational response here"
+}}
+
+For transfer_to_human:
+{{
+  "tool": "transfer_to_human",
+  "arguments": {{
+    "reason": "Complex question",
+    "transfer_message": "Let me connect you with a specialist",
+    "urgency": "low|medium|high"
+  }},
+  "response": "Let me connect you with one of our specialists who can help you better."
+}}
 
 {language_instruction}
 
 Knowledge Base: {context if context else 'Limited information available'}
-"""
 
-    # Build user message with conversation context
+REMEMBER: Always respond with VALID JSON only. No extra text before or after the JSON."""
+
+    # Build user message
     user_message = f"""Conversation History:
 {conversation_history}
 
 Customer's Latest Message: {transcript}
 
-Analyze this message and decide:
-1. Is this lead qualified and worth continuing?
-2. Should I end the call, schedule callback, continue, or transfer?
-3. What's the most strategic action?
+Analyze this and respond with the appropriate tool in JSON format."""
 
-Make your decision and use the appropriate tool."""
-
-    max_retries = 2
-    for attempt in range(max_retries):
-        try:
-            # Try OpenAI first (has best function calling)
-            import openai
-            openai_key = os.getenv("OPENAI_API_KEY")
-            
-            if not openai_key:
-                # Fallback to regular response without tools
-                logger.warning("OpenAI API key not found, falling back to regular response")
-                return {
-                    "type": "text",
-                    "content": generate_response(transcript, goal, history, context, personality, company_name, "", agent_name)
-                }
-            
-            openai.api_key = openai_key
-            
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ]
-            
-            response = openai.chat.completions.create(
-                model="gpt-4-turbo-preview",
-                messages=messages,
-                tools=AGENT_TOOLS,
-                tool_choice="auto",  # Let AI decide when to use tools
-                temperature=0.7
-            )
-            
-            message = response.choices[0].message
-            
-            # Check if AI decided to use a tool
-            if message.tool_calls and len(message.tool_calls) > 0:
-                tool_call = message.tool_calls[0]
-                tool_name = tool_call.function.name
-                
-                try:
-                    arguments = json.loads(tool_call.function.arguments)
-                except json.JSONDecodeError:
-                    logger.error(f"Failed to parse tool arguments: {tool_call.function.arguments}")
-                    arguments = {}
-                
-                logger.info(f"🤖 AI decided to use tool: {tool_name} with args: {arguments}")
-                
-                return {
-                    "type": "tool_call",
-                    "tool": tool_name,
-                    "arguments": arguments
-                }
-            else:
-                # Regular text response
-                response_text = message.content if message.content else "I understand. How can I help you?"
-                
-                return {
-                    "type": "text",
-                    "content": response_text
-                }
+    try:
+        # Use DeepSeek for tool calling via prompt engineering
+        client = get_deepseek_client()
+        if not client:
+            logger.error("DeepSeek client not available")
+            return {
+                "type": "text",
+                "content": generate_response(transcript, goal, history, context, personality, company_name, "", agent_name)
+            }
         
-        except Exception as e:
-            logger.error(f"Error in generate_response_with_tools (attempt {attempt + 1}): {e}")
-            if attempt < max_retries - 1:
-                time.sleep(1)
-                continue
-            else:
-                # Fallback to regular response
-                logger.warning("Function calling failed, falling back to regular response")
-                return {
-                    "type": "text",
-                    "content": generate_response(transcript, goal, history, context, personality, company_name, "", agent_name)
-                }
+        # Call DeepSeek
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+        
+        response = client.chat.completions.create(
+            model="deepseek-ai/DeepSeek-V3",
+            messages=messages,
+            temperature=0.3,  # Lower temperature for more consistent JSON
+            max_tokens=500
+        )
+        
+        response_text = response.choices[0].message.content.strip()
+        logger.info(f"🤖 DeepSeek raw response: {response_text[:200]}...")
+        
+        # Extract JSON from response (handle cases where LLM adds extra text)
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            try:
+                tool_data = json.loads(json_str)
+                
+                # Validate required fields
+                if "tool" in tool_data and "arguments" in tool_data:
+                    tool_name = tool_data["tool"]
+                    arguments = tool_data["arguments"]
+                    
+                    logger.info(f"🛠️ Tool decision: {tool_name} with args: {arguments}")
+                    
+                    return {
+                        "type": "tool_call",
+                        "tool": tool_name,
+                        "arguments": arguments
+                    }
+                else:
+                    logger.warning(f"Invalid tool JSON structure: {tool_data}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON: {e}")
+        
+        # If JSON parsing failed, treat as continue_conversation
+        logger.warning("No valid JSON found, defaulting to continue_conversation")
+        return {
+            "type": "tool_call",
+            "tool": "continue_conversation",
+            "arguments": {
+                "strategy": "answer_questions",
+                "response": response_text
+            }
+        }
     
-    # Final fallback
-    return {
-        "type": "text",
-        "content": "I'm here to help. What can I do for you?"
-    }
+    except Exception as e:
+        logger.error(f"Error in generate_response_with_tools: {e}", exc_info=True)
+        # Fallback to regular response
+        return {
+            "type": "text",
+            "content": generate_response(transcript, goal, history, context, personality, company_name, "", agent_name)
+        }
+
