@@ -539,29 +539,38 @@ async def _generate_and_stream_response(state: ConversationState, transcript: st
         
         # --- 1. Lazy Initialization of Autonomous Agent ---
         if not state.autonomous_agent and state.custom_agent_id:
-            logger.info(f"🔄 Lazily initializing Autonomous Agent: {state.custom_agent_id}")
-            custom_agent = await _fetch_custom_agent(state.custom_agent_id)
-            if custom_agent:
-                state.autonomous_agent = create_agent(custom_agent)
-                state.autonomous_agent.conversation_history = state.conversation_history
+            try:
+                logger.info(f"🔄 Lazily initializing Autonomous Agent: {state.custom_agent_id}")
+                custom_agent = await _fetch_custom_agent(state.custom_agent_id)
                 
-                # INJECT CAMPAIGN GOAL
-                if state.goal:
-                    state.autonomous_agent.config.primary_goal = state.goal
-                    logger.info(f"🎯 Overrode agent goal with campaign goal: {state.goal}")
-                
-                # INJECT IDEAL CUSTOMER PROFILE
-                if state.ideal_customer_description:
-                    state.autonomous_agent.current_context["ideal_customer_profile"] = state.ideal_customer_description
-                    logger.info(f"👥 Injected ICP into agent context: {state.ideal_customer_description[:100]}...")
-                
-                # INJECT CALL SID into context for tools
-                state.autonomous_agent.current_context["call_sid"] = state.call_sid
-                state.autonomous_agent.current_context["campaign_id"] = state.campaign_id
-                state.autonomous_agent.current_context["lead_id"] = state.lead_id
-                state.autonomous_agent.current_context["phone_number"] = state.phone_number
-                
-                logger.info(f"✅ Agent '{custom_agent.name}' initialized ({len(state.conversation_history)} history items)")
+                if custom_agent:
+                    state.autonomous_agent = create_agent(custom_agent)
+                    state.autonomous_agent.conversation_history = state.conversation_history
+                    
+                    # INJECT CAMPAIGN GOAL
+                    if state.goal:
+                        state.autonomous_agent.config.primary_goal = state.goal
+                        logger.info(f"🎯 Overrode agent goal with campaign goal: {state.goal}")
+                    
+                    # INJECT IDEAL CUSTOMER PROFILE
+                    if state.ideal_customer_description:
+                        state.autonomous_agent.current_context["ideal_customer_profile"] = state.ideal_customer_description
+                        logger.info(f"👥 Injected ICP into agent context: {state.ideal_customer_description[:100]}...")
+                    
+                    # INJECT CALL SID into context for tools
+                    state.autonomous_agent.current_context["call_sid"] = state.call_sid
+                    state.autonomous_agent.current_context["campaign_id"] = state.campaign_id
+                    state.autonomous_agent.current_context["lead_id"] = state.lead_id
+                    state.autonomous_agent.current_context["phone_number"] = state.phone_number
+                    
+                    logger.info(f"✅ Agent '{custom_agent.name}' initialized ({len(state.conversation_history)} history items)")
+                else:
+                    logger.error(f"❌ Failed to fetch custom agent: {state.custom_agent_id}")
+                    
+            except Exception as e:
+                logger.error(f"❌ Error initializing autonomous agent: {e}", exc_info=True)
+        elif not state.custom_agent_id:
+            logger.warning(f"⚠️ No custom_agent_id provided - cannot initialize autonomous agent")
         
         # --- 2. RAG Context Retrieval ---
         rag_context = ""
